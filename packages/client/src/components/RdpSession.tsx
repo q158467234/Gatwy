@@ -88,6 +88,7 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
   const inUseConfirmedRef = useRef(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [fileTransferOpen, setFileTransferOpen] = useState(false);
   const [showFileTransferNewBadge, setShowFileTransferNewBadge] = useState(false);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
@@ -1068,7 +1069,7 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
 
       {/* Flyout panel */}
       <div
-        className={`absolute right-5 top-1/2 -translate-y-1/2 z-20 w-60 max-h-[calc(100%-2rem)] overflow-y-auto bg-surface/95 backdrop-blur-xs border border-border rounded-xl shadow-2xl flex flex-col gap-1 p-3 transition-all duration-200 ${
+        className={`absolute right-5 top-1/2 -translate-y-1/2 z-20 w-52 max-h-[calc(100%-2rem)] overflow-y-auto bg-surface/95 backdrop-blur-xs border border-border rounded-xl shadow-2xl flex flex-col gap-1 p-3 transition-all duration-200 ${
           panelOpen ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-4 pointer-events-none'
         }`}
       >
@@ -1119,22 +1120,34 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
         )}
 
         {/* Keyboard shortcuts the browser or local OS would otherwise swallow */}
-        <div className="border-t border-border mt-1 pt-2">
-          <p className="text-xs text-text-secondary px-1 pb-1.5">Send keys</p>
-          <div className="grid grid-cols-2 gap-1">
+        <button
+          onClick={() => setShortcutsOpen((o) => !o)}
+          disabled={status !== 'Connected' || disconnected}
+          className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-surface-hover text-text-primary text-sm transition-colors text-left w-full disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="2" y="6" width="20" height="12" rx="2" />
+            <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10" />
+          </svg>
+          Send keys
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`ml-auto transition-transform ${shortcutsOpen ? 'rotate-90' : ''}`}>
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+        {shortcutsOpen && status === 'Connected' && !disconnected && (
+          <div className="flex flex-col pl-7">
             {RDP_SHORTCUTS.map((s) => (
               <button
                 key={s.label}
                 title={s.title}
-                disabled={status !== 'Connected' || disconnected}
                 onClick={() => sendShortcutRef.current?.(s.codes)}
-                className="px-1.5 py-1.5 rounded-md bg-surface-hover/50 hover:bg-surface-hover text-text-primary text-xs transition-colors truncate disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-2 py-1.5 rounded-md hover:bg-surface-hover text-text-primary text-xs transition-colors text-left truncate"
               >
                 {s.label}
               </button>
             ))}
           </div>
-        </div>
+        )}
 
         {/* File Transfer */}
         {fileTransferProvider && (
