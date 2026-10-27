@@ -37,9 +37,6 @@ export const config = {
   sessionTimeout: process.env.SESSION_TIMEOUT || '90d',
   // Reverse-proxy path prefix Gatwy is served under, e.g. '/sys/ftp'. Defaults to '/' (root),
   basePath: normalizeBasePath(process.env.BASE_PATH),
-  // RDP over the graphics pipeline with WebCodecs H.264 by default (needs the vendored IronRDP
-  // build); each browser can still opt out with localStorage gatwy.rdpH264=0.
-  rdpH264: envFlag(process.env.GATWY_RDP_H264),
 
   get dbPath() {
     return path.join(this.dataDir, 'gatwy.db');

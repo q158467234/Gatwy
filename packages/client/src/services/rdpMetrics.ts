@@ -1,28 +1,10 @@
-// Opt-in RDP render meter and prototype switches for the EGFX/WebCodecs prototype (docs/rdp-webcodecs-poc.md).
-// Enable with `localStorage.setItem('gatwy.rdpMetrics', '1')`. Works on the JS side only —
-// WebSocket arrivals and canvas `putImageData` calls — so RFX and H.264 paths are measured alike.
+// RDP graphics path selection and the opt-in render meter, both driven by the admin settings
+// `rdp.graphics_mode` and `rdp.metrics_enabled` (Settings → General → RDP). The meter works on the
+// JS side only — WebSocket arrivals and canvas `putImageData` calls — so every graphics path is
+// measured alike.
 
-const STORAGE_KEY = 'gatwy.rdpMetrics';
-const EGFX_STORAGE_KEY = 'gatwy.rdpEgfx';
-const H264_STORAGE_KEY = 'gatwy.rdpH264';
 /** A message with no draw within this window (keepalive, input echo) is not a pending update. */
 const STALE_PENDING_MS = 1000;
-
-function storageValue(key: string): string | null {
-  try {
-    return window.localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function storageFlag(key: string): boolean {
-  return storageValue(key) === '1';
-}
-
-export function rdpMetricsEnabled(): boolean {
-  return storageFlag(STORAGE_KEY);
-}
 
 export interface RdpGraphicsMode {
   /** Advertise the graphics pipeline (EGFX). */
@@ -31,17 +13,41 @@ export interface RdpGraphicsMode {
   h264: boolean;
 }
 
+/** Maps the `rdp.graphics_mode` setting (`legacy` | `egfx` | `h264`); anything else is `legacy`. */
+export function rdpGraphicsMode(setting: string | undefined): RdpGraphicsMode {
+  switch (setting) {
+    case 'h264':
+      return { egfx: true, h264: true };
+    case 'egfx':
+      return { egfx: true, h264: false };
+    default:
+      return { egfx: false, h264: false };
+  }
+}
+
+export interface RdpSessionSettings {
+  graphics: RdpGraphicsMode;
+  metrics: boolean;
+}
+
 /**
- * Picks the RDP graphics path. The server default (`GATWY_RDP_H264`) applies unless this browser
- * overrides it: `gatwy.rdpH264` = `1`/`0` turns H.264 on/off, `gatwy.rdpEgfx` = `1` enables the
- * graphics pipeline without H.264 and `0` turns both off.
+ * Reads the RDP settings when a session connects, straight from the server, so a session opened
+ * right after page load (or after a change in another tab) never connects with stale defaults.
+ * On failure the session uses the classic graphics path without metrics.
  */
-export function rdpGraphicsMode(serverH264Default: boolean, read: (key: string) => string | null = storageValue): RdpGraphicsMode {
-  const egfxFlag = read(EGFX_STORAGE_KEY);
-  const h264Flag = read(H264_STORAGE_KEY);
-  const h264 = h264Flag === '1' || (h264Flag !== '0' && serverH264Default);
-  const egfx = egfxFlag !== '0' && (egfxFlag === '1' || h264);
-  return { egfx, h264: egfx && h264 };
+export async function loadRdpSessionSettings(fetchImpl: typeof fetch = fetch): Promise<RdpSessionSettings> {
+  try {
+    const res = await fetchImpl('/api/v1/settings/public', { credentials: 'include' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { settings } = (await res.json()) as { settings?: Record<string, string> };
+    return {
+      graphics: rdpGraphicsMode(settings?.['rdp.graphics_mode']),
+      metrics: settings?.['rdp.metrics_enabled'] === 'true',
+    };
+  } catch (error) {
+    console.warn('[RDP] Could not read the RDP settings; using the classic graphics path', error);
+    return { graphics: rdpGraphicsMode(undefined), metrics: false };
+  }
 }
 
 export function percentile(sorted: number[], p: number): number | null {

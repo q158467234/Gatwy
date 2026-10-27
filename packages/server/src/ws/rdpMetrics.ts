@@ -1,8 +1,7 @@
-// Opt-in RDP throughput meter for the EGFX/WebCodecs prototype (docs/rdp-webcodecs-poc.md, T1).
+// Opt-in RDP throughput meter (Settings → General → RDP → "Performance metrics").
 // Counts bytes relayed between the browser WebSocket and the RDP server and logs one JSON line
 // per interval plus a summary when the session ends.
 
-export const RDP_METRICS_ENABLED = process.env.GATWY_RDP_METRICS === '1' || process.env.GATWY_RDP_METRICS === 'true';
 const RDP_METRICS_INTERVAL_MS = Number.parseInt(process.env.GATWY_RDP_METRICS_INTERVAL_MS ?? '5000', 10);
 
 export interface RdpByteMeter {

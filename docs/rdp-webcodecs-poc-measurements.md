@@ -17,10 +17,10 @@
 
 ## 操作步骤
 
-1. 启动网关时设置 `GATWY_RDP_METRICS=1`（开发模式：`GATWY_RDP_METRICS=1 npm run dev`）。
-2. 浏览器控制台执行 `localStorage.setItem('gatwy.rdpMetrics', '1')`，然后打开 RDP 会话；会话界面应全屏到 1920×1080。
-   - 路径 A（RFX 基线）：`localStorage.setItem('gatwy.rdpEgfx', '0')`（显式关闭；只删除键会跟随服务端 `GATWY_RDP_H264` 默认值）
-   - 路径 B（EGFX + H.264）：`localStorage.setItem('gatwy.rdpEgfx', '1'); localStorage.setItem('gatwy.rdpH264', '1')`；
+1. 设置 → 管理 → General → RDP：打开 Performance metrics。
+2. 同一页选择图形模式并保存，然后打开 RDP 会话；会话界面应全屏到 1920×1080。
+   - 路径 A（RFX 基线）：Classic (RemoteFX)
+   - 路径 B（EGFX + H.264）：Graphics pipeline + H.264；
      控制台应出现 `[RDP] H.264 via WebCodecs, hardware: true` 与 `Graphics pipeline (EGFX) capabilities confirmed`，
      服务器事件 162 应显示 AVC420。解码器统计（`decoded`/`errors`/`stalls`/`formats`/`decodeMsMax`）随每个窗口记录在
      `window.__gatwyRdpMetrics.windows[i].extra`。

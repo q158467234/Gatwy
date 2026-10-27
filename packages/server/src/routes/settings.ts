@@ -7,6 +7,7 @@ import { getAllSettings, getSetting, setSettings } from '../services/settings.js
 import { encrypt, usingFileKey } from '../services/encryption.js';
 import { execute, queryAll } from '../db/helpers.js';
 import { resolveClientIp, validateTrustedProxies } from '../services/ip.js';
+import { validateRdpSettings } from '../services/rdpSettings.js';
 import { isValidIpRule } from '../services/cidr.js';
 
 const router = Router();
@@ -36,6 +37,9 @@ router.get('/public', (_req: Request, res: Response) => {
     'auth.ldap_enabled',
     'auth.local_enabled',
     'security.idle_timeout_minutes',
+    // Read by every RDP session; not sensitive.
+    'rdp.graphics_mode',
+    'rdp.metrics_enabled',
   ];
   const settings: Record<string, string> = {};
   for (const key of PUBLIC_KEYS) {
@@ -158,6 +162,12 @@ router.put('/', (req: Request, res: Response, next: NextFunction) => {
       res.status(400).json({ error: problem });
       return;
     }
+  }
+
+  const rdpProblem = validateRdpSettings(updates);
+  if (rdpProblem) {
+    res.status(400).json({ error: rdpProblem });
+    return;
   }
 
   // Fields that must be encrypted before storage

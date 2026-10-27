@@ -19,7 +19,8 @@ import { performCredSSP } from '../services/credssp.js';
 import { isDangerousTunnelHost } from '../services/ssrfGuard.js';
 import { inspectServerPreActivationFrame, type RedirectInfo } from './rdpRedirect.js';
 import { parseUpgradeUrl } from './upgradeUrl.js';
-import { RDP_METRICS_ENABLED, createRdpByteMeter } from './rdpMetrics.js';
+import { createRdpByteMeter } from './rdpMetrics.js';
+import { rdpMetricsEnabled } from '../services/rdpSettings.js';
 
 interface ConnectionRow {
   id: string;
@@ -339,7 +340,7 @@ export function setupRdpProxy(server: https.Server, basePath = ''): void {
     const traceStartedAt = Date.now();
     let traceSeq = 0;
     const traceEvents: Array<Record<string, unknown>> = [];
-    const byteMeter = RDP_METRICS_ENABLED ? createRdpByteMeter(sessionId) : null;
+    const byteMeter = rdpMetricsEnabled() ? createRdpByteMeter(sessionId) : null;
 
     const trace = (event: string, details?: Record<string, unknown>) => {
       if (!RDP_TRACE_ENABLED) return;

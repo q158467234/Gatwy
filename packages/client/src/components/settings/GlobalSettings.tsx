@@ -3,7 +3,7 @@ import type React from 'react';
 import { useSettings, invalidateSettings } from '../../hooks/useSettings';
 import { showToast } from '../../hooks/useToast';
 
-type Tab = 'general' | 'version-check' | 'recordings';
+type Tab = 'general' | 'version-check' | 'recordings' | 'rdp';
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -15,6 +15,25 @@ function formatBytes(bytes: number): string {
 const TABS: { id: Tab; label: string }[] = [
   { id: 'general', label: 'General' },
   { id: 'version-check', label: 'Version Check' },
+  { id: 'rdp', label: 'RDP' },
+];
+
+const RDP_GRAPHICS_MODES: { value: string; label: string; help: string }[] = [
+  {
+    value: 'legacy',
+    label: 'Classic (RemoteFX)',
+    help: 'Most compatible. Every update is decoded on the CPU in the browser.',
+  },
+  {
+    value: 'egfx',
+    label: 'Graphics pipeline (EGFX)',
+    help: 'The modern RDP graphics channel without H.264. Needed by servers that require it, such as GNOME Remote Desktop.',
+  },
+  {
+    value: 'h264',
+    label: 'Graphics pipeline + H.264',
+    help: 'H.264 decoded by the browser (WebCodecs), on the GPU where available: much less bandwidth for video and motion. Colored text is slightly softer (AVC420). Browsers that cannot decode H.264 use the graphics pipeline without it.',
+  },
 ];
 
 // All IANA timezones supported by the runtime (Intl API).
@@ -75,6 +94,11 @@ export function GlobalSettings() {
   const [versionNotify, setVersionNotify] = useState(false);
   const [savingVersion, setSavingVersion] = useState(false);
 
+  // RDP
+  const [rdpGraphicsMode, setRdpGraphicsMode] = useState('legacy');
+  const [rdpMetrics, setRdpMetrics] = useState(false);
+  const [savingRdp, setSavingRdp] = useState(false);
+
   // Audit retention (shown in General tab)
   const [auditRetention, setAuditRetention] = useState('90');
 
@@ -100,6 +124,8 @@ export function GlobalSettings() {
     setRetentionDaysEnabled(settings['session.recording_retention_days_enabled'] !== 'false');
     setRetentionSizeEnabled(settings['session.recording_retention_size_enabled'] === 'true');
     setRetentionMaxSizeGb(settings['session.recording_retention_max_size_gb'] ?? '10');
+    setRdpGraphicsMode(settings['rdp.graphics_mode'] || 'legacy');
+    setRdpMetrics(settings['rdp.metrics_enabled'] === 'true');
   }, [settings]);
 
   useEffect(() => {
@@ -193,6 +219,22 @@ export function GlobalSettings() {
       showToast('Network error.', 'error');
     } finally {
       setPurging(false);
+    }
+  }
+
+  async function handleRdpSave(e: FormEvent) {
+    e.preventDefault();
+    setSavingRdp(true);
+    try {
+      const result = await saveSettings({
+        'rdp.graphics_mode': rdpGraphicsMode,
+        'rdp.metrics_enabled': String(rdpMetrics),
+      });
+      showToast(result.ok ? 'Saved. Applies to RDP sessions opened from now on.' : result.error!, result.ok ? 'success' : 'error');
+    } catch {
+      showToast('Network error.', 'error');
+    } finally {
+      setSavingRdp(false);
     }
   }
 
@@ -311,6 +353,46 @@ export function GlobalSettings() {
             className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium"
           >
             {savingGeneral ? 'Saving...' : 'Save'}
+          </button>
+        </form>
+      )}
+
+      {/* RDP */}
+      {activeTab === 'rdp' && (
+        <form onSubmit={handleRdpSave} className="space-y-4 max-w-lg">
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">Graphics mode</label>
+            <select
+              value={rdpGraphicsMode}
+              onChange={(e) => setRdpGraphicsMode(e.target.value)}
+              className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm"
+            >
+              {RDP_GRAPHICS_MODES.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+            <p className="text-xs text-text-secondary mt-1">
+              {RDP_GRAPHICS_MODES.find((m) => m.value === rdpGraphicsMode)?.help}
+            </p>
+            <p className="text-xs text-text-secondary/60 mt-1">Applies to RDP sessions opened after saving; open sessions keep their mode until they reconnect.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Toggle value={rdpMetrics} onChange={setRdpMetrics} />
+            <div>
+              <span className="text-sm text-text-secondary">Performance metrics</span>
+              <p className="text-xs text-text-secondary/60 mt-0.5">
+                Logs each RDP session's throughput to the server log and its frame rate, draw latency and H.264 decoder
+                statistics to the browser console (<code className="text-xs bg-surface px-1 rounded">window.__gatwyRdpMetrics</code>).
+                For troubleshooting; leave off otherwise.
+              </p>
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={savingRdp}
+            className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium"
+          >
+            {savingRdp ? 'Saving...' : 'Save'}
           </button>
         </form>
       )}

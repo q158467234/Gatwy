@@ -31,6 +31,8 @@ const DEFAULTS: Record<string, string> = {
   'rdp.default_port': '3389',
   'rdp.default_width': '1920',
   'rdp.default_height': '1080',
+  'rdp.graphics_mode': 'legacy',
+  'rdp.metrics_enabled': 'false',
   'auth.local_enabled': 'true',
   'auth.ldap_enabled': 'false',
   'auth.ldap_url': '',

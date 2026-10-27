@@ -19,15 +19,13 @@ interface LoginResult {
 
 interface RuntimeFeatures {
   moonlight: boolean;
-  /** Server default for RDP over EGFX with WebCodecs H.264 (GATWY_RDP_H264). */
-  rdpH264: boolean;
 }
 
-const FEATURES_OFF: RuntimeFeatures = { moonlight: false, rdpH264: false };
+const FEATURES_OFF: RuntimeFeatures = { moonlight: false };
 
 function parseFeatures(raw: unknown): RuntimeFeatures {
-  const f = raw as { moonlight?: unknown; rdpH264?: unknown } | undefined;
-  return { moonlight: Boolean(f?.moonlight), rdpH264: Boolean(f?.rdpH264) };
+  const moonlight = Boolean((raw as { moonlight?: unknown } | undefined)?.moonlight);
+  return { moonlight };
 }
 
 interface AuthContextValue {

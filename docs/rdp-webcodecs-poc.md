@@ -65,7 +65,7 @@
 
 | 指标 | 采集方式 |
 |---|---|
-| 带宽（Mbps，下行） | 服务端 `GATWY_RDP_METRICS=1` 时 `rdpProxy.ts` 每 5s 输出 `[rdp-metrics]` 一行（`packages/server/src/ws/rdpMetrics.ts`） |
+| 带宽（Mbps，下行） | 打开 设置 → 管理 → General → RDP → Performance metrics 后，`rdpProxy.ts` 每 5s 输出 `[rdp-metrics]` 一行（`packages/server/src/ws/rdpMetrics.ts`） |
 | 客户端 CPU（%） | Chrome 任务管理器中该标签页渲染进程 CPU，读 60s 内均值；客户端 `longtask_ms` 作为主线程压力的辅助指标 |
 | GPU 解码是否生效 | `chrome://media-internals` 中 decoder 名称（非 FFmpeg/软件解码器） |
 | 帧率（fps） | 客户端每秒 draw batch 数：同一任务内连续的 `putImageData` 计为一批（`packages/client/src/services/rdpMetrics.ts`） |
@@ -74,7 +74,7 @@
 | 丢弃更新数 | `dropped_updates` 计数（T2 起） |
 
 > 帧率与延迟在 JS 层测量（WebSocket 到达与 canvas 上屏），RFX 与 H.264 两条路径口径一致；H.264 路径在方案 A 下同样经 `putImageData` 上屏。
-> 客户端埋点启用：浏览器控制台 `localStorage.setItem('gatwy.rdpMetrics', '1')` 后重新打开会话；数据同时保存在 `window.__gatwyRdpMetrics`。
+> 客户端埋点随同一开关启用，重新打开会话后生效；数据保存在 `window.__gatwyRdpMetrics`。
 
 ## 6. 验收指标（Go / No-Go）
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { RdpRenderMeter, messageByteLength, percentile, rdpGraphicsMode } from '../src/services/rdpMetrics.js';
+import { RdpRenderMeter, loadRdpSessionSettings, messageByteLength, percentile, rdpGraphicsMode } from '../src/services/rdpMetrics.js';
 
 function harness() {
   let t = 0;
@@ -104,21 +104,42 @@ describe('RdpRenderMeter extra', () => {
 });
 
 describe('rdpGraphicsMode', () => {
-  const read = (values: Record<string, string>) => (key: string) => values[key] ?? null;
-
-  it('follows the server default when the browser has no override', () => {
-    assert.deepEqual(rdpGraphicsMode(true, read({})), { egfx: true, h264: true });
-    assert.deepEqual(rdpGraphicsMode(false, read({})), { egfx: false, h264: false });
+  it('maps the rdp.graphics_mode setting', () => {
+    assert.deepEqual(rdpGraphicsMode('legacy'), { egfx: false, h264: false });
+    assert.deepEqual(rdpGraphicsMode('egfx'), { egfx: true, h264: false });
+    assert.deepEqual(rdpGraphicsMode('h264'), { egfx: true, h264: true });
   });
 
-  it('lets the browser turn H.264 on or off', () => {
-    assert.deepEqual(rdpGraphicsMode(false, read({ 'gatwy.rdpH264': '1' })), { egfx: true, h264: true });
-    assert.deepEqual(rdpGraphicsMode(true, read({ 'gatwy.rdpH264': '0' })), { egfx: false, h264: false });
+  it('treats a missing or unknown value as the classic path', () => {
+    assert.deepEqual(rdpGraphicsMode(undefined), { egfx: false, h264: false });
+    assert.deepEqual(rdpGraphicsMode('H264'), { egfx: false, h264: false });
+  });
+});
+
+describe('loadRdpSessionSettings', () => {
+  const respond = (status: number, body: unknown) =>
+    (async () => new Response(JSON.stringify(body), { status })) as unknown as typeof fetch;
+
+  it('reads both settings from the public settings endpoint', async () => {
+    let url = '';
+    const fetchImpl = (async (input: RequestInfo | URL) => {
+      url = String(input);
+      return new Response(JSON.stringify({ settings: { 'rdp.graphics_mode': 'h264', 'rdp.metrics_enabled': 'true' } }));
+    }) as typeof fetch;
+    assert.deepEqual(await loadRdpSessionSettings(fetchImpl), { graphics: { egfx: true, h264: true }, metrics: true });
+    assert.equal(url, '/api/v1/settings/public');
   });
 
-  it('enables the graphics pipeline alone, or turns both off', () => {
-    assert.deepEqual(rdpGraphicsMode(false, read({ 'gatwy.rdpEgfx': '1' })), { egfx: true, h264: false });
-    assert.deepEqual(rdpGraphicsMode(true, read({ 'gatwy.rdpH264': '0', 'gatwy.rdpEgfx': '1' })), { egfx: true, h264: false });
-    assert.deepEqual(rdpGraphicsMode(true, read({ 'gatwy.rdpEgfx': '0' })), { egfx: false, h264: false });
+  it('falls back to the classic path without metrics when the request fails', async () => {
+    const warn = console.warn;
+    console.warn = () => {};
+    try {
+      const off = { graphics: { egfx: false, h264: false }, metrics: false };
+      assert.deepEqual(await loadRdpSessionSettings(respond(500, {})), off);
+      assert.deepEqual(await loadRdpSessionSettings((async () => { throw new Error('offline'); }) as unknown as typeof fetch), off);
+      assert.deepEqual(await loadRdpSessionSettings(respond(200, {})), off);
+    } finally {
+      console.warn = warn;
+    }
   });
 });

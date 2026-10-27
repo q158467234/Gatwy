@@ -29,7 +29,7 @@
 | `ironrdp-session`（fork） | `ActiveStage::complete_h264_decode`：回填、合成、编码回复 |
 | `ironrdp-web`（fork） | `enable_egfx` / `h264_decoder` 扩展；`Send` 的排队解码器 + JS 桥 + 会话主循环的结果分支；canvas 跟随帧缓冲尺寸 |
 | `iron-remote-desktop-rdp`（fork） | `WebCodecsH264Decoder`：Annex B / 长度前缀、SPS 推导 codec、关键帧门控、I420 / NV12 读回、卡顿看门狗、统计 |
-| Gatwy | 依赖指向本地 fork 构建；`gatwy.rdpEgfx` / `gatwy.rdpH264` 开关；`rdpProxy` 字节计数与客户端渲染埋点；测量汇总脚本 |
+| Gatwy | 依赖指向 fork 构建（`vendor/`）；图形模式与性能统计在 设置 → 管理 → General → RDP 中设置；`rdpProxy` 字节计数与客户端渲染埋点；测量汇总脚本 |
 
 fork：`/home/ljz/Documents/LWL/IronRDP-poc`，基于 Devolutions/IronRDP@3ca12ee，未推送。
 
@@ -60,12 +60,12 @@ fork：`/home/ljz/Documents/LWL/IronRDP-poc`，基于 Devolutions/IronRDP@3ca12e
 |---|---|
 | IronRDP 依赖 | fork 构建产物打成 tgz 放在 `vendor/`（说明与更新步骤见 `vendor/README.md`），`packages/client` 以 `file:` 依赖引用；lockfile 带完整性哈希 |
 | Docker | 构建阶段 `COPY vendor/ vendor/`；生产阶段只装服务端依赖，不需要也不包含该 tgz |
-| 开关 | 服务端环境变量 `GATWY_RDP_H264=1`（`1`/`true`/`yes`）使所有 RDP 会话默认走 EGFX + WebCodecs H.264；随登录响应下发为 `features.rdpH264` |
-| 单浏览器覆盖 | localStorage `gatwy.rdpH264` = `0`/`1` 关闭/开启 H.264；`gatwy.rdpEgfx` = `1` 只开 EGFX、`0` 两者都关 |
+| 图形模式 | 设置 → 管理 → General → RDP → Graphics mode：Classic (RemoteFX) / Graphics pipeline (EGFX) / Graphics pipeline + H.264；存为设置项 `rdp.graphics_mode`（`legacy`/`egfx`/`h264`，默认 `legacy`），会话连接时读取，只影响之后新开的会话 |
+| 性能统计 | 同一页 Performance metrics（`rdp.metrics_enabled`）：同时打开服务端 `[rdp-metrics]` 日志与浏览器端 `window.__gatwyRdpMetrics`；采样间隔仍由环境变量 `GATWY_RDP_METRICS_INTERVAL_MS` 控制（默认 5000） |
 | 回落 | 浏览器无 WebCodecs H.264 时自动只用 EGFX 的其他编码；关闭开关即回到原 RFX 路径 |
 
-启用：在 `docker-compose.yml` 的 `environment` 中加入 `GATWY_RDP_H264=1` 后重建镜像。
+启用：部署后在 设置 → 管理 → General → RDP 选择 Graphics pipeline + H.264 并保存，然后新开 RDP 会话。
 
-**出问题时**：先在该浏览器执行 `localStorage.setItem('gatwy.rdpH264', '0')` 重开会话确认是否与 H.264 有关；
-控制台的 `[WebCodecsH264]` 告警与 `window.__gatwyRdpMetrics`（需 `gatwy.rdpMetrics=1`）中的 `stalls`/`errors` 是首要线索。
+**出问题时**：先把图形模式切到 Graphics pipeline (EGFX) 或 Classic 后重开会话，确认是否与 H.264 有关；
+控制台的 `[WebCodecsH264]` 告警与 `window.__gatwyRdpMetrics`（需打开 Performance metrics）中的 `stalls`/`errors` 是首要线索。
 画面周期性卡住且 `stalls` 增长，即 §1 所述的解码器缓帧问题，此时应关闭该开关。

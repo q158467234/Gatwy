@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Tab } from '../pages/MainLayout';
 import { getWsTicket } from '../lib/wsTicket';
-import { useAuth } from '../hooks/useAuth';
 import { ADMIN_DISCONNECT_CODE, ADMIN_DISCONNECT_REASON } from '../lib/adminDisconnect';
 import { rdpKeyAction } from '../lib/rdpKeyboard';
 import { DisconnectOverlay } from './DisconnectOverlay';
@@ -11,8 +10,7 @@ import {
   RdpRenderMeter,
   attachRdpRenderMeter,
   messageByteLength,
-  rdpGraphicsMode,
-  rdpMetricsEnabled,
+  loadRdpSessionSettings,
 } from '../services/rdpMetrics';
 import { RdpFileTransfer, RdpFileTransferHandle } from './RdpFileTransfer';
 
@@ -68,10 +66,6 @@ interface RdpSessionProps {
 }
 
 export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
-  const { features } = useAuth();
-  // Read when the session connects; a later features refresh must not reconnect it.
-  const rdpH264DefaultRef = useRef(features.rdpH264);
-  rdpH264DefaultRef.current = features.rdpH264;
   const outerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -429,8 +423,10 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
           builder.extension(enableCredssp(true));
         }
 
+        // Settings changes apply to sessions connected afterwards.
+        const rdpSettings = await loadRdpSessionSettings();
         let h264: InstanceType<RdpModule['WebCodecsH264Decoder']> | null = null;
-        const graphicsMode = rdpGraphicsMode(rdpH264DefaultRef.current);
+        const graphicsMode = rdpSettings.graphics;
         if (enableEgfx && graphicsMode.egfx) {
           builder.extension(enableEgfx(true));
           if (h264Decoder && WebCodecsH264DecoderClass && graphicsMode.h264) {
@@ -453,7 +449,7 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
         }
 
         const h264Stats = h264?.stats; // updated in place by the decoder
-        const renderMeter = rdpMetricsEnabled()
+        const renderMeter = rdpSettings.metrics
           ? new RdpRenderMeter({ extra: h264Stats ? () => h264Stats : undefined })
           : null;
         if (renderMeter) detachRenderMeter = attachRdpRenderMeter(canvas, renderMeter);

@@ -10,6 +10,8 @@ const DEFAULTS: Settings = {
   'ssh.font_family': '"Fira Code", monospace',
   'ssh.scrollback': '5000',
   'ssh.cursor_style': 'block',
+  'rdp.graphics_mode': 'legacy',
+  'rdp.metrics_enabled': 'false',
 };
 
 let cache: Settings | null = null;
