@@ -67,3 +67,39 @@ export function rdpKeyAction(e: RdpKeyEvent): RdpKeyAction | null {
   if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) return { kind: 'unicode', pressed, key: e.key };
   return null;
 }
+
+/** A key combination the browser cannot forward (the OS or the browser handles it first). */
+export interface RdpShortcut {
+  label: string;
+  title: string;
+  /** KeyboardEvent.code values, pressed in order and released in reverse. */
+  codes: readonly string[];
+}
+
+export const RDP_SHORTCUTS: readonly RdpShortcut[] = [
+  { label: 'Ctrl+Alt+Del', title: 'Security options: lock, sign out, change password', codes: ['ControlLeft', 'AltLeft', 'Delete'] },
+  { label: 'Ctrl+Shift+Esc', title: 'Task Manager', codes: ['ControlLeft', 'ShiftLeft', 'Escape'] },
+  { label: 'Win', title: 'Start menu', codes: ['MetaLeft'] },
+  { label: 'Win+R', title: 'Run dialog', codes: ['MetaLeft', 'KeyR'] },
+  { label: 'Win+E', title: 'File Explorer', codes: ['MetaLeft', 'KeyE'] },
+  { label: 'Win+D', title: 'Show desktop', codes: ['MetaLeft', 'KeyD'] },
+  { label: 'Win+L', title: 'Lock the remote session', codes: ['MetaLeft', 'KeyL'] },
+  { label: 'Win+X', title: 'Quick link menu', codes: ['MetaLeft', 'KeyX'] },
+  { label: 'Alt+Tab', title: 'Switch to the previous window', codes: ['AltLeft', 'Tab'] },
+  { label: 'Alt+F4', title: 'Close the active window', codes: ['AltLeft', 'F4'] },
+  { label: 'PrtSc', title: 'Print Screen', codes: ['PrintScreen'] },
+  { label: 'Ctrl+Esc', title: 'Start menu (without the Windows key)', codes: ['ControlLeft', 'Escape'] },
+];
+
+/** The scancode presses then releases (reverse order) that type a shortcut. */
+export function shortcutActions(codes: readonly string[]): RdpKeyAction[] {
+  const scancodes = codes.map((code) => {
+    const scancode = CODE_TO_SCANCODE[code];
+    if (scancode === undefined) throw new Error(`no scancode for ${code}`);
+    return scancode;
+  });
+  return [
+    ...scancodes.map((scancode): RdpKeyAction => ({ kind: 'scancode', pressed: true, scancode })),
+    ...[...scancodes].reverse().map((scancode): RdpKeyAction => ({ kind: 'scancode', pressed: false, scancode })),
+  ];
+}

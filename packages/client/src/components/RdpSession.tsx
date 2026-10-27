@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Tab } from '../pages/MainLayout';
 import { getWsTicket } from '../lib/wsTicket';
 import { ADMIN_DISCONNECT_CODE, ADMIN_DISCONNECT_REASON } from '../lib/adminDisconnect';
-import { rdpKeyAction } from '../lib/rdpKeyboard';
+import { RDP_SHORTCUTS, rdpKeyAction, shortcutActions } from '../lib/rdpKeyboard';
 import { DisconnectOverlay } from './DisconnectOverlay';
 import { RdpMobileKeyboard } from './RdpMobileKeyboard';
 import { RdpClipboardService } from '../services/rdpClipboard';
@@ -74,6 +74,7 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
   const rdpSessionIdRef = useRef<string | null>(null);
   const pushEventRef = useRef<((type: 'click' | 'key' | 'move') => void) | null>(null);
   const flushEventsRef = useRef<(() => void) | null>(null);
+  const sendShortcutRef = useRef<((codes: readonly string[]) => void) | null>(null);
   const [status, setStatus] = useState<string>('Initializing...');
   const [disconnected, setDisconnected] = useState(false);
   const [disconnectMessage, setDisconnectMessage] = useState('');
@@ -664,6 +665,15 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
           session.applyInputs(tx);
         };
 
+        // Each event in its own transaction, so the server sees every press before its release.
+        sendShortcutRef.current = (codes) => {
+          pushEventRef.current?.('key');
+          for (const action of shortcutActions(codes)) {
+            if (action.kind !== 'scancode') continue;
+            applyEvents(action.pressed ? DeviceEvent.keyPressed(action.scancode) : DeviceEvent.keyReleased(action.scancode));
+          }
+        };
+
         const onMouseMove = (e: MouseEvent) => {
           const scaleX = canvas.width / canvas.clientWidth;
           const scaleY = canvas.height / canvas.clientHeight;
@@ -837,6 +847,7 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
         window.addEventListener('drop', onFileDrop, false);
 
         await session.run();
+        sendShortcutRef.current = null;
         detachRenderMeter?.();
         detachRenderMeter = null;
 
@@ -1057,7 +1068,7 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
 
       {/* Flyout panel */}
       <div
-        className={`absolute right-5 top-1/2 -translate-y-1/2 z-20 w-52 bg-surface/95 backdrop-blur-xs border border-border rounded-xl shadow-2xl flex flex-col gap-1 p-3 transition-all duration-200 ${
+        className={`absolute right-5 top-1/2 -translate-y-1/2 z-20 w-60 max-h-[calc(100%-2rem)] overflow-y-auto bg-surface/95 backdrop-blur-xs border border-border rounded-xl shadow-2xl flex flex-col gap-1 p-3 transition-all duration-200 ${
           panelOpen ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-4 pointer-events-none'
         }`}
       >
@@ -1106,6 +1117,24 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
             Enter fullscreen to capture Ctrl+Tab, F-keys and other browser shortcuts.
           </p>
         )}
+
+        {/* Keyboard shortcuts the browser or local OS would otherwise swallow */}
+        <div className="border-t border-border mt-1 pt-2">
+          <p className="text-xs text-text-secondary px-1 pb-1.5">Send keys</p>
+          <div className="grid grid-cols-2 gap-1">
+            {RDP_SHORTCUTS.map((s) => (
+              <button
+                key={s.label}
+                title={s.title}
+                disabled={status !== 'Connected' || disconnected}
+                onClick={() => sendShortcutRef.current?.(s.codes)}
+                className="px-1.5 py-1.5 rounded-md bg-surface-hover/50 hover:bg-surface-hover text-text-primary text-xs transition-colors truncate disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* File Transfer */}
         {fileTransferProvider && (

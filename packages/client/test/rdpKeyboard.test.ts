@@ -3,9 +3,11 @@ import { describe, it } from 'node:test';
 import {
   CODE_TO_SCANCODE,
   LOCK_CODES,
+  RDP_SHORTCUTS,
   NO_REPEAT_CODES,
   SCANCODE_TO_CODE,
   rdpKeyAction,
+  shortcutActions,
   type RdpKeyEvent,
 } from '../src/lib/rdpKeyboard.js';
 
@@ -73,5 +75,26 @@ describe('rdpKeyAction', () => {
     assert.equal(rdpKeyAction(key('keydown', '', { key: 'é', altKey: true })), null);
     assert.equal(rdpKeyAction(key('keydown', '', { key: 'é', metaKey: true })), null);
     assert.equal(rdpKeyAction(key('keydown', '', { key: 'Process' })), null);
+  });
+});
+
+describe('shortcutActions', () => {
+  it('presses in order and releases in reverse', () => {
+    assert.deepEqual(shortcutActions(['ControlLeft', 'AltLeft', 'Delete']), [
+      { kind: 'scancode', pressed: true, scancode: 0x1D },
+      { kind: 'scancode', pressed: true, scancode: 0x38 },
+      { kind: 'scancode', pressed: true, scancode: 0xE053 },
+      { kind: 'scancode', pressed: false, scancode: 0xE053 },
+      { kind: 'scancode', pressed: false, scancode: 0x38 },
+      { kind: 'scancode', pressed: false, scancode: 0x1D },
+    ]);
+  });
+
+  it('rejects a code without a scancode', () => {
+    assert.throws(() => shortcutActions(['ControlLeft', 'Nope']), /Nope/);
+  });
+
+  it('every listed shortcut maps to scancodes', () => {
+    for (const s of RDP_SHORTCUTS) assert.equal(shortcutActions(s.codes).length, s.codes.length * 2, s.label);
   });
 });
