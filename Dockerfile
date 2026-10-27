@@ -1,3 +1,7 @@
+# BuildKit sets BUILDPLATFORM itself (overriding this default); the legacy builder
+# (no buildx installed) leaves it empty, which makes `FROM --platform=` fail to parse.
+ARG BUILDPLATFORM=linux/amd64
+
 # Stage 1: Build — always runs on the host's native platform so tsc/vite aren't QEMU-emulated
 FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 
