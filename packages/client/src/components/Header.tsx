@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { useSettings } from '../hooks/useSettings';
-import { useVersionCheck } from '../hooks/useVersionCheck';
 
 const AVATAR_COLORS = [
   'bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-yellow-500',
@@ -45,46 +44,7 @@ export function Header({
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { settings } = useSettings();
-  const { current: appVersion, updateAvailable, latest, releaseUrl, fetchError, checking, refresh: refreshVersion } = useVersionCheck();
-  const [upToDate, setUpToDate] = useState(false);
-  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' | 'warn' } | null>(null);
-  const wasManualCheck = useRef(false);
-
-  const showToast = useCallback((msg: string, type: 'success' | 'error' | 'warn' = 'success') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  }, []);
-
-  // Show "Up to date" flash only when check completed, got a response, and no update found
-  useEffect(() => {
-    if (!checking && latest !== null && !updateAvailable) {
-      setUpToDate(true);
-      const t = setTimeout(() => setUpToDate(false), 2500);
-      return () => clearTimeout(t);
-    } else if (updateAvailable) {
-      setUpToDate(false);
-    }
-  }, [checking, latest, updateAvailable]);
-
-  // Show toast after a manual check completes (respects version.toast_feedback setting)
-  useEffect(() => {
-    if (checking || !wasManualCheck.current) return;
-    if (settings['version.toast_feedback'] === 'false') { wasManualCheck.current = false; return; }
-    wasManualCheck.current = false;
-    if (fetchError) {
-      showToast(`Update check failed: ${fetchError}`, 'error');
-    } else if (updateAvailable && latest) {
-      showToast(`v${latest} is available!`, 'warn');
-    } else if (latest) {
-      showToast('You\'re on the latest version', 'success');
-    }
-  }, [checking, fetchError, updateAvailable, latest, settings, showToast]);
-
-  async function handleVersionClick() {
-    setUpToDate(false);
-    wasManualCheck.current = true;
-    await refreshVersion();
-  }
+  const appVersion = __APP_VERSION__;
 
   const appName = settings['app.name'] ?? 'Gatwy';
   const appLogo = settings['app.logo'] ?? '';
@@ -139,19 +99,7 @@ export function Header({
         ) : (
           <span className="text-lg font-bold text-text-primary tracking-tight">{appName}</span>
         )}
-        <button
-          onClick={handleVersionClick}
-          disabled={checking}
-          className="flex items-center gap-1 text-xs text-text-secondary opacity-60 font-mono hover:opacity-100 transition-opacity disabled:cursor-wait"
-          title="Check for updates"
-        >
-          {checking && (
-            <svg className="animate-spin" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-            </svg>
-          )}
-          v{appVersion}
-        </button>
+        <span className="text-xs text-text-secondary opacity-60 font-mono">v{appVersion}</span>
 
         {/* GitHub icon with hover popover */}
         <div className="relative group">
@@ -220,27 +168,6 @@ export function Header({
             <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
           </svg>
         </a>
-        {updateAvailable && releaseUrl ? (
-          <a
-            href={releaseUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-accent text-white text-xs font-medium hover:bg-accent-hover transition-colors"
-            title={`New version available: v${latest}`}
-          >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 5v14M5 12l7-7 7 7" />
-            </svg>
-            v{latest} available
-          </a>
-        ) : upToDate && !checking ? (
-          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-600 text-white text-xs font-medium">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            Up to date
-          </span>
-        ) : null}
       </div>
       <div className="flex items-center gap-2">
         <button
@@ -292,26 +219,6 @@ export function Header({
         </div>
       </div>
     </header>
-
-    {/* Version check toast */}
-    {toast && (
-      <div className={`fixed bottom-6 right-6 z-[100] flex items-center gap-2 px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium animate-[fadeIn_0.2s_ease-out] ${
-        toast.type === 'success' ? 'bg-green-500 text-white'
-        : toast.type === 'warn' ? 'bg-accent text-white'
-        : 'bg-red-500 text-white'
-      }`}>
-        {toast.type === 'success' && (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        )}
-        {toast.type === 'warn' && (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12l7-7 7 7"/></svg>
-        )}
-        {toast.type === 'error' && (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        )}
-        {toast.msg}
-      </div>
-    )}
     </>
   );
 }

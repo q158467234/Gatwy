@@ -3,7 +3,7 @@ import type React from 'react';
 import { useSettings, invalidateSettings } from '../../hooks/useSettings';
 import { showToast } from '../../hooks/useToast';
 
-type Tab = 'general' | 'version-check' | 'recordings' | 'rdp';
+type Tab = 'general' | 'recordings' | 'rdp';
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B';
@@ -14,7 +14,6 @@ function formatBytes(bytes: number): string {
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'general', label: 'General' },
-  { id: 'version-check', label: 'Version Check' },
   { id: 'rdp', label: 'RDP' },
 ];
 
@@ -93,12 +92,6 @@ export function GlobalSettings() {
   const [retentionMaxSizeGb, setRetentionMaxSizeGb] = useState('10');
   const [savingRecording, setSavingRecording] = useState(false);
 
-  // Version check preferences
-  const [versionAuditLog, setVersionAuditLog] = useState(true);
-  const [versionToast, setVersionToast] = useState(true);
-  const [versionNotify, setVersionNotify] = useState(false);
-  const [savingVersion, setSavingVersion] = useState(false);
-
   // RDP
   const [rdpGraphicsMode, setRdpGraphicsMode] = useState('legacy');
   const [rdpMetrics, setRdpMetrics] = useState(false);
@@ -121,9 +114,6 @@ export function GlobalSettings() {
     setAuditRetention(settings['audit.retention_days'] ?? '90');
     setHealthMonitorEnabled(settings['health_monitor.enabled'] !== 'false');
     setAutoCloseDisconnected(settings['session.auto_close_disconnected_enabled'] !== 'false');
-    setVersionAuditLog(settings['version.audit_log_checks'] !== 'false');
-    setVersionToast(settings['version.toast_feedback'] !== 'false');
-    setVersionNotify(settings['version.notify_on_update'] === 'true');
     setRecordingEnabled(settings['session.recording_enabled'] === 'true');
     setRecordingRetention(settings['session.recording_retention_days'] ?? '90');
     setRetentionDaysEnabled(settings['session.recording_retention_days_enabled'] !== 'false');
@@ -174,23 +164,6 @@ export function GlobalSettings() {
       showToast('Network error.', 'error');
     } finally {
       setSavingGeneral(false);
-    }
-  }
-
-  async function handleVersionCheckSave(e: FormEvent) {
-    e.preventDefault();
-    setSavingVersion(true);
-    try {
-      const result = await saveSettings({
-        'version.audit_log_checks': String(versionAuditLog),
-        'version.toast_feedback': String(versionToast),
-        'version.notify_on_update': String(versionNotify),
-      });
-      showToast(result.ok ? 'Saved.' : result.error!, result.ok ? 'success' : 'error');
-    } catch {
-      showToast('Network error.', 'error');
-    } finally {
-      setSavingVersion(false);
     }
   }
 
@@ -398,40 +371,6 @@ export function GlobalSettings() {
             className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium"
           >
             {savingRdp ? 'Saving...' : 'Save'}
-          </button>
-        </form>
-      )}
-
-      {/* Version Check */}
-      {activeTab === 'version-check' && (
-        <form onSubmit={handleVersionCheckSave} className="space-y-4 max-w-lg">
-          <div className="flex items-center gap-3">
-            <Toggle value={versionAuditLog} onChange={setVersionAuditLog} />
-            <div>
-              <span className="text-sm text-text-secondary">Log manual checks to audit trail</span>
-              <p className="text-xs text-text-secondary/60 mt-0.5">Writes an entry to the audit log each time someone clicks "Check for updates", including the result and any error.</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Toggle value={versionToast} onChange={setVersionToast} />
-            <div>
-              <span className="text-sm text-text-secondary">Show toast after manual check</span>
-              <p className="text-xs text-text-secondary/60 mt-0.5">Displays a brief notification with the result — up to date, new version found, or unreachable.</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Toggle value={versionNotify} onChange={setVersionNotify} />
-            <div>
-              <span className="text-sm text-text-secondary">Fire notification rule on update available</span>
-              <p className="text-xs text-text-secondary/60 mt-0.5">Emits a <code className="text-xs bg-surface px-1 rounded">system.update_available</code> event you can use in notification rules to send an alert via email, Telegram, Slack, etc.</p>
-            </div>
-          </div>
-          <button
-            type="submit"
-            disabled={savingVersion}
-            className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium"
-          >
-            {savingVersion ? 'Saving...' : 'Save'}
           </button>
         </form>
       )}

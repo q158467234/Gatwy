@@ -25,7 +25,6 @@ import profileRoutes from './routes/profile.js';
 import loginSessionsRoutes from './routes/loginSessions.js';
 import usersRoutes from './routes/users.js';
 import auditRoutes from './routes/audit.js';
-import versionRoutes from './routes/version.js';
 import sessionsRoutes from './routes/sessions.js';
 import backupRoutes from './routes/backup.js';
 import smbRoutes from './routes/smb.js';
@@ -134,7 +133,6 @@ async function main() {
   app.use(`${bp}/api/v1/profile`, profileRoutes);
   app.use(`${bp}/api/v1/users`, usersRoutes);
   app.use(`${bp}/api/v1/audit`, auditRoutes);
-  app.use(`${bp}/api/v1/version`, versionRoutes);
   app.use(`${bp}/api/v1/sessions`, sessionsRoutes);
   app.use(`${bp}/api/v1/backup`, backupRoutes);
   app.use(`${bp}/api/v1/smb`, smbRoutes);

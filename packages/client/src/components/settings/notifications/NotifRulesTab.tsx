@@ -226,14 +226,6 @@ const EVENT_GROUPS: { label: string; events: { value: string; label: string }[] 
       { value: 'recordings.retention_purged', label: 'Recordings retention purged' },
     ],
   },
-  {
-    label: 'System',
-    events: [
-      { value: 'system.*', label: 'System — all' },
-      { value: 'system.update_available', label: 'New version available' },
-      { value: 'system.version_check', label: 'Manual version check' },
-    ],
-  },
 ];
 
 const CONDITION_FIELDS: { value: string; label: string }[] = [
