@@ -60,7 +60,7 @@ describe('migration upgrade path', () => {
     const resourceSharesAfter = after.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='resource_shares'");
     assert.equal(resourceSharesAfter.length, 1, 'resource_shares table must exist after upgrading from v21');
     const maxAfter = after.exec('SELECT MAX(version) as v FROM schema_version')[0]!.values[0]![0];
-    assert.equal(maxAfter, 27);
+    assert.equal(maxAfter, 28);
   });
 
   it('migrates real connection_shares and group_shares rows into resource_shares from a v22 database', () => {
@@ -114,7 +114,7 @@ describe('migration upgrade path', () => {
     assert.equal(oldTables.length, 0, 'connection_shares and group_shares must not survive past v23');
 
     const maxAfter = after.exec('SELECT MAX(version) as v FROM schema_version')[0]!.values[0]![0];
-    assert.equal(maxAfter, 27);
+    assert.equal(maxAfter, 28);
   });
 
   it('applies a lower-numbered migration that is missing even when a higher one is already applied', () => {
@@ -127,7 +127,7 @@ describe('migration upgrade path', () => {
     db.run('DELETE FROM schema_version WHERE version = 22');
 
     const maxBefore = db.exec('SELECT MAX(version) as v FROM schema_version')[0]!.values[0]![0];
-    assert.equal(maxBefore, 27, 'precondition: a higher version is already applied');
+    assert.equal(maxBefore, 28, 'precondition: a higher version is already applied');
     assert.equal(db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='group_shares'").length, 0);
 
     restoreDbFromBytes(Buffer.from(db.export()));
@@ -349,7 +349,7 @@ describe('migration upgrade path', () => {
       rewindToV24(adminBefore);
 
       const maxAfter = getDb().exec('SELECT MAX(version) as v FROM schema_version')[0]!.values[0]![0];
-      assert.equal(maxAfter, 27);
+      assert.equal(maxAfter, 28);
 
       const admin = readPerms('admin');
       assert.equal(admin.filter((p) => p === PERM).length, 1, 'admin must have the permission exactly once');
@@ -410,7 +410,7 @@ describe('migration upgrade path', () => {
       rewindToV26(adminBefore);
 
       const maxAfter = getDb().exec('SELECT MAX(version) as v FROM schema_version')[0]!.values[0]![0];
-      assert.equal(maxAfter, 27);
+      assert.equal(maxAfter, 28);
 
       const admin = readPerms('admin');
       assert.equal(admin.filter((p) => p === PERM).length, 1, 'admin must have the permission exactly once');
@@ -435,5 +435,35 @@ describe('migration upgrade path', () => {
       assert.deepEqual(admin, adminWith, 'admin permissions must be left untouched');
       assert.ok(!readPerms('user').includes(PERM));
     });
+  });
+
+  it('v28 drops the version-check settings and system.* events from notification rules', () => {
+    const db = getDb();
+    db.run(`INSERT OR REPLACE INTO settings (key, value) VALUES ('version.audit_log_checks', 'true'), ('version.toast_feedback', 'false'), ('version.notify_on_update', 'true'), ('rdp.graphics_mode', 'h264')`);
+    const rule = (id: string, event: string) =>
+      db.run(`INSERT INTO notification_rules (id, name, event) VALUES (?, ?, ?)`, [id, id, event]);
+    rule('r-v28-only-system', JSON.stringify(['system.update_available']));
+    rule('r-v28-system-wild', JSON.stringify(['system.*', 'system.version_check']));
+    rule('r-v28-mixed', JSON.stringify(['auth.login', 'system.update_available']));
+    rule('r-v28-all', JSON.stringify(['*']));
+    rule('r-v28-legacy', 'system.version_check');
+    rule('r-v28-bad', '[not json');
+    db.run(`INSERT INTO notification_log (id, rule_id, rule_name, channel, status) VALUES ('l-v28', 'r-v28-only-system', 'r', 'webhook', 'sent')`);
+
+    db.run('DELETE FROM schema_version WHERE version = 28');
+    restoreDbFromBytes(Buffer.from(db.export()));
+
+    const migrated = getDb();
+    const settings = migrated.exec(`SELECT key FROM settings WHERE key LIKE 'version.%' OR key = 'rdp.graphics_mode'`)[0]!.values.map((r) => r[0]);
+    assert.deepEqual(settings, ['rdp.graphics_mode']);
+    const events = Object.fromEntries(
+      migrated.exec(`SELECT id, event FROM notification_rules WHERE id LIKE 'r-v28-%'`)[0]!.values as [string, string][],
+    );
+    assert.deepEqual(events, {
+      'r-v28-mixed': JSON.stringify(['auth.login']),
+      'r-v28-all': JSON.stringify(['*']),
+      'r-v28-bad': '[not json',
+    });
+    assert.equal(migrated.exec(`SELECT id FROM notification_log WHERE id = 'l-v28'`).length, 1, 'log history is kept');
   });
 });

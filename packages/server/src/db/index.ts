@@ -1224,6 +1224,32 @@ function runMigrations() {
         );
       },
     },
+    {
+      // The GitHub release check was removed: drop its settings, and the system.* events it
+      // emitted from notification rules. A rule left with no event at all is deleted; its
+      // notification_log rows stay as history (rule_id has no foreign key).
+      version: 28,
+      run: (database: Database) => {
+        database.run(
+          `DELETE FROM settings WHERE key IN ('version.audit_log_checks', 'version.toast_feedback', 'version.notify_on_update')`,
+        );
+        const rows = database.exec(`SELECT id, event FROM notification_rules`);
+        if (!rows.length) return;
+        for (const [id, event] of rows[0].values as [string, string | null][]) {
+          const raw = (event ?? '*').trimStart();
+          let patterns: string[];
+          try { patterns = raw.startsWith('[') ? JSON.parse(raw) as string[] : [raw]; } catch { continue; }
+          if (!Array.isArray(patterns)) continue;
+          const kept = patterns.filter((p) => p !== 'system.*' && !p.startsWith('system.'));
+          if (kept.length === patterns.length) continue;
+          if (kept.length === 0) {
+            database.run(`DELETE FROM notification_rules WHERE id = ?`, [id]);
+          } else {
+            database.run(`UPDATE notification_rules SET event = ? WHERE id = ?`, [JSON.stringify(kept), id]);
+          }
+        }
+      },
+    },
   ];
 
   // Several migrations (v5, v13, v14, v18, v24) rebuild a table via CREATE-new/
