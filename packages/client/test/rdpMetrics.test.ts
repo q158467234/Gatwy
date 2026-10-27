@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { RdpRenderMeter, messageByteLength, percentile } from '../src/services/rdpMetrics.js';
+import { RdpRenderMeter, messageByteLength, percentile, rdpGraphicsMode } from '../src/services/rdpMetrics.js';
 
 function harness() {
   let t = 0;
@@ -100,5 +100,25 @@ describe('RdpRenderMeter extra', () => {
     t = 2000;
     meter.flush();
     assert.deepEqual(meter.windows.map((w) => w.extra), [{ decoded: 1 }, { decoded: 2 }]);
+  });
+});
+
+describe('rdpGraphicsMode', () => {
+  const read = (values: Record<string, string>) => (key: string) => values[key] ?? null;
+
+  it('follows the server default when the browser has no override', () => {
+    assert.deepEqual(rdpGraphicsMode(true, read({})), { egfx: true, h264: true });
+    assert.deepEqual(rdpGraphicsMode(false, read({})), { egfx: false, h264: false });
+  });
+
+  it('lets the browser turn H.264 on or off', () => {
+    assert.deepEqual(rdpGraphicsMode(false, read({ 'gatwy.rdpH264': '1' })), { egfx: true, h264: true });
+    assert.deepEqual(rdpGraphicsMode(true, read({ 'gatwy.rdpH264': '0' })), { egfx: false, h264: false });
+  });
+
+  it('enables the graphics pipeline alone, or turns both off', () => {
+    assert.deepEqual(rdpGraphicsMode(false, read({ 'gatwy.rdpEgfx': '1' })), { egfx: true, h264: false });
+    assert.deepEqual(rdpGraphicsMode(true, read({ 'gatwy.rdpH264': '0', 'gatwy.rdpEgfx': '1' })), { egfx: true, h264: false });
+    assert.deepEqual(rdpGraphicsMode(true, read({ 'gatwy.rdpEgfx': '0' })), { egfx: false, h264: false });
   });
 });

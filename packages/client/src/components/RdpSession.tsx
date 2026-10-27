@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Tab } from '../pages/MainLayout';
 import { getWsTicket } from '../lib/wsTicket';
+import { useAuth } from '../hooks/useAuth';
 import { ADMIN_DISCONNECT_CODE, ADMIN_DISCONNECT_REASON } from '../lib/adminDisconnect';
 import { rdpKeyAction } from '../lib/rdpKeyboard';
 import { DisconnectOverlay } from './DisconnectOverlay';
@@ -10,8 +11,7 @@ import {
   RdpRenderMeter,
   attachRdpRenderMeter,
   messageByteLength,
-  rdpEgfxEnabled,
-  rdpH264Enabled,
+  rdpGraphicsMode,
   rdpMetricsEnabled,
 } from '../services/rdpMetrics';
 import { RdpFileTransfer, RdpFileTransferHandle } from './RdpFileTransfer';
@@ -68,6 +68,10 @@ interface RdpSessionProps {
 }
 
 export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
+  const { features } = useAuth();
+  // Read when the session connects; a later features refresh must not reconnect it.
+  const rdpH264DefaultRef = useRef(features.rdpH264);
+  rdpH264DefaultRef.current = features.rdpH264;
   const outerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -426,9 +430,10 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
         }
 
         let h264: InstanceType<RdpModule['WebCodecsH264Decoder']> | null = null;
-        if (enableEgfx && rdpEgfxEnabled()) {
+        const graphicsMode = rdpGraphicsMode(rdpH264DefaultRef.current);
+        if (enableEgfx && graphicsMode.egfx) {
           builder.extension(enableEgfx(true));
-          if (h264Decoder && WebCodecsH264DecoderClass && rdpH264Enabled()) {
+          if (h264Decoder && WebCodecsH264DecoderClass && graphicsMode.h264) {
             h264 = await WebCodecsH264DecoderClass.create();
             if (h264) {
               builder.extension(h264Decoder(h264));

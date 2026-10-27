@@ -1,6 +1,6 @@
 # RDP EGFX + WebCodecs 原型：结论
 
-> 计划见 [rdp-webcodecs-poc.md](rdp-webcodecs-poc.md) · 日期：2026-10-27 · 状态：**功能验证通过，性能未测量，§6 判定未执行**
+> 计划见 [rdp-webcodecs-poc.md](rdp-webcodecs-poc.md) · 日期：2026-10-27 · 状态：**功能验证通过，性能未测量，§6 判定未执行；已按方向 C 接入自用部署（见 §6）**
 
 ## 1. 结论
 
@@ -39,7 +39,7 @@ fork：`/home/ljz/Documents/LWL/IronRDP-poc`，基于 Devolutions/IronRDP@3ca12e
 2. **一次一帧在途**：解码器缓帧时会卡（见 §1）；高帧率下 WebCodecs 往返延迟直接限制帧率。
 3. **读回 + CPU 合成**：解码在 GPU，但 `copyTo` 读回、YUV→RGB、合成、`putImageData` 仍在 CPU（方案 A 的固有代价）。
 4. **无 wasm-opt**：构建环境下载不到 binaryen，wasm 体积 8.1 MB、未做二进制优化。
-5. **不可部署**：Gatwy 依赖是 `file:../../../IronRDP-poc/...`，Docker 镜像构建无法解析；开关只有 localStorage，没有设置界面。
+5. ~~不可部署~~：已解决，见 §6。
 6. **上游漂移**：fork 固定在一个 commit，EGFX 相关代码上游几乎每天变化，且 web 客户端架构可能被替换（上游 #790）。
 7. **上游问题**：该 commit 上 `ironrdp-egfx` 单测无法编译（一处调用未跟随签名变更），fork 已修一行。
 
@@ -51,3 +51,21 @@ fork：`/home/ljz/Documents/LWL/IronRDP-poc`，基于 Devolutions/IronRDP@3ca12e
 | B. 贡献上游 | 把 `AsyncH264Decoder` + web 端 EGFX 拆成 PR 提给 Devolutions/IronRDP，先在 #790 沟通 web 架构方向 | 降低长期 fork 维护成本；节奏受上游评审控制 |
 | C. 产品化接入 Gatwy | fork 构建产物以 vendored tgz 或私有 registry 引入、修 Docker 构建、设置界面开关、默认关闭 | 需先有 A 的数据支撑；同时承担 §4.6 的维护成本 |
 | D. 停止 | 保留分支与文档，跟进上游 | 无额外成本 |
+
+## 6. 自用部署（方向 C）
+
+**决定**：只在自己的服务器上使用，不提交上游、不对外发布；接受 §1 的未测量风险与 §4 的限制。
+
+| 项 | 做法 |
+|---|---|
+| IronRDP 依赖 | fork 构建产物打成 tgz 放在 `vendor/`（说明与更新步骤见 `vendor/README.md`），`packages/client` 以 `file:` 依赖引用；lockfile 带完整性哈希 |
+| Docker | 构建阶段 `COPY vendor/ vendor/`；生产阶段只装服务端依赖，不需要也不包含该 tgz |
+| 开关 | 服务端环境变量 `GATWY_RDP_H264=1`（`1`/`true`/`yes`）使所有 RDP 会话默认走 EGFX + WebCodecs H.264；随登录响应下发为 `features.rdpH264` |
+| 单浏览器覆盖 | localStorage `gatwy.rdpH264` = `0`/`1` 关闭/开启 H.264；`gatwy.rdpEgfx` = `1` 只开 EGFX、`0` 两者都关 |
+| 回落 | 浏览器无 WebCodecs H.264 时自动只用 EGFX 的其他编码；关闭开关即回到原 RFX 路径 |
+
+启用：在 `docker-compose.yml` 的 `environment` 中加入 `GATWY_RDP_H264=1` 后重建镜像。
+
+**出问题时**：先在该浏览器执行 `localStorage.setItem('gatwy.rdpH264', '0')` 重开会话确认是否与 H.264 有关；
+控制台的 `[WebCodecsH264]` 告警与 `window.__gatwyRdpMetrics`（需 `gatwy.rdpMetrics=1`）中的 `stalls`/`errors` 是首要线索。
+画面周期性卡住且 `stalls` 增长，即 §1 所述的解码器缓帧问题，此时应关闭该开关。

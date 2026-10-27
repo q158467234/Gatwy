@@ -189,8 +189,8 @@ export function getMoonlightRuntimeError(): string | null {
   return lastFailure;
 }
 
-export function runtimeFeatures(): { moonlight: boolean } {
-  return { moonlight: isMoonlightWebAvailable() };
+export function runtimeFeatures(): { moonlight: boolean; rdpH264: boolean } {
+  return { moonlight: isMoonlightWebAvailable(), rdpH264: config.rdpH264 };
 }
 
 export function filterListedConnections<T extends { protocol: string }>(

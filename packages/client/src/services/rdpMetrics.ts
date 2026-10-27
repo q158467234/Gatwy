@@ -8,26 +8,40 @@ const H264_STORAGE_KEY = 'gatwy.rdpH264';
 /** A message with no draw within this window (keepalive, input echo) is not a pending update. */
 const STALE_PENDING_MS = 1000;
 
-function storageFlag(key: string): boolean {
+function storageValue(key: string): string | null {
   try {
-    return window.localStorage.getItem(key) === '1';
+    return window.localStorage.getItem(key);
   } catch {
-    return false;
+    return null;
   }
+}
+
+function storageFlag(key: string): boolean {
+  return storageValue(key) === '1';
 }
 
 export function rdpMetricsEnabled(): boolean {
   return storageFlag(STORAGE_KEY);
 }
 
-/** Prototype switch for the graphics pipeline path: `localStorage.setItem('gatwy.rdpEgfx', '1')`. */
-export function rdpEgfxEnabled(): boolean {
-  return storageFlag(EGFX_STORAGE_KEY);
+export interface RdpGraphicsMode {
+  /** Advertise the graphics pipeline (EGFX). */
+  egfx: boolean;
+  /** Decode its H.264 stream with WebCodecs; implies `egfx`. */
+  h264: boolean;
 }
 
-/** Prototype switch for WebCodecs H.264 over the graphics pipeline; needs `gatwy.rdpEgfx` too. */
-export function rdpH264Enabled(): boolean {
-  return storageFlag(H264_STORAGE_KEY);
+/**
+ * Picks the RDP graphics path. The server default (`GATWY_RDP_H264`) applies unless this browser
+ * overrides it: `gatwy.rdpH264` = `1`/`0` turns H.264 on/off, `gatwy.rdpEgfx` = `1` enables the
+ * graphics pipeline without H.264 and `0` turns both off.
+ */
+export function rdpGraphicsMode(serverH264Default: boolean, read: (key: string) => string | null = storageValue): RdpGraphicsMode {
+  const egfxFlag = read(EGFX_STORAGE_KEY);
+  const h264Flag = read(H264_STORAGE_KEY);
+  const h264 = h264Flag === '1' || (h264Flag !== '0' && serverH264Default);
+  const egfx = egfxFlag !== '0' && (egfxFlag === '1' || h264);
+  return { egfx, h264: egfx && h264 };
 }
 
 export function percentile(sorted: number[], p: number): number | null {

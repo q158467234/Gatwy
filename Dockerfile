@@ -7,6 +7,8 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY packages/server/package.json packages/server/
 COPY packages/client/package.json packages/client/
+# Prebuilt packages referenced by file: dependencies (the client's IronRDP build)
+COPY vendor/ vendor/
 
 # Install all dependencies (--ignore-scripts skips native compilation, safe for TS build stage)
 RUN npm install --ignore-scripts
