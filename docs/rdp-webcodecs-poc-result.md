@@ -37,8 +37,8 @@ fork：`/home/ljz/Documents/LWL/IronRDP-poc`，基于 Devolutions/IronRDP@3ca12e
 
 1. **只有 AVC420**：彩色文字边缘会发糊；AVC444 需要两路流合成色度，未做。
 2. **一次一帧在途**：解码器缓帧时会卡（见 §1）；高帧率下 WebCodecs 往返延迟直接限制帧率。
-3. **读回 + CPU 合成**：解码在 GPU，但 `copyTo` 读回、YUV→RGB、合成、`putImageData` 仍在 CPU（方案 A 的固有代价）。
-4. **无 wasm-opt**：构建环境下载不到 binaryen，wasm 体积 8.1 MB、未做二进制优化。
+3. **读回 + CPU 合成**：解码在 GPU，但 `copyTo` 读回、YUV→RGB、合成、`putImageData` 仍在 CPU（方案 A 的固有代价）。其中 YUV→RGB 已改为 wasm SIMD：1080p 每帧 13.1 → 1.43 ms（逐像素与规范公式一致，见 fork `poc/yuv-bench`）。
+4. ~~无 wasm-opt~~：已用 npm 版 binaryen 接入（fork `poc/build-web.sh`）。默认只剥离函数名等元数据，前端包 8.1 → 6.6 MB（gzip 2.58 → 2.10 MB），代码不变；实测 `-O` 在 gzip 后体积相近但运行慢 0–8%，故不默认启用。
 5. ~~不可部署~~：已解决，见 §6。
 6. **上游漂移**：fork 固定在一个 commit，EGFX 相关代码上游几乎每天变化，且 web 客户端架构可能被替换（上游 #790）。
 7. **上游问题**：该 commit 上 `ironrdp-egfx` 单测无法编译（一处调用未跟随签名变更），fork 已修一行。
