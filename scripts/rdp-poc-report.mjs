@@ -3,6 +3,7 @@
 // docs/rdp-webcodecs-poc.md §6.
 //
 // Usage: node scripts/rdp-poc-report.mjs <measurements-dir>
+//        node scripts/rdp-poc-report.mjs --init <measurements-dir> [scenarios...]   (creates empty run folders)
 //
 // One sub-directory per run, named <path>-<scenario>-<run>, e.g. A-S4-1 or B-S2-3
 // (path A = RFX baseline, B = EGFX + H.264; scenarios S1..S4), containing:
@@ -10,7 +11,7 @@
 //   server.log   the server's [rdp-metrics] lines for the same 60 s (other lines are ignored)
 //   cpu.txt      Chrome task manager CPU readings, whitespace or comma separated
 
-import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -183,12 +184,44 @@ export function renderReport(groups) {
   return lines.join('\n');
 }
 
+const RUN_FILES = ['client.json', 'server.log', 'cpu.txt'];
+
+/** Creates empty `<path>-<scenario>-<run>` folders with the three files to paste into. */
+export function initMeasurements(dir, scenarios = SCENARIOS, runs = 3) {
+  const created = [];
+  for (const path of ['A', 'B']) {
+    for (const s of scenarios) {
+      for (let run = 1; run <= runs; run++) {
+        const runDir = join(dir, `${path}-${s}-${run}`);
+        mkdirSync(runDir, { recursive: true });
+        for (const file of RUN_FILES) {
+          if (!existsSync(join(runDir, file))) writeFileSync(join(runDir, file), '');
+        }
+        created.push(runDir);
+      }
+    }
+  }
+  return created;
+}
+
+/** Folders with nothing pasted yet, so the report can say what is missing. */
+export function emptyRuns(dir) {
+  return readdirSync(dir)
+    .filter((name) => /^([AB])-(S[1-4])-(\d+)$/.test(name))
+    .filter((name) => RUN_FILES.every((file) => {
+      const at = join(dir, name, file);
+      return !existsSync(at) || readFileSync(at, 'utf8').trim() === '';
+    }))
+    .sort();
+}
+
 export function loadMeasurements(dir) {
   const groups = {};
   for (const name of readdirSync(dir).sort()) {
     const m = /^([AB])-(S[1-4])-(\d+)$/.exec(name);
     if (!m) continue;
     const runDir = join(dir, name);
+    if (emptyRuns(dir).includes(name)) continue;
     const read = (file) => (existsSync(join(runDir, file)) ? readFileSync(join(runDir, file), 'utf8') : '');
     const clientText = read('client.json').trim();
     const run = summarizeRun({
@@ -207,10 +240,26 @@ export function loadMeasurements(dir) {
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
-  const dir = process.argv[2];
+  const args = process.argv.slice(2);
+  if (args[0] === '--init' && args[1]) {
+    const scenarios = args.slice(2).length ? args.slice(2) : SCENARIOS;
+    const created = initMeasurements(args[1], scenarios);
+    console.log(`Created ${created.length} run folders under ${args[1]}; paste client.json, server.log and cpu.txt into each.`);
+    process.exit(0);
+  }
+  const dir = args[0];
   if (!dir) {
     console.error('Usage: node scripts/rdp-poc-report.mjs <measurements-dir>');
+    console.error('       node scripts/rdp-poc-report.mjs --init <measurements-dir> [S1 S2 S3 S4]');
     process.exit(2);
   }
+  if (!existsSync(dir)) {
+    console.error(`${dir} does not exist. Measure first (docs/rdp-webcodecs-poc-measurements.md), or create the folders with:`);
+    console.error(`  node scripts/rdp-poc-report.mjs --init ${dir}        # all scenarios, 24 runs`);
+    console.error(`  node scripts/rdp-poc-report.mjs --init ${dir} S4     # video only, 6 runs`);
+    process.exit(1);
+  }
+  const empty = emptyRuns(dir);
+  if (empty.length) console.error(`Not filled in yet (left out of the report): ${empty.join(', ')}`);
   console.log(renderReport(loadMeasurements(dir)));
 }

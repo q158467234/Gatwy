@@ -5,7 +5,9 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import {
   aggregate,
+  emptyRuns,
   evaluate,
+  initMeasurements,
   loadMeasurements,
   median,
   parseCpu,
@@ -125,5 +127,15 @@ describe('evaluation', () => {
   it('refuses to judge incomplete data', () => {
     const groups = { A: { S4: aggregate([summarizeRun({ client: [window()], server: [], cpu: [] })]) }, B: {} };
     assert.equal(verdict(evaluate(groups.A, groups.B), { stalls: 0 }), '数据不全，无法判定');
+  });
+});
+
+describe('initMeasurements', () => {
+  it('creates empty run folders that the report skips and lists as missing', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'rdp-poc-init-'));
+    assert.equal(initMeasurements(dir, ['S4']).length, 6);
+    assert.deepEqual(emptyRuns(dir), ['A-S4-1', 'A-S4-2', 'A-S4-3', 'B-S4-1', 'B-S4-2', 'B-S4-3']);
+    assert.deepEqual(loadMeasurements(dir), {});
+    assert.match(renderReport(loadMeasurements(dir)), /数据不全，无法判定/);
   });
 });

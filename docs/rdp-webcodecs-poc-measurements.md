@@ -31,7 +31,7 @@
    copy(JSON.stringify(window.__gatwyRdpMetrics.windows.slice(-12)))
    ```
    服务端从日志中取同一时段的 `[rdp-metrics]` 行（按 `session` 过滤）。
-6. 每个场景测 3 轮。每轮的原始数据存一个目录 `data/rdp-poc/<路径>-<场景>-<轮次>/`（如 `A-S4-1`、`B-S2-3`），内含：
+6. 每个场景测 3 轮。先用 `node scripts/rdp-poc-report.mjs --init data/rdp-poc`（只测视频：末尾加 `S4`）生成空目录，每轮的原始数据存一个目录 `data/rdp-poc/<路径>-<场景>-<轮次>/`（如 `A-S4-1`、`B-S2-3`），内含：
    - `client.json`：第 5 步 `copy(...)` 的输出
    - `server.log`：同一时段服务端的 `[rdp-metrics]` 行（可连同其他日志一起粘贴，脚本只取这些行）
    - `cpu.txt`：第 4 步的 CPU 读数，空格或逗号分隔
