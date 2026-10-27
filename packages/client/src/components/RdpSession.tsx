@@ -6,6 +6,7 @@ import { rdpKeyAction } from '../lib/rdpKeyboard';
 import { DisconnectOverlay } from './DisconnectOverlay';
 import { RdpMobileKeyboard } from './RdpMobileKeyboard';
 import { RdpClipboardService } from '../services/rdpClipboard';
+import { RdpRenderMeter, attachRdpRenderMeter, messageByteLength, rdpMetricsEnabled } from '../services/rdpMetrics';
 import { RdpFileTransfer, RdpFileTransferHandle } from './RdpFileTransfer';
 
 let rdpInitialized = false;
@@ -161,6 +162,7 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
     let resizeObserver: ResizeObserver | null = null;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     let canvasStyleGuard: MutationObserver | null = null;
+    let detachRenderMeter: (() => void) | null = null;
 
     // Suppress disconnect overlay when session is revoked (global handler redirects to login)
     const onRevoked = () => { sessionRevoked = true; };
@@ -415,6 +417,9 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
           }
         }
 
+        const renderMeter = rdpMetricsEnabled() ? new RdpRenderMeter() : null;
+        if (renderMeter) detachRenderMeter = attachRdpRenderMeter(canvas, renderMeter);
+
         // The WASM client owns the proxy socket, so watch its construction to learn why it closed.
         const NativeWebSocket = window.WebSocket;
         window.WebSocket = new Proxy(NativeWebSocket, {
@@ -424,6 +429,7 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
               sock.addEventListener('close', (ev) => {
                 if (ev.code === ADMIN_DISCONNECT_CODE) adminDisconnected = true;
               });
+              if (renderMeter) sock.addEventListener('message', (ev) => renderMeter.onMessage(messageByteLength(ev.data)));
             }
             return sock;
           },
@@ -797,6 +803,8 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
         window.addEventListener('drop', onFileDrop, false);
 
         await session.run();
+        detachRenderMeter?.();
+        detachRenderMeter = null;
 
         clipboardService.dispose();
         if (ftProvider?.dispose) ftProvider.dispose();
@@ -820,6 +828,8 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
 
         if (!cancelled) showDisconnect(adminDisconnected ? ADMIN_DISCONNECT_REASON : 'The remote session has ended.');
       } catch (err) {
+        detachRenderMeter?.();
+        detachRenderMeter = null;
         if (!cancelled) {
           // The close event arrives just before run() rejects, so an admin disconnect also lands here.
           if (adminDisconnected) { showDisconnect(ADMIN_DISCONNECT_REASON); return; }
@@ -882,6 +892,8 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
       window.removeEventListener('gatwy:unauthorized', onRevoked);
       resizeObserver?.disconnect();
       canvasStyleGuard?.disconnect();
+      detachRenderMeter?.();
+      detachRenderMeter = null;
       if (resizeTimer) clearTimeout(resizeTimer);
       // Stop the compositor rAF loop and size observer used for cursor recording
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

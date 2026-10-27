@@ -65,13 +65,16 @@
 
 | 指标 | 采集方式 |
 |---|---|
-| 带宽（Mbps，下行） | T1 中 `rdpProxy.ts` 的字节计数 |
-| 客户端 CPU（%） | Chrome 任务管理器中该标签页渲染进程 CPU，录屏读数取均值；辅以 Performance 面板确认热点 |
+| 带宽（Mbps，下行） | 服务端 `GATWY_RDP_METRICS=1` 时 `rdpProxy.ts` 每 5s 输出 `[rdp-metrics]` 一行（`packages/server/src/ws/rdpMetrics.ts`） |
+| 客户端 CPU（%） | Chrome 任务管理器中该标签页渲染进程 CPU，读 60s 内均值；客户端 `longtask_ms` 作为主线程压力的辅助指标 |
 | GPU 解码是否生效 | `chrome://media-internals` 中 decoder 名称（非 FFmpeg/软件解码器） |
-| 帧率（fps） | 客户端埋点：每秒 `EndFrame` 被应用的次数 |
-| 流水线延迟（ms，p50/p95） | 客户端埋点：PDU 到达 WASM → 对应区域 `draw` 完成 |
+| 帧率（fps） | 客户端每秒 draw batch 数：同一任务内连续的 `putImageData` 计为一批（`packages/client/src/services/rdpMetrics.ts`） |
+| 流水线延迟（ms，p50/p95） | 客户端：上一批之后首个 WebSocket 消息到达 → 下一批 `putImageData` 完成；超过 1s 无绘制的消息视为非画面消息并丢弃。不含网络传输与显示合成，不是端到端延迟 |
 | 服务器端编码方式 | 事件查看器 `Microsoft-Windows-RemoteDesktopServices-RdpCoreTS/Operational`，事件 ID 162（AVC 模式）、170（硬件编码） |
-| 丢弃更新数 | `dropped_updates` 计数 |
+| 丢弃更新数 | `dropped_updates` 计数（T2 起） |
+
+> 帧率与延迟在 JS 层测量（WebSocket 到达与 canvas 上屏），RFX 与 H.264 两条路径口径一致；H.264 路径在方案 A 下同样经 `putImageData` 上屏。
+> 客户端埋点启用：浏览器控制台 `localStorage.setItem('gatwy.rdpMetrics', '1')` 后重新打开会话；数据同时保存在 `window.__gatwyRdpMetrics`。
 
 ## 6. 验收指标（Go / No-Go）
 

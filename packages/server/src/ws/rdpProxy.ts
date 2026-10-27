@@ -19,6 +19,7 @@ import { performCredSSP } from '../services/credssp.js';
 import { isDangerousTunnelHost } from '../services/ssrfGuard.js';
 import { inspectServerPreActivationFrame, type RedirectInfo } from './rdpRedirect.js';
 import { parseUpgradeUrl } from './upgradeUrl.js';
+import { RDP_METRICS_ENABLED, createRdpByteMeter } from './rdpMetrics.js';
 
 interface ConnectionRow {
   id: string;
@@ -338,6 +339,7 @@ export function setupRdpProxy(server: https.Server, basePath = ''): void {
     const traceStartedAt = Date.now();
     let traceSeq = 0;
     const traceEvents: Array<Record<string, unknown>> = [];
+    const byteMeter = RDP_METRICS_ENABLED ? createRdpByteMeter(sessionId) : null;
 
     const trace = (event: string, details?: Record<string, unknown>) => {
       if (!RDP_TRACE_ENABLED) return;
@@ -384,6 +386,7 @@ export function setupRdpProxy(server: https.Server, basePath = ''): void {
       }
       if (tlsTunnel) { try { tlsTunnel.destroy(); } catch { /**/ } tlsTunnel = null; }
       if (tunnel) { try { tunnel.destroy(); } catch { /**/ } tunnel = null; }
+      byteMeter?.stop();
       trace('session.cleanup');
     };
 
@@ -483,6 +486,7 @@ export function setupRdpProxy(server: https.Server, basePath = ''): void {
 
               currentTls.on('data', (chunk: Uint8Array) => {
                 if (generation !== activeGeneration) return;
+                byteMeter?.down(chunk.byteLength);
 
                 if (activationComplete) {
                   if (ws.readyState === WebSocket.OPEN) ws.send(chunk);
@@ -628,6 +632,7 @@ export function setupRdpProxy(server: https.Server, basePath = ''): void {
 
       wsRelayHandler = (msg: RawData) => {
         const rawBytes = rawDataToBytes(msg);
+        byteMeter?.up(rawBytes.byteLength);
         let relayBytes: Uint8Array = rawBytes;
         if (!colorDepthPatched) {
           const patched = patchHighColorDepth(rawBytes);
