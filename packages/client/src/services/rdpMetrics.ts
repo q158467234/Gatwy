@@ -1,5 +1,5 @@
-// RDP graphics path selection and the opt-in render meter, both driven by the admin settings
-// `rdp.graphics_mode` and `rdp.metrics_enabled` (Settings → General → RDP). The meter works on the
+// RDP graphics path selection and the opt-in render meter, driven by the admin settings
+// `rdp.graphics_mode`, `rdp.gpu_compositing` and `rdp.metrics_enabled` (Settings → General → RDP). The meter works on the
 // JS side only — WebSocket arrivals and canvas `putImageData` calls — so every graphics path is
 // measured alike.
 
@@ -34,6 +34,8 @@ export function rdpGraphicsMode(setting: string | undefined): RdpGraphicsMode {
 
 export interface RdpSessionSettings {
   graphics: RdpGraphicsMode;
+  /** Composite the graphics pipeline with WebGL2; only meaningful with `graphics.egfx`. */
+  gpuCompositing: boolean;
   metrics: boolean;
 }
 
@@ -49,11 +51,12 @@ export async function loadRdpSessionSettings(fetchImpl: typeof fetch = fetch): P
     const { settings } = (await res.json()) as { settings?: Record<string, string> };
     return {
       graphics: rdpGraphicsMode(settings?.['rdp.graphics_mode']),
+      gpuCompositing: settings?.['rdp.gpu_compositing'] === 'true',
       metrics: settings?.['rdp.metrics_enabled'] === 'true',
     };
   } catch (error) {
     console.warn('[RDP] Could not read the RDP settings; using the classic graphics path', error);
-    return { graphics: rdpGraphicsMode(undefined), metrics: false };
+    return { graphics: rdpGraphicsMode(undefined), gpuCompositing: false, metrics: false };
   }
 }
 

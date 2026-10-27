@@ -30,6 +30,7 @@ const DEFAULTS: Record<string, string> = {
   'rdp.default_height': '1080',
   'rdp.graphics_mode': 'legacy',
   'rdp.metrics_enabled': 'false',
+  'rdp.gpu_compositing': 'false',
   'auth.local_enabled': 'true',
   'auth.ldap_enabled': 'false',
   'auth.ldap_url': '',

@@ -12,5 +12,8 @@ source.
 
 1. Commit the change in the fork (`/home/ljz/Documents/LWL/IronRDP-poc`).
 2. `./poc/build-web.sh --pack <gatwy>/vendor` — refuses to pack an uncommitted tree.
-3. Delete the previous tarball, point `packages/client/package.json` at the new file name, run `npm install`.
+3. Delete the previous tarball and install the new one from `packages/client` (a plain `npm install`
+   keeps the locked tarball):
+   `npm install "@devolutions/iron-remote-desktop-rdp@file:../../vendor/<new file>"`. Check that it
+   left the `devDependencies` order alone.
 4. Rebuild and test the client; commit the tarball, `package.json` and `package-lock.json` together.

@@ -12,6 +12,7 @@ const DEFAULTS: Settings = {
   'ssh.cursor_style': 'block',
   'rdp.graphics_mode': 'legacy',
   'rdp.metrics_enabled': 'false',
+  'rdp.gpu_compositing': 'false',
 };
 
 let cache: Settings | null = null;

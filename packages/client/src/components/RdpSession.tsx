@@ -24,6 +24,7 @@ let enableCredssp: ((enable: boolean) => any) | null = null;
 let enableEgfx: ((enable: boolean) => any) | null = null;
 type RdpModule = typeof import('@devolutions/iron-remote-desktop-rdp');
 let h264Decoder: RdpModule['h264Decoder'] | null = null;
+let gpuCompositing: RdpModule['gpuCompositing'] | null = null;
 let WebCodecsH264DecoderClass: RdpModule['WebCodecsH264Decoder'] | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let RdpFileTransferProviderClass: (new (options?: any) => any) | null = null;
@@ -38,6 +39,7 @@ async function initRdp() {
   // Only present in the EGFX prototype build of the RDP package.
   enableEgfx = (rdpModule as { enableEgfx?: typeof enableEgfx }).enableEgfx ?? null;
   h264Decoder = (rdpModule as Partial<RdpModule>).h264Decoder ?? null;
+  gpuCompositing = (rdpModule as Partial<RdpModule>).gpuCompositing ?? null;
   WebCodecsH264DecoderClass = (rdpModule as Partial<RdpModule>).WebCodecsH264Decoder ?? null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   RdpFileTransferProviderClass = (rdpModule as any).RdpFileTransferProvider ?? null;
@@ -431,6 +433,11 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
         const graphicsMode = rdpSettings.graphics;
         if (enableEgfx && graphicsMode.egfx) {
           builder.extension(enableEgfx(true));
+          // Falls back to CPU compositing by itself when no hardware WebGL2 is available.
+          if (gpuCompositing && rdpSettings.gpuCompositing) {
+            builder.extension(gpuCompositing(true));
+            console.info('[RDP] GPU compositing requested');
+          }
           if (h264Decoder && WebCodecsH264DecoderClass && graphicsMode.h264) {
             h264 = await WebCodecsH264DecoderClass.create({ avc444: graphicsMode.avc444 });
             if (h264) {

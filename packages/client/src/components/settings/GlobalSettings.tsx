@@ -95,6 +95,7 @@ export function GlobalSettings() {
   // RDP
   const [rdpGraphicsMode, setRdpGraphicsMode] = useState('legacy');
   const [rdpMetrics, setRdpMetrics] = useState(false);
+  const [rdpGpuCompositing, setRdpGpuCompositing] = useState(false);
   const [savingRdp, setSavingRdp] = useState(false);
 
   // Audit retention (shown in General tab)
@@ -121,6 +122,7 @@ export function GlobalSettings() {
     setRetentionMaxSizeGb(settings['session.recording_retention_max_size_gb'] ?? '10');
     setRdpGraphicsMode(settings['rdp.graphics_mode'] || 'legacy');
     setRdpMetrics(settings['rdp.metrics_enabled'] === 'true');
+    setRdpGpuCompositing(settings['rdp.gpu_compositing'] === 'true');
   }, [settings]);
 
   useEffect(() => {
@@ -207,6 +209,7 @@ export function GlobalSettings() {
       const result = await saveSettings({
         'rdp.graphics_mode': rdpGraphicsMode,
         'rdp.metrics_enabled': String(rdpMetrics),
+        'rdp.gpu_compositing': String(rdpGpuCompositing),
       });
       showToast(result.ok ? 'Saved. Applies to RDP sessions opened from now on.' : result.error!, result.ok ? 'success' : 'error');
     } catch {
@@ -353,6 +356,17 @@ export function GlobalSettings() {
               {RDP_GRAPHICS_MODES.find((m) => m.value === rdpGraphicsMode)?.help}
             </p>
             <p className="text-xs text-text-secondary/60 mt-1">Applies to RDP sessions opened after saving; open sessions keep their mode until they reconnect.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Toggle value={rdpGpuCompositing} onChange={setRdpGpuCompositing} />
+            <div>
+              <span className="text-sm text-text-secondary">GPU compositing</span>
+              <p className="text-xs text-text-secondary/60 mt-0.5">
+                Composites the screen with WebGL2 and draws H.264 pictures without copying them back from the GPU, which
+                lowers browser CPU use for full-screen motion. Graphics pipeline modes only; browsers without hardware
+                WebGL2 keep compositing on the CPU. Colors at sharp edges can differ slightly from the CPU path.
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <Toggle value={rdpMetrics} onChange={setRdpMetrics} />

@@ -40,6 +40,7 @@ router.get('/public', (_req: Request, res: Response) => {
     // Read by every RDP session; not sensitive.
     'rdp.graphics_mode',
     'rdp.metrics_enabled',
+    'rdp.gpu_compositing',
   ];
   const settings: Record<string, string> = {};
   for (const key of PUBLIC_KEYS) {
