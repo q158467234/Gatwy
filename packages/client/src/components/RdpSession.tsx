@@ -6,7 +6,7 @@ import { rdpKeyAction } from '../lib/rdpKeyboard';
 import { DisconnectOverlay } from './DisconnectOverlay';
 import { RdpMobileKeyboard } from './RdpMobileKeyboard';
 import { RdpClipboardService } from '../services/rdpClipboard';
-import { RdpRenderMeter, attachRdpRenderMeter, messageByteLength, rdpMetricsEnabled } from '../services/rdpMetrics';
+import { RdpRenderMeter, attachRdpRenderMeter, messageByteLength, rdpEgfxEnabled, rdpMetricsEnabled } from '../services/rdpMetrics';
 import { RdpFileTransfer, RdpFileTransferHandle } from './RdpFileTransfer';
 
 let rdpInitialized = false;
@@ -15,6 +15,8 @@ let Backend: Record<string, unknown> | null = null;
 let displayControl: ((enable: boolean) => any) | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let enableCredssp: ((enable: boolean) => any) | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let enableEgfx: ((enable: boolean) => any) | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let RdpFileTransferProviderClass: (new (options?: any) => any) | null = null;
 
@@ -25,6 +27,8 @@ async function initRdp() {
   Backend = rdpModule.Backend as Record<string, unknown>;
   displayControl = rdpModule.displayControl;
   enableCredssp = rdpModule.enableCredssp;
+  // Only present in the EGFX prototype build of the RDP package.
+  enableEgfx = (rdpModule as { enableEgfx?: typeof enableEgfx }).enableEgfx ?? null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   RdpFileTransferProviderClass = (rdpModule as any).RdpFileTransferProvider ?? null;
   rdpInitialized = true;
@@ -407,6 +411,10 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
 
         if (enableCredssp) {
           builder.extension(enableCredssp(true));
+        }
+
+        if (enableEgfx && rdpEgfxEnabled()) {
+          builder.extension(enableEgfx(true));
         }
 
         // Register file transfer extensions on the builder

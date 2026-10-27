@@ -1,17 +1,27 @@
-// Opt-in RDP render meter for the EGFX/WebCodecs prototype (docs/rdp-webcodecs-poc.md, T1).
+// Opt-in RDP render meter and prototype switches for the EGFX/WebCodecs prototype (docs/rdp-webcodecs-poc.md).
 // Enable with `localStorage.setItem('gatwy.rdpMetrics', '1')`. Works on the JS side only —
 // WebSocket arrivals and canvas `putImageData` calls — so RFX and H.264 paths are measured alike.
 
 const STORAGE_KEY = 'gatwy.rdpMetrics';
+const EGFX_STORAGE_KEY = 'gatwy.rdpEgfx';
 /** A message with no draw within this window (keepalive, input echo) is not a pending update. */
 const STALE_PENDING_MS = 1000;
 
-export function rdpMetricsEnabled(): boolean {
+function storageFlag(key: string): boolean {
   try {
-    return window.localStorage.getItem(STORAGE_KEY) === '1';
+    return window.localStorage.getItem(key) === '1';
   } catch {
     return false;
   }
+}
+
+export function rdpMetricsEnabled(): boolean {
+  return storageFlag(STORAGE_KEY);
+}
+
+/** Prototype switch for the graphics pipeline path: `localStorage.setItem('gatwy.rdpEgfx', '1')`. */
+export function rdpEgfxEnabled(): boolean {
+  return storageFlag(EGFX_STORAGE_KEY);
 }
 
 export function percentile(sorted: number[], p: number): number | null {

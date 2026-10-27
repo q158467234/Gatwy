@@ -74,6 +74,8 @@ declare module '@devolutions/iron-remote-desktop-rdp' {
   export function displayControl(enable: boolean): Extension;
   export function kdcProxyUrl(url: string): Extension;
   export function enableCredssp(enable: boolean): Extension;
+  /** EGFX prototype build only. */
+  export function enableEgfx(enable: boolean): Extension;
 }
 
 declare module '@devolutions/iron-remote-desktop' {
