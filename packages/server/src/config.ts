@@ -23,11 +23,6 @@ export function normalizeBasePath(raw: string | undefined): string {
   return p;
 }
 
-/** `1`, `true` or `yes` (any case), like ENABLE_MOONLIGHT in entrypoint.sh. */
-export function envFlag(raw: string | undefined): boolean {
-  return ['1', 'true', 'yes'].includes((raw ?? '').trim().toLowerCase());
-}
-
 export const config = {
   port: parseInt(process.env.PORT || '7443', 10),
   dataDir: process.env.DATA_DIR || path.resolve(__dirname, '../../..', 'data'),
