@@ -4,10 +4,11 @@ import { getSetting } from './settings.js';
  * RDP graphics path, applied to new sessions:
  * - `legacy`: RemoteFX/bitmaps over the classic fast-path updates
  * - `egfx`: the graphics pipeline (MS-RDPEGFX) with the codecs the client decodes itself
- * - `h264`: the graphics pipeline with H.264 decoded by the browser (WebCodecs); falls back to
- *   `egfx` in browsers without it
+ * - `h264`: the graphics pipeline with H.264 (AVC420) decoded by the browser (WebCodecs); falls
+ *   back to `egfx` in browsers without it
+ * - `h264-444`: as `h264`, also accepting AVC444 (full chroma, two pictures per update)
  */
-export const RDP_GRAPHICS_MODES = ['legacy', 'egfx', 'h264'] as const;
+export const RDP_GRAPHICS_MODES = ['legacy', 'egfx', 'h264', 'h264-444'] as const;
 export type RdpGraphicsMode = (typeof RDP_GRAPHICS_MODES)[number];
 
 export const RDP_GRAPHICS_MODE_KEY = 'rdp.graphics_mode';

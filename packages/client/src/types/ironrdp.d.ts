@@ -80,7 +80,7 @@ declare module '@devolutions/iron-remote-desktop-rdp' {
   export function h264Decoder(decoder: WebCodecsH264Decoder): Extension;
   /** EGFX prototype build only. */
   export class WebCodecsH264Decoder {
-    static create(): Promise<WebCodecsH264Decoder | null>;
+    static create(options?: { avc444?: boolean }): Promise<WebCodecsH264Decoder | null>;
     readonly stats: Record<string, unknown> & { hardware: boolean };
   }
 }

@@ -105,14 +105,15 @@ describe('RdpRenderMeter extra', () => {
 
 describe('rdpGraphicsMode', () => {
   it('maps the rdp.graphics_mode setting', () => {
-    assert.deepEqual(rdpGraphicsMode('legacy'), { egfx: false, h264: false });
-    assert.deepEqual(rdpGraphicsMode('egfx'), { egfx: true, h264: false });
-    assert.deepEqual(rdpGraphicsMode('h264'), { egfx: true, h264: true });
+    assert.deepEqual(rdpGraphicsMode('legacy'), { egfx: false, h264: false, avc444: false });
+    assert.deepEqual(rdpGraphicsMode('egfx'), { egfx: true, h264: false, avc444: false });
+    assert.deepEqual(rdpGraphicsMode('h264'), { egfx: true, h264: true, avc444: false });
+    assert.deepEqual(rdpGraphicsMode('h264-444'), { egfx: true, h264: true, avc444: true });
   });
 
   it('treats a missing or unknown value as the classic path', () => {
-    assert.deepEqual(rdpGraphicsMode(undefined), { egfx: false, h264: false });
-    assert.deepEqual(rdpGraphicsMode('H264'), { egfx: false, h264: false });
+    assert.deepEqual(rdpGraphicsMode(undefined), { egfx: false, h264: false, avc444: false });
+    assert.deepEqual(rdpGraphicsMode('H264'), { egfx: false, h264: false, avc444: false });
   });
 });
 
@@ -126,7 +127,10 @@ describe('loadRdpSessionSettings', () => {
       url = String(input);
       return new Response(JSON.stringify({ settings: { 'rdp.graphics_mode': 'h264', 'rdp.metrics_enabled': 'true' } }));
     }) as typeof fetch;
-    assert.deepEqual(await loadRdpSessionSettings(fetchImpl), { graphics: { egfx: true, h264: true }, metrics: true });
+    assert.deepEqual(await loadRdpSessionSettings(fetchImpl), {
+      graphics: { egfx: true, h264: true, avc444: false },
+      metrics: true,
+    });
     assert.equal(url, '/api/v1/settings/public');
   });
 
@@ -134,7 +138,7 @@ describe('loadRdpSessionSettings', () => {
     const warn = console.warn;
     console.warn = () => {};
     try {
-      const off = { graphics: { egfx: false, h264: false }, metrics: false };
+      const off = { graphics: { egfx: false, h264: false, avc444: false }, metrics: false };
       assert.deepEqual(await loadRdpSessionSettings(respond(500, {})), off);
       assert.deepEqual(await loadRdpSessionSettings((async () => { throw new Error('offline'); }) as unknown as typeof fetch), off);
       assert.deepEqual(await loadRdpSessionSettings(respond(200, {})), off);

@@ -430,10 +430,10 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
         if (enableEgfx && graphicsMode.egfx) {
           builder.extension(enableEgfx(true));
           if (h264Decoder && WebCodecsH264DecoderClass && graphicsMode.h264) {
-            h264 = await WebCodecsH264DecoderClass.create();
+            h264 = await WebCodecsH264DecoderClass.create({ avc444: graphicsMode.avc444 });
             if (h264) {
               builder.extension(h264Decoder(h264));
-              console.info('[RDP] H.264 via WebCodecs, hardware:', h264.stats.hardware);
+              console.info('[RDP] H.264 via WebCodecs, hardware:', h264.stats.hardware, 'AVC444:', graphicsMode.avc444);
             } else {
               console.info('[RDP] WebCodecs H.264 unavailable; the graphics pipeline uses its other codecs');
             }

@@ -34,6 +34,11 @@ const RDP_GRAPHICS_MODES: { value: string; label: string; help: string }[] = [
     label: 'Graphics pipeline + H.264',
     help: 'H.264 decoded by the browser (WebCodecs), on the GPU where available: much less bandwidth for video and motion. Colored text is slightly softer (AVC420). Browsers that cannot decode H.264 use the graphics pipeline without it.',
   },
+  {
+    value: 'h264-444',
+    label: 'Graphics pipeline + H.264 4:4:4',
+    help: 'As H.264, also accepting AVC444: full color resolution, so colored text stays sharp, at about twice the decoding work. Windows only sends it when the server enables "Prioritize H.264/AVC 444 graphics mode"; otherwise this behaves like H.264.',
+  },
 ];
 
 // All IANA timezones supported by the runtime (Intl API).

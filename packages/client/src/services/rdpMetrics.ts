@@ -11,17 +11,24 @@ export interface RdpGraphicsMode {
   egfx: boolean;
   /** Decode its H.264 stream with WebCodecs; implies `egfx`. */
   h264: boolean;
+  /** Also accept AVC444 (full chroma); implies `h264`. */
+  avc444: boolean;
 }
 
-/** Maps the `rdp.graphics_mode` setting (`legacy` | `egfx` | `h264`); anything else is `legacy`. */
+/**
+ * Maps the `rdp.graphics_mode` setting (`legacy` | `egfx` | `h264` | `h264-444`); anything else
+ * is `legacy`.
+ */
 export function rdpGraphicsMode(setting: string | undefined): RdpGraphicsMode {
   switch (setting) {
+    case 'h264-444':
+      return { egfx: true, h264: true, avc444: true };
     case 'h264':
-      return { egfx: true, h264: true };
+      return { egfx: true, h264: true, avc444: false };
     case 'egfx':
-      return { egfx: true, h264: false };
+      return { egfx: true, h264: false, avc444: false };
     default:
-      return { egfx: false, h264: false };
+      return { egfx: false, h264: false, avc444: false };
   }
 }
 

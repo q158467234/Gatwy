@@ -35,7 +35,7 @@ fork：`/home/ljz/Documents/LWL/IronRDP-poc`，基于 Devolutions/IronRDP@3ca12e
 
 ## 4. 已知限制
 
-1. **只有 AVC420**：彩色文字边缘会发糊；AVC444 需要两路流合成色度，未做。
+1. ~~只有 AVC420~~：已支持 AVC444（v1 与 v2 布局），在设置中选 Graphics pipeline + H.264 4:4:4；两个视图各作为一个访问单元交给 WebCodecs，按流顺序合成。服务器需开启组策略“Prioritize H.264/AVC 444 graphics mode”才会发送；每次更新解码两张图，4:4:4 合成与转换在 wasm 中约 6 ms/1080p（SIMD，原 19 ms）。
 2. ~~一次一帧在途~~：已改为流水线，AVC420 一到即提交解码，多帧可同时在途，命令仍严格按流顺序应用。缓帧风险已缓解：每个 SPS 改写为 `max_num_reorder_frames=0`，解码器拿到一帧即输出；万一仍需关键帧（解码错误、卡顿 flush 后），会话自动请求：先 Suppress/Resume 重绘两次（间隔 1s），再 EGFX 协议重置（间隔 5s），直到解出画面。浏览器统计中 `spsRewritten`/`spsRewriteFailed`/`keyFrameRequests` 可观察这两项。
 3. **读回 + CPU 合成**：解码在 GPU，但 `copyTo` 读回、YUV→RGB、合成、`putImageData` 仍在 CPU（方案 A 的固有代价）。其中 YUV→RGB 已改为 wasm SIMD：1080p 每帧 13.1 → 1.43 ms（逐像素与规范公式一致，见 fork `poc/yuv-bench`）。
 4. ~~无 wasm-opt~~：已用 npm 版 binaryen 接入（fork `poc/build-web.sh`）。默认只剥离函数名等元数据，前端包 8.1 → 6.6 MB（gzip 2.58 → 2.10 MB），代码不变；实测 `-O` 在 gzip 后体积相近但运行慢 0–8%，故不默认启用。
