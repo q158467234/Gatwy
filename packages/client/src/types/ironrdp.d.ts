@@ -76,6 +76,13 @@ declare module '@devolutions/iron-remote-desktop-rdp' {
   export function enableCredssp(enable: boolean): Extension;
   /** EGFX prototype build only. */
   export function enableEgfx(enable: boolean): Extension;
+  /** EGFX prototype build only. */
+  export function h264Decoder(decoder: WebCodecsH264Decoder): Extension;
+  /** EGFX prototype build only. */
+  export class WebCodecsH264Decoder {
+    static create(): Promise<WebCodecsH264Decoder | null>;
+    readonly stats: Record<string, unknown> & { hardware: boolean };
+  }
 }
 
 declare module '@devolutions/iron-remote-desktop' {

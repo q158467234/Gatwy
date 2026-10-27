@@ -6,7 +6,14 @@ import { rdpKeyAction } from '../lib/rdpKeyboard';
 import { DisconnectOverlay } from './DisconnectOverlay';
 import { RdpMobileKeyboard } from './RdpMobileKeyboard';
 import { RdpClipboardService } from '../services/rdpClipboard';
-import { RdpRenderMeter, attachRdpRenderMeter, messageByteLength, rdpEgfxEnabled, rdpMetricsEnabled } from '../services/rdpMetrics';
+import {
+  RdpRenderMeter,
+  attachRdpRenderMeter,
+  messageByteLength,
+  rdpEgfxEnabled,
+  rdpH264Enabled,
+  rdpMetricsEnabled,
+} from '../services/rdpMetrics';
 import { RdpFileTransfer, RdpFileTransferHandle } from './RdpFileTransfer';
 
 let rdpInitialized = false;
@@ -17,6 +24,9 @@ let displayControl: ((enable: boolean) => any) | null = null;
 let enableCredssp: ((enable: boolean) => any) | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let enableEgfx: ((enable: boolean) => any) | null = null;
+type RdpModule = typeof import('@devolutions/iron-remote-desktop-rdp');
+let h264Decoder: RdpModule['h264Decoder'] | null = null;
+let WebCodecsH264DecoderClass: RdpModule['WebCodecsH264Decoder'] | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let RdpFileTransferProviderClass: (new (options?: any) => any) | null = null;
 
@@ -29,6 +39,8 @@ async function initRdp() {
   enableCredssp = rdpModule.enableCredssp;
   // Only present in the EGFX prototype build of the RDP package.
   enableEgfx = (rdpModule as { enableEgfx?: typeof enableEgfx }).enableEgfx ?? null;
+  h264Decoder = (rdpModule as Partial<RdpModule>).h264Decoder ?? null;
+  WebCodecsH264DecoderClass = (rdpModule as Partial<RdpModule>).WebCodecsH264Decoder ?? null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   RdpFileTransferProviderClass = (rdpModule as any).RdpFileTransferProvider ?? null;
   rdpInitialized = true;
@@ -413,8 +425,18 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
           builder.extension(enableCredssp(true));
         }
 
+        let h264: InstanceType<RdpModule['WebCodecsH264Decoder']> | null = null;
         if (enableEgfx && rdpEgfxEnabled()) {
           builder.extension(enableEgfx(true));
+          if (h264Decoder && WebCodecsH264DecoderClass && rdpH264Enabled()) {
+            h264 = await WebCodecsH264DecoderClass.create();
+            if (h264) {
+              builder.extension(h264Decoder(h264));
+              console.info('[RDP] H.264 via WebCodecs, hardware:', h264.stats.hardware);
+            } else {
+              console.info('[RDP] WebCodecs H.264 unavailable; the graphics pipeline uses its other codecs');
+            }
+          }
         }
 
         // Register file transfer extensions on the builder
@@ -425,7 +447,10 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
           }
         }
 
-        const renderMeter = rdpMetricsEnabled() ? new RdpRenderMeter() : null;
+        const h264Stats = h264?.stats; // updated in place by the decoder
+        const renderMeter = rdpMetricsEnabled()
+          ? new RdpRenderMeter({ extra: h264Stats ? () => h264Stats : undefined })
+          : null;
         if (renderMeter) detachRenderMeter = attachRdpRenderMeter(canvas, renderMeter);
 
         // The WASM client owns the proxy socket, so watch its construction to learn why it closed.

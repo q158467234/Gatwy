@@ -19,6 +19,11 @@
 
 1. 启动网关时设置 `GATWY_RDP_METRICS=1`（开发模式：`GATWY_RDP_METRICS=1 npm run dev`）。
 2. 浏览器控制台执行 `localStorage.setItem('gatwy.rdpMetrics', '1')`，然后打开 RDP 会话；会话界面应全屏到 1920×1080。
+   - 路径 A（RFX 基线）：`localStorage.removeItem('gatwy.rdpEgfx'); localStorage.removeItem('gatwy.rdpH264')`
+   - 路径 B（EGFX + H.264）：`localStorage.setItem('gatwy.rdpEgfx', '1'); localStorage.setItem('gatwy.rdpH264', '1')`；
+     控制台应出现 `[RDP] H.264 via WebCodecs, hardware: true` 与 `Graphics pipeline (EGFX) capabilities confirmed`，
+     服务器事件 162 应显示 AVC420。解码器统计（`decoded`/`errors`/`stalls`/`formats`/`decodeMsMax`）随每个窗口记录在
+     `window.__gatwyRdpMetrics.windows[i].extra`。
 3. 打开 Chrome 任务管理器（Shift+Esc），定位该标签页进程。
 4. 每个场景：静止 5s → 开始动作并计时 60s → 停止动作。期间每 10s 读一次 CPU，取 6 个读数均值。
 5. 场景结束后，在控制台执行以下代码，复制最近 12 个窗口（60s）：

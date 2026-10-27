@@ -4,6 +4,7 @@
 
 const STORAGE_KEY = 'gatwy.rdpMetrics';
 const EGFX_STORAGE_KEY = 'gatwy.rdpEgfx';
+const H264_STORAGE_KEY = 'gatwy.rdpH264';
 /** A message with no draw within this window (keepalive, input echo) is not a pending update. */
 const STALE_PENDING_MS = 1000;
 
@@ -24,6 +25,11 @@ export function rdpEgfxEnabled(): boolean {
   return storageFlag(EGFX_STORAGE_KEY);
 }
 
+/** Prototype switch for WebCodecs H.264 over the graphics pipeline; needs `gatwy.rdpEgfx` too. */
+export function rdpH264Enabled(): boolean {
+  return storageFlag(H264_STORAGE_KEY);
+}
+
 export function percentile(sorted: number[], p: number): number | null {
   if (sorted.length === 0) return null;
   const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1));
@@ -41,6 +47,8 @@ export interface RdpRenderWindow {
   lat_p50_ms: number | null;
   lat_p95_ms: number | null;
   longtask_ms: number;
+  /** Snapshot from `RdpRenderMeterOptions.extra`, e.g. H.264 decoder stats. */
+  extra?: unknown;
 }
 
 export interface RdpRenderMeterOptions {
@@ -49,6 +57,8 @@ export interface RdpRenderMeterOptions {
   log?: (line: string) => void;
   /** Runs `fn` after the current task; defaults to `queueMicrotask`. */
   afterTask?: (fn: () => void) => void;
+  /** Extra state recorded with each window (cumulative values, copied at flush time). */
+  extra?: () => unknown;
 }
 
 const round = (n: number, digits = 1) => Math.round(n * 10 ** digits) / 10 ** digits;
@@ -96,6 +106,7 @@ export class RdpRenderMeter {
   private readonly now: () => number;
   private readonly log: (line: string) => void;
   private readonly afterTask: (fn: () => void) => void;
+  private readonly extra: (() => unknown) | undefined;
   private readonly startedAt: number;
   private windowStart: number;
   private win = new Accumulator();
@@ -109,6 +120,7 @@ export class RdpRenderMeter {
     this.now = opts.now ?? (() => performance.now());
     this.log = opts.log ?? ((line) => console.info(line));
     this.afterTask = opts.afterTask ?? ((fn) => queueMicrotask(fn));
+    this.extra = opts.extra;
     this.startedAt = this.now();
     this.windowStart = this.startedAt;
   }
@@ -144,6 +156,7 @@ export class RdpRenderMeter {
     const elapsed = t - this.windowStart;
     if (elapsed <= 0) return;
     const record: RdpRenderWindow = { t_s: round((t - this.startedAt) / 1000), ...this.win.report(elapsed) };
+    if (this.extra) record.extra = structuredClone(this.extra());
     this.windows.push(record);
     this.log(`[rdp-metrics] ${JSON.stringify(record)}`);
     this.total.merge(this.win);

@@ -88,3 +88,17 @@ describe('messageByteLength', () => {
     assert.equal(messageByteLength(null), 0);
   });
 });
+
+describe('RdpRenderMeter extra', () => {
+  it('records a copy of the extra state with each window', () => {
+    let t = 0;
+    const stats = { decoded: 1 };
+    const meter = new RdpRenderMeter({ now: () => t, log: () => {}, afterTask: () => {}, extra: () => stats });
+    t = 1000;
+    meter.flush();
+    stats.decoded = 2;
+    t = 2000;
+    meter.flush();
+    assert.deepEqual(meter.windows.map((w) => w.extra), [{ decoded: 1 }, { decoded: 2 }]);
+  });
+});
