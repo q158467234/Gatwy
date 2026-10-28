@@ -1,7 +1,9 @@
 // RDP graphics path selection and the opt-in render meter, driven by the admin settings
-// `rdp.graphics_mode`, `rdp.gpu_compositing` and `rdp.metrics_enabled` (Settings → General → RDP). The meter works on the
-// JS side only — WebSocket arrivals and canvas `putImageData` calls — so every graphics path is
-// measured alike.
+// `rdp.graphics_mode`, `rdp.gpu_compositing`, `rdp.resolution` and `rdp.metrics_enabled`
+// (Settings → General → RDP). The meter works on the JS side only — WebSocket arrivals and canvas
+// `putImageData` calls — so every graphics path is measured alike.
+
+import { type RdpResolution, rdpResolution } from '../lib/rdpDisplay';
 
 /** A message with no draw within this window (keepalive, input echo) is not a pending update. */
 const STALE_PENDING_MS = 1000;
@@ -36,6 +38,7 @@ export interface RdpSessionSettings {
   graphics: RdpGraphicsMode;
   /** Composite the graphics pipeline with WebGL2; only meaningful with `graphics.egfx`. */
   gpuCompositing: boolean;
+  resolution: RdpResolution;
   metrics: boolean;
 }
 
@@ -52,11 +55,12 @@ export async function loadRdpSessionSettings(fetchImpl: typeof fetch = fetch): P
     return {
       graphics: rdpGraphicsMode(settings?.['rdp.graphics_mode']),
       gpuCompositing: settings?.['rdp.gpu_compositing'] === 'true',
+      resolution: rdpResolution(settings?.['rdp.resolution']),
       metrics: settings?.['rdp.metrics_enabled'] === 'true',
     };
   } catch (error) {
     console.warn('[RDP] Could not read the RDP settings; using the classic graphics path', error);
-    return { graphics: rdpGraphicsMode(undefined), gpuCompositing: false, metrics: false };
+    return { graphics: rdpGraphicsMode(undefined), gpuCompositing: false, resolution: rdpResolution(undefined), metrics: false };
   }
 }
 

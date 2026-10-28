@@ -13,6 +13,7 @@ import {
   loadRdpSessionSettings,
 } from '../services/rdpMetrics';
 import { RdpFileTransfer, RdpFileTransferHandle } from './RdpFileTransfer';
+import { type RdpResolution, rdpDesktopSize } from '../lib/rdpDisplay';
 
 let rdpInitialized = false;
 let Backend: Record<string, unknown> | null = null;
@@ -25,6 +26,7 @@ let enableEgfx: ((enable: boolean) => any) | null = null;
 type RdpModule = typeof import('@devolutions/iron-remote-desktop-rdp');
 let h264Decoder: RdpModule['h264Decoder'] | null = null;
 let gpuCompositing: RdpModule['gpuCompositing'] | null = null;
+let desktopScaleFactor: RdpModule['desktopScaleFactor'] | null = null;
 let WebCodecsH264DecoderClass: RdpModule['WebCodecsH264Decoder'] | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let RdpFileTransferProviderClass: (new (options?: any) => any) | null = null;
@@ -40,6 +42,7 @@ async function initRdp() {
   enableEgfx = (rdpModule as { enableEgfx?: typeof enableEgfx }).enableEgfx ?? null;
   h264Decoder = (rdpModule as Partial<RdpModule>).h264Decoder ?? null;
   gpuCompositing = (rdpModule as Partial<RdpModule>).gpuCompositing ?? null;
+  desktopScaleFactor = (rdpModule as Partial<RdpModule>).desktopScaleFactor ?? null;
   WebCodecsH264DecoderClass = (rdpModule as Partial<RdpModule>).WebCodecsH264Decoder ?? null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   RdpFileTransferProviderClass = (rdpModule as any).RdpFileTransferProvider ?? null;
@@ -101,6 +104,18 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
   const fileTransferRef = useRef<RdpFileTransferHandle>(null);
   const autoCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disableDisplayControlRef = useRef(false);
+  // Fixed per session: read from the settings when the session connects.
+  const resolutionRef = useRef<RdpResolution>('sharp');
+
+  /** Asks the server to fit the remote desktop to the container, in the session's resolution mode. */
+  const resizeToContainer = useCallback(() => {
+    if (!sessionRef.current || !containerRef.current) return;
+    const w = containerRef.current.clientWidth;
+    const h = Math.max(containerRef.current.clientHeight, 1);
+    if (w <= 0 || h <= 0) return;
+    const size = rdpDesktopSize(w, h, window.devicePixelRatio, resolutionRef.current);
+    sessionRef.current.resize(size.width, size.height, size.scaleFactor);
+  }, []);
 
   // ── Fullscreen + Keyboard Lock ─────────────────────────────────────────────
   const toggleFullscreen = useCallback(() => {
@@ -129,19 +144,14 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
       // rAF is not reliable here — fullscreenchange can fire before the element's
       // dimensions have settled. A 100 ms timeout ensures we read the correct size.
       if (fsResizeTimer) clearTimeout(fsResizeTimer);
-      fsResizeTimer = setTimeout(() => {
-        if (!sessionRef.current || !containerRef.current) return;
-        const w = containerRef.current.clientWidth;
-        const h = Math.max(containerRef.current.clientHeight, 1);
-        if (w > 0 && h > 0) sessionRef.current.resize(w, h);
-      }, 100);
+      fsResizeTimer = setTimeout(resizeToContainer, 100);
     };
     document.addEventListener('fullscreenchange', onFsChange);
     return () => {
       document.removeEventListener('fullscreenchange', onFsChange);
       if (fsResizeTimer) clearTimeout(fsResizeTimer);
     };
-  }, []);
+  }, [resizeToContainer]);
 
   // ── Auto-open panel on connect, close after 3 s ────────────────────────────
   useEffect(() => {
@@ -179,6 +189,7 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
     let adminDisconnected = false;
     let resizeObserver: ResizeObserver | null = null;
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    let stopWatchingPixelRatio: (() => void) | null = null;
     let canvasStyleGuard: MutationObserver | null = null;
     let detachRenderMeter: (() => void) | null = null;
 
@@ -240,6 +251,11 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
           await sessionRes.json();
         if (cancelled) return;
 
+        // Settings changes apply to sessions connected afterwards.
+        const rdpSettings = await loadRdpSessionSettings();
+        if (cancelled) return;
+        resolutionRef.current = rdpSettings.resolution;
+
         const container = containerRef.current!;
         const canvas = document.createElement('canvas');
         // Use absolute positioning so the canvas always fills containerRef
@@ -253,8 +269,14 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
         canvas.style.height = '100%';
         canvas.style.display = 'block';
         canvas.tabIndex = 0;
-        canvas.width = container.clientWidth || 1280;
-        canvas.height = container.clientHeight || 720;
+        const initialSize = rdpDesktopSize(
+          container.clientWidth || 1280,
+          container.clientHeight || 720,
+          window.devicePixelRatio,
+          rdpSettings.resolution,
+        );
+        canvas.width = initialSize.width;
+        canvas.height = initialSize.height;
         container.innerHTML = '';
         container.appendChild(canvas);
 
@@ -427,8 +449,10 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
           builder.extension(enableCredssp(true));
         }
 
-        // Settings changes apply to sessions connected afterwards.
-        const rdpSettings = await loadRdpSessionSettings();
+        if (desktopScaleFactor && initialSize.scaleFactor !== undefined) {
+          builder.extension(desktopScaleFactor(initialSize.scaleFactor));
+        }
+
         let h264: InstanceType<RdpModule['WebCodecsH264Decoder']> | null = null;
         const graphicsMode = rdpSettings.graphics;
         if (enableEgfx && graphicsMode.egfx) {
@@ -635,15 +659,25 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
         // ── Auto-resize (debounced) ────────────────────────────────────────
         resizeObserver = new ResizeObserver(() => {
           if (resizeTimer) clearTimeout(resizeTimer);
-          resizeTimer = setTimeout(() => {
-            if (!sessionRef.current || !containerRef.current) return;
-            const w = containerRef.current.clientWidth;
-            const h = Math.max(containerRef.current.clientHeight, 1);
-            if (w <= 0 || h <= 0) return;
-            sessionRef.current.resize(w, h);
-          }, RESIZE_DEBOUNCE_MS);
+          resizeTimer = setTimeout(resizeToContainer, RESIZE_DEBOUNCE_MS);
         });
         resizeObserver.observe(container);
+
+        // Moving the window to a screen with another pixel ratio changes no CSS size, so the
+        // observer above stays quiet; follow the ratio itself (sharp mode only depends on it).
+        if (rdpSettings.resolution === 'sharp') {
+          const watchPixelRatio = () => {
+            const query = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+            const onChange = () => {
+              stopWatchingPixelRatio?.();
+              watchPixelRatio();
+              resizeToContainer();
+            };
+            query.addEventListener('change', onChange, { once: true });
+            stopWatchingPixelRatio = () => query.removeEventListener('change', onChange);
+          };
+          watchPixelRatio();
+        }
 
         // ── Input event wiring ─────────────────────────────────────────────
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -864,6 +898,7 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
         setFileTransferProvider(null);
         fileTransferProviderRef.current = null;
         resizeObserver?.disconnect();
+        stopWatchingPixelRatio?.();
         if (resizeTimer) clearTimeout(resizeTimer);
         canvas.removeEventListener('mousemove', onMouseMove);
         canvas.removeEventListener('mousedown', onMouseDown);
@@ -944,6 +979,7 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
       inUseResolveRef.current?.(false); // a pending heads-up must not keep the effect waiting
       window.removeEventListener('gatwy:unauthorized', onRevoked);
       resizeObserver?.disconnect();
+      stopWatchingPixelRatio?.();
       canvasStyleGuard?.disconnect();
       detachRenderMeter?.();
       detachRenderMeter = null;

@@ -80,6 +80,8 @@ declare module '@devolutions/iron-remote-desktop-rdp' {
   export function h264Decoder(decoder: WebCodecsH264Decoder): Extension;
   /** EGFX prototype build only: composite the graphics pipeline with WebGL2. */
   export function gpuCompositing(enable: boolean): Extension;
+  /** EGFX prototype build only: initial desktop scale factor in percent. */
+  export function desktopScaleFactor(percent: number): Extension;
   /** EGFX prototype build only. */
   export class WebCodecsH264Decoder {
     static create(options?: { avc444?: boolean }): Promise<WebCodecsH264Decoder | null>;

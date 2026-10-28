@@ -61,6 +61,7 @@ fork：`/home/ljz/Documents/LWL/IronRDP-poc`，基于 Devolutions/IronRDP@3ca12e
 | IronRDP 依赖 | fork 构建产物打成 tgz 放在 `vendor/`（说明与更新步骤见 `vendor/README.md`），`packages/client` 以 `file:` 依赖引用；lockfile 带完整性哈希 |
 | Docker | 构建阶段 `COPY vendor/ vendor/`；生产阶段只装服务端依赖，不需要也不包含该 tgz |
 | 图形模式 | 设置 → 管理 → General → RDP → Graphics mode：Classic (RemoteFX) / Graphics pipeline (EGFX) / Graphics pipeline + H.264；存为设置项 `rdp.graphics_mode`（`legacy`/`egfx`/`h264`，默认 `legacy`），会话连接时读取，只影响之后新开的会话 |
+| 清晰度 | 同一页 Resolution（`rdp.resolution`，默认 `sharp`）：清晰模式按物理像素请求远程分辨率（CSS 尺寸 × devicePixelRatio，宽取偶数，单边上限 8192 时按比例缩小），并把缩放比例（按 25% 取整）在连接时和每次 resize 时告诉 Windows，高分屏上文字不再被浏览器放大而发虚；省流模式维持按 CSS 像素请求。100% 缩放的屏幕上两者相同 |
 | GPU 合成 | 同一页 GPU compositing（`rdp.gpu_compositing`，默认关）：仅对 Graphics pipeline 模式生效，见 §7 |
 | 性能统计 | 同一页 Performance metrics（`rdp.metrics_enabled`）：同时打开服务端 `[rdp-metrics]` 日志与浏览器端 `window.__gatwyRdpMetrics`；采样间隔仍由环境变量 `GATWY_RDP_METRICS_INTERVAL_MS` 控制（默认 5000） |
 | 回落 | 浏览器无 WebCodecs H.264 时自动只用 EGFX 的其他编码；关闭开关即回到原 RFX 路径 |

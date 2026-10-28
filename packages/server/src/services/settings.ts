@@ -31,6 +31,7 @@ const DEFAULTS: Record<string, string> = {
   'rdp.graphics_mode': 'legacy',
   'rdp.metrics_enabled': 'false',
   'rdp.gpu_compositing': 'false',
+  'rdp.resolution': 'sharp',
   'auth.local_enabled': 'true',
   'auth.ldap_enabled': 'false',
   'auth.ldap_url': '',

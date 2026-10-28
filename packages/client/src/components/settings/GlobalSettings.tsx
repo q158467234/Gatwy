@@ -96,6 +96,7 @@ export function GlobalSettings() {
   const [rdpGraphicsMode, setRdpGraphicsMode] = useState('legacy');
   const [rdpMetrics, setRdpMetrics] = useState(false);
   const [rdpGpuCompositing, setRdpGpuCompositing] = useState(false);
+  const [rdpResolution, setRdpResolution] = useState('sharp');
   const [savingRdp, setSavingRdp] = useState(false);
 
   // Audit retention (shown in General tab)
@@ -123,6 +124,7 @@ export function GlobalSettings() {
     setRdpGraphicsMode(settings['rdp.graphics_mode'] || 'legacy');
     setRdpMetrics(settings['rdp.metrics_enabled'] === 'true');
     setRdpGpuCompositing(settings['rdp.gpu_compositing'] === 'true');
+    setRdpResolution(settings['rdp.resolution'] === 'saver' ? 'saver' : 'sharp');
   }, [settings]);
 
   useEffect(() => {
@@ -210,6 +212,7 @@ export function GlobalSettings() {
         'rdp.graphics_mode': rdpGraphicsMode,
         'rdp.metrics_enabled': String(rdpMetrics),
         'rdp.gpu_compositing': String(rdpGpuCompositing),
+        'rdp.resolution': rdpResolution,
       });
       showToast(result.ok ? 'Saved. Applies to RDP sessions opened from now on.' : result.error!, result.ok ? 'success' : 'error');
     } catch {
@@ -356,6 +359,22 @@ export function GlobalSettings() {
               {RDP_GRAPHICS_MODES.find((m) => m.value === rdpGraphicsMode)?.help}
             </p>
             <p className="text-xs text-text-secondary/60 mt-1">Applies to RDP sessions opened after saving; open sessions keep their mode until they reconnect.</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">Resolution</label>
+            <select
+              value={rdpResolution}
+              onChange={(e) => setRdpResolution(e.target.value)}
+              className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm"
+            >
+              <option value="sharp">Sharp — match the screen's pixels</option>
+              <option value="saver">Data saver — fewer pixels</option>
+            </select>
+            <p className="text-xs text-text-secondary mt-1">
+              {rdpResolution === 'sharp'
+                ? 'On high-DPI screens (scaling above 100%) the remote desktop gets one pixel per screen pixel and Windows scales its text and UI to match, so nothing is blurred by upscaling. Costs more bandwidth and decoding (2.25x the pixels at 150%).'
+                : 'The remote desktop gets one pixel per CSS pixel and the browser upscales it on high-DPI screens: softer text, less bandwidth. Identical to Sharp on 100% screens.'}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <Toggle value={rdpGpuCompositing} onChange={setRdpGpuCompositing} />

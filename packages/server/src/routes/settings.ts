@@ -41,6 +41,7 @@ router.get('/public', (_req: Request, res: Response) => {
     'rdp.graphics_mode',
     'rdp.metrics_enabled',
     'rdp.gpu_compositing',
+    'rdp.resolution',
   ];
   const settings: Record<string, string> = {};
   for (const key of PUBLIC_KEYS) {

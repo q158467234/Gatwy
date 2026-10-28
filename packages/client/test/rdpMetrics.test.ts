@@ -126,12 +126,18 @@ describe('loadRdpSessionSettings', () => {
     const fetchImpl = (async (input: RequestInfo | URL) => {
       url = String(input);
       return new Response(JSON.stringify({
-        settings: { 'rdp.graphics_mode': 'h264', 'rdp.gpu_compositing': 'true', 'rdp.metrics_enabled': 'true' },
+        settings: {
+          'rdp.graphics_mode': 'h264',
+          'rdp.gpu_compositing': 'true',
+          'rdp.resolution': 'saver',
+          'rdp.metrics_enabled': 'true',
+        },
       }));
     }) as typeof fetch;
     assert.deepEqual(await loadRdpSessionSettings(fetchImpl), {
       graphics: { egfx: true, h264: true, avc444: false },
       gpuCompositing: true,
+      resolution: 'saver',
       metrics: true,
     });
     assert.equal(url, '/api/v1/settings/public');
@@ -141,7 +147,12 @@ describe('loadRdpSessionSettings', () => {
     const warn = console.warn;
     console.warn = () => {};
     try {
-      const off = { graphics: { egfx: false, h264: false, avc444: false }, gpuCompositing: false, metrics: false };
+      const off = {
+        graphics: { egfx: false, h264: false, avc444: false },
+        gpuCompositing: false,
+        resolution: 'sharp',
+        metrics: false,
+      };
       assert.deepEqual(await loadRdpSessionSettings(respond(500, {})), off);
       assert.deepEqual(await loadRdpSessionSettings((async () => { throw new Error('offline'); }) as unknown as typeof fetch), off);
       assert.deepEqual(await loadRdpSessionSettings(respond(200, {})), off);

@@ -13,6 +13,7 @@ const DEFAULTS: Settings = {
   'rdp.graphics_mode': 'legacy',
   'rdp.metrics_enabled': 'false',
   'rdp.gpu_compositing': 'false',
+  'rdp.resolution': 'sharp',
 };
 
 let cache: Settings | null = null;
