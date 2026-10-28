@@ -68,7 +68,7 @@ function makeSmbClient(conn: ConnRow): SMB2 {
   domain = conn.credential_domain || domain;
 
   if (!shareName) {
-    throw new Error('SMB share name is not configured. Edit the connection and enter a share name.');
+    throw new Error('未配置 SMB 共享名称。请编辑连接并填写共享名称。');
   }
 
   // SMB2 requires \\host\share format
@@ -101,7 +101,7 @@ async function smbOp<T>(fn: () => Promise<T>): Promise<T> {
 router.post('/:connectionId/list', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = await getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { path: dirPath = '' } = req.body as { path?: string };
   let smb: SMB2 | null = null;
@@ -135,7 +135,7 @@ router.post('/:connectionId/list', async (req: Request, res: Response) => {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'SMB error';
     console.error('[smb] list error:', msg);
-    res.status(500).json({ error: 'Operation failed' });
+    res.status(500).json({ error: '操作失败' });
   } finally {
     smb?.disconnect();
   }
@@ -146,10 +146,10 @@ router.post('/:connectionId/list', async (req: Request, res: Response) => {
 router.get('/:connectionId/download', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = await getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const filePath = req.query.path as string;
-  if (!filePath) { res.status(400).json({ error: 'path required' }); return; }
+  if (!filePath) { res.status(400).json({ error: '缺少路径' }); return; }
 
   const rawName = filePath.split(/[/\\]/).pop() || 'download';
   const safeFileName = encodeURIComponent(rawName).replace(/['()]/g, encodeURIComponent);
@@ -174,7 +174,7 @@ router.get('/:connectionId/download', async (req: Request, res: Response) => {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'SMB error';
     console.error('[smb] download error:', msg);
-    if (!res.headersSent) res.status(500).json({ error: 'Operation failed' });
+    if (!res.headersSent) res.status(500).json({ error: '操作失败' });
   } finally {
     smb?.disconnect();
     fs.promises.unlink(tmpFile).catch(() => {});
@@ -187,12 +187,12 @@ router.get('/:connectionId/download', async (req: Request, res: Response) => {
 router.post('/:connectionId/upload', connectionAccessGuard('smb'), express.raw({ limit: '100mb', type: '*/*' }), async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = await getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const filePath = req.query.path as string;
-  if (!filePath) { res.status(400).json({ error: 'path required' }); return; }
+  if (!filePath) { res.status(400).json({ error: '缺少路径' }); return; }
 
-  if (!Buffer.isBuffer(req.body)) { res.status(400).json({ error: 'Invalid upload body' }); return; }
+  if (!Buffer.isBuffer(req.body)) { res.status(400).json({ error: '无效的上传内容' }); return; }
 
   let smb: SMB2 | null = null;
 
@@ -210,7 +210,7 @@ router.post('/:connectionId/upload', connectionAccessGuard('smb'), express.raw({
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'SMB error';
     console.error('[smb] upload error:', msg);
-    res.status(500).json({ error: 'Operation failed' });
+    res.status(500).json({ error: '操作失败' });
   } finally {
     smb?.disconnect();
   }
@@ -220,10 +220,10 @@ router.post('/:connectionId/upload', connectionAccessGuard('smb'), express.raw({
 router.post('/:connectionId/mkdir', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = await getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { path: dirPath } = req.body as { path?: string };
-  if (!dirPath) { res.status(400).json({ error: 'path required' }); return; }
+  if (!dirPath) { res.status(400).json({ error: '缺少路径' }); return; }
 
   let smb: SMB2 | null = null;
 
@@ -235,7 +235,7 @@ router.post('/:connectionId/mkdir', async (req: Request, res: Response) => {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'SMB error';
     console.error('[smb] mkdir error:', msg);
-    res.status(500).json({ error: 'Operation failed' });
+    res.status(500).json({ error: '操作失败' });
   } finally {
     smb?.disconnect();
   }
@@ -259,10 +259,10 @@ async function rmdirRecursive(smb: SMB2, dirPath: string): Promise<void> {
 router.delete('/:connectionId/file', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = await getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const filePath = req.query.path as string;
-  if (!filePath) { res.status(400).json({ error: 'path required' }); return; }
+  if (!filePath) { res.status(400).json({ error: '缺少路径' }); return; }
 
   let smb: SMB2 | null = null;
 
@@ -279,7 +279,7 @@ router.delete('/:connectionId/file', async (req: Request, res: Response) => {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'SMB error';
     console.error('[smb] delete error:', msg);
-    res.status(500).json({ error: 'Operation failed' });
+    res.status(500).json({ error: '操作失败' });
   } finally {
     smb?.disconnect();
   }
@@ -289,10 +289,10 @@ router.delete('/:connectionId/file', async (req: Request, res: Response) => {
 router.post('/:connectionId/rename', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = await getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { oldPath, newPath } = req.body as { oldPath?: string; newPath?: string };
-  if (!oldPath || !newPath) { res.status(400).json({ error: 'oldPath and newPath required' }); return; }
+  if (!oldPath || !newPath) { res.status(400).json({ error: '缺少 oldPath 或 newPath' }); return; }
 
   let smb: SMB2 | null = null;
   try {
@@ -301,7 +301,7 @@ router.post('/:connectionId/rename', async (req: Request, res: Response) => {
     logFileSessionEvent({ req, userId, connectionId: req.params.connectionId as string, protocol: 'smb', action: 'rename', path: `${oldPath} → ${newPath}` });
     res.json({ success: true });
   } catch (e: unknown) {
-    res.status(500).json({ error: e instanceof Error ? e.message : 'SMB error' });
+    res.status(500).json({ error: e instanceof Error ? e.message : 'SMB 操作失败' });
   } finally { smb?.disconnect(); }
 });
 
@@ -309,10 +309,10 @@ router.post('/:connectionId/rename', async (req: Request, res: Response) => {
 router.post('/:connectionId/stat', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = await getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { path: filePath } = req.body as { path?: string };
-  if (!filePath) { res.status(400).json({ error: 'path required' }); return; }
+  if (!filePath) { res.status(400).json({ error: '缺少路径' }); return; }
 
   let smb: SMB2 | null = null;
   try {
@@ -327,7 +327,7 @@ router.post('/:connectionId/stat', async (req: Request, res: Response) => {
     });
   } catch (e: unknown) {
     console.error('[smb] stat error:', e instanceof Error ? e.message : e);
-    res.status(500).json({ error: e instanceof Error ? e.message : 'SMB stat failed' });
+    res.status(500).json({ error: e instanceof Error ? e.message : '获取 SMB 文件信息失败' });
   } finally { smb?.disconnect(); }
 });
 
@@ -335,10 +335,10 @@ router.post('/:connectionId/stat', async (req: Request, res: Response) => {
 router.post('/:connectionId/copy', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = await getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { srcPath, destPath } = req.body as { srcPath?: string; destPath?: string };
-  if (!srcPath || !destPath) { res.status(400).json({ error: 'srcPath and destPath required' }); return; }
+  if (!srcPath || !destPath) { res.status(400).json({ error: '缺少 srcPath 或 destPath' }); return; }
 
   let smb: SMB2 | null = null;
   try {
@@ -358,7 +358,7 @@ router.post('/:connectionId/copy', async (req: Request, res: Response) => {
     logFileSessionEvent({ req, userId, connectionId: req.params.connectionId as string, protocol: 'smb', action: 'copy', path: `${srcPath} → ${destPath}` });
     res.json({ success: true });
   } catch (e: unknown) {
-    res.status(500).json({ error: e instanceof Error ? e.message : 'SMB error' });
+    res.status(500).json({ error: e instanceof Error ? e.message : 'SMB 操作失败' });
   } finally { smb?.disconnect(); }
 });
 

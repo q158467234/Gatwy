@@ -117,7 +117,7 @@ router.get('/size', requirePermission('settings.backup'), (_req: Request, res: R
     const { recordingsSize, recordingCount } = getRecordingsSizeInfo();
     res.json({ dbSize, recordingsSize, recordingCount });
   } catch (e) {
-    res.status(500).json({ error: `Size check failed: ${(e as Error).message}` });
+    res.status(500).json({ error: `大小检查失败：${(e as Error).message}` });
   }
 });
 
@@ -125,7 +125,7 @@ router.get('/size', requirePermission('settings.backup'), (_req: Request, res: R
 router.post('/export', requirePermission('settings.backup'), (req: Request, res: Response) => {
   const { password, includeRecordings = false } = req.body as { password?: string; includeRecordings?: boolean };
   if (!password || password.length < 8) {
-    res.status(400).json({ error: 'Backup password must be at least 8 characters' });
+    res.status(400).json({ error: '备份密码至少需要 8 个字符' });
     return;
   }
   try {
@@ -144,7 +144,7 @@ router.post('/export', requirePermission('settings.backup'), (req: Request, res:
     res.setHeader('Content-Length', backupBuf.length);
     res.end(backupBuf);
   } catch (e) {
-    res.status(500).json({ error: `Backup failed: ${(e as Error).message}` });
+    res.status(500).json({ error: `备份失败：${(e as Error).message}` });
   }
 });
 
@@ -155,19 +155,19 @@ router.post('/export', requirePermission('settings.backup'), (req: Request, res:
 router.post('/import', backupImportLimiter, requirePermission('settings.backup'), express.raw({ limit: '4gb', type: 'application/octet-stream' }), async (req: Request, res: Response) => {
   const password = req.headers['x-backup-password'];
   if (!password || typeof password !== 'string') {
-    res.status(400).json({ error: 'X-Backup-Password header required' });
+    res.status(400).json({ error: '缺少 X-Backup-Password 请求头' });
     return;
   }
   const raw: unknown = req.body;
   if (!Buffer.isBuffer(raw)) {
-    res.status(400).json({ error: 'Valid backup file required' });
+    res.status(400).json({ error: '请提供有效的备份文件' });
     return;
   }
   // Construct a fresh Buffer immediately after type guard — all further checks
   // operate on `data` so CodeQL sees a clearly-typed value, not the raw body.
   const data: Buffer = Buffer.from(raw);
   if (data.length < 100) {
-    res.status(400).json({ error: 'Valid backup file required' });
+    res.status(400).json({ error: '请提供有效的备份文件' });
     return;
   }
   try {
@@ -198,13 +198,13 @@ router.post('/import', backupImportLimiter, requirePermission('settings.backup')
 
     res.json({
       ok: true,
-      message: 'Backup restored successfully. Please reload the page.',
+      message: '备份恢复成功，请刷新页面。',
       recordingsRestored: restored.recordings.length,
     });
   } catch (e) {
     const msg = (e as Error).message;
     // Use 422 (not 401) for wrong password — 401 can trigger browser auth dialogs
-    const status = msg.includes('Invalid backup password') || msg.includes('corrupted') ? 422 : 400;
+    const status = msg.includes('备份密码错误') ? 422 : 400;
     res.status(status).json({ error: msg });
   }
 });
@@ -215,7 +215,7 @@ router.get('/auto/config', requirePermission('settings.backup'), (_req: Request,
     const payload = getAutoBackupConfigForApi();
     res.json(payload);
   } catch (e) {
-    res.status(500).json({ error: `Failed to load auto-backup config: ${(e as Error).message}` });
+    res.status(500).json({ error: `加载自动备份配置失败：${(e as Error).message}` });
   }
 });
 
@@ -276,7 +276,7 @@ router.get('/auto/connections', requirePermission('settings.backup'), (_req: Req
       connections: listAdminSmbConnections(),
     });
   } catch (e) {
-    res.status(500).json({ error: `Failed to list SMB destinations: ${(e as Error).message}` });
+    res.status(500).json({ error: `获取 SMB 目标列表失败：${(e as Error).message}` });
   }
 });
 
@@ -323,7 +323,7 @@ router.post('/auto/run-now', requirePermission('settings.backup'), async (_req: 
     res.json({ ok: true });
   } catch (e) {
     const message = (e as Error).message;
-    const status = message.includes('already in progress') ? 409 : 400;
+    const status = message.includes('正在运行中') ? 409 : 400;
     res.status(status).json({ error: message });
   }
 });
@@ -334,7 +334,7 @@ router.get('/auto/status', requirePermission('settings.backup'), (_req: Request,
     const status = getAutoBackupStatus();
     res.json({ status });
   } catch (e) {
-    res.status(500).json({ error: `Failed to get status: ${(e as Error).message}` });
+    res.status(500).json({ error: `获取状态失败：${(e as Error).message}` });
   }
 });
 
@@ -349,7 +349,7 @@ router.get('/auto/history', requirePermission('settings.backup'), (req: Request,
     );
     res.json(data);
   } catch (e) {
-    res.status(500).json({ error: `Failed to get history: ${(e as Error).message}` });
+    res.status(500).json({ error: `获取历史记录失败：${(e as Error).message}` });
   }
 });
 

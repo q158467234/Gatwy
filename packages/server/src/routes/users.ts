@@ -14,7 +14,7 @@ router.use(authRequired);
 
 function requireManageUsers(req: Request, res: Response): boolean {
   if (!userCan(req, 'users.manage')) {
-    res.status(403).json({ error: 'Insufficient permissions' });
+    res.status(403).json({ error: '权限不足' });
     return false;
   }
   return true;
@@ -79,12 +79,12 @@ router.post('/', async (req: Request, res: Response) => {
   };
 
   if (!username || !password || !displayName) {
-    res.status(400).json({ error: 'username, password, and displayName are required' });
+    res.status(400).json({ error: '用户名、密码和显示名称为必填项' });
     return;
   }
 
   if (password.length < 8) {
-    res.status(400).json({ error: 'Password must be at least 8 characters' });
+    res.status(400).json({ error: '密码长度至少为 8 个字符' });
     return;
   }
 
@@ -93,7 +93,7 @@ router.post('/', async (req: Request, res: Response) => {
 
   const existing = queryOne('SELECT id FROM users WHERE username = ?', [username]);
   if (existing) {
-    res.status(400).json({ error: 'Username already exists' });
+    res.status(400).json({ error: '用户名已存在' });
     return;
   }
 
@@ -140,7 +140,7 @@ router.put('/:id', (req: Request, res: Response) => {
     'SELECT id, username, display_name, email, role FROM users WHERE id = ?', [id],
   );
   if (!user) {
-    res.status(404).json({ error: 'User not found' });
+    res.status(404).json({ error: '用户不存在' });
     return;
   }
 
@@ -148,7 +148,7 @@ router.put('/:id', (req: Request, res: Response) => {
   // JWT, so the caller's own session would keep the old one until it expires. The client
   // resends the unchanged role on every save, so only a real change is rejected.
   if (role !== undefined && role !== user.role && id === req.user!.userId) {
-    res.status(400).json({ error: 'Cannot change your own role' });
+    res.status(400).json({ error: '不能修改自己的角色' });
     return;
   }
 
@@ -160,7 +160,7 @@ router.put('/:id', (req: Request, res: Response) => {
   if (role !== undefined) {
     const roleExists = queryOne('SELECT id FROM roles WHERE id = ?', [role]);
     if (!roleExists) {
-      res.status(400).json({ error: 'Invalid role' });
+      res.status(400).json({ error: '无效的角色' });
       return;
     }
     updates.push('role = ?');
@@ -168,7 +168,7 @@ router.put('/:id', (req: Request, res: Response) => {
   }
 
   if (updates.length === 0) {
-    res.status(400).json({ error: 'No fields to update' });
+    res.status(400).json({ error: '没有需要更新的字段' });
     return;
   }
 
@@ -208,13 +208,13 @@ router.delete('/:id', (req: Request, res: Response) => {
   const id = req.params.id as string;
 
   if (id === req.user!.userId) {
-    res.status(400).json({ error: 'Cannot delete your own account' });
+    res.status(400).json({ error: '不能删除自己的账户' });
     return;
   }
 
   const user = queryOne<UserRow>('SELECT id, username, display_name, email, role FROM users WHERE id = ?', [id]);
   if (!user) {
-    res.status(404).json({ error: 'User not found' });
+    res.status(404).json({ error: '用户不存在' });
     return;
   }
 
@@ -224,7 +224,7 @@ router.delete('/:id', (req: Request, res: Response) => {
   const blockers = sharedCredentialsInUseByOthers(id);
   if (blockers.length) {
     res.status(409).json({
-      error: 'This user owns shared credentials still used by other users\' connections',
+      error: '该用户拥有的共享凭据仍被其他用户的连接使用',
       credentials: blockers.map((b) => ({ id: b.id, name: b.name, connectionCount: b.connections.length })),
     });
     return;
@@ -238,7 +238,7 @@ router.delete('/:id', (req: Request, res: Response) => {
   const sharedBlockers = sharedResourcesOwnedBy(id);
   if (sharedBlockers.connections.length || sharedBlockers.groups.length) {
     res.status(409).json({
-      error: 'This user owns connections or folders that are shared with other users',
+      error: '该用户拥有已共享给其他用户的连接或文件夹',
       connections: sharedBlockers.connections,
       groups: sharedBlockers.groups,
     });
@@ -279,13 +279,13 @@ router.post('/:id/reset-password', async (req: Request, res: Response) => {
   const { newPassword } = req.body as { newPassword?: string };
 
   if (!newPassword || newPassword.length < 8) {
-    res.status(400).json({ error: 'New password must be at least 8 characters' });
+    res.status(400).json({ error: '新密码长度至少为 8 个字符' });
     return;
   }
 
   const user = queryOne<UserRow>('SELECT id, username FROM users WHERE id = ?', [id]);
   if (!user) {
-    res.status(404).json({ error: 'User not found' });
+    res.status(404).json({ error: '用户不存在' });
     return;
   }
 
@@ -313,7 +313,7 @@ router.post('/:id/unlock', (req: Request, res: Response) => {
 
   const user = queryOne('SELECT id FROM users WHERE id = ?', [id]);
   if (!user) {
-    res.status(404).json({ error: 'User not found' });
+    res.status(404).json({ error: '用户不存在' });
     return;
   }
 
@@ -340,7 +340,7 @@ router.get('/:id/passkeys', (req: Request, res: Response) => {
 
   const user = queryOne<{ id: string; username: string }>('SELECT id, username FROM users WHERE id = ?', [id]);
   if (!user) {
-    res.status(404).json({ error: 'User not found' });
+    res.status(404).json({ error: '用户不存在' });
     return;
   }
 
@@ -367,13 +367,13 @@ router.post('/:id/passkeys/reset', (req: Request, res: Response) => {
   const { reason } = req.body as { reason?: string };
 
   if (!reason || reason.trim().length < 5) {
-    res.status(400).json({ error: 'Reason is required (minimum 5 characters)' });
+    res.status(400).json({ error: '原因为必填项（至少 5 个字符）' });
     return;
   }
 
   const user = queryOne<{ id: string; username: string }>('SELECT id, username FROM users WHERE id = ?', [id]);
   if (!user) {
-    res.status(404).json({ error: 'User not found' });
+    res.status(404).json({ error: '用户不存在' });
     return;
   }
 

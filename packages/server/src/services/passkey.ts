@@ -163,7 +163,7 @@ export async function verifyPasskeyRegistration(
   );
   
   if (!challengeResult.length || !challengeResult[0].values.length) {
-    return { success: false, error: 'Challenge expired or not found' };
+    return { success: false, error: '验证挑战已过期或不存在' };
   }
 
   const cols = challengeResult[0].columns;
@@ -173,12 +173,12 @@ export async function verifyPasskeyRegistration(
   const storedChallenge = challenge as unknown as PasskeyChallenge;
 
   if (!storedChallenge.user_id) {
-    return { success: false, error: 'Invalid challenge' };
+    return { success: false, error: '无效的验证挑战' };
   }
 
   // Check if user can still add passkeys
   if (!canAddPasskey(storedChallenge.user_id)) {
-    return { success: false, error: 'Maximum passkeys limit reached (3)' };
+    return { success: false, error: '通行密钥数量已达上限（3 个）' };
   }
 
   let verification: VerifiedRegistrationResponse;
@@ -191,11 +191,11 @@ export async function verifyPasskeyRegistration(
       requireUserVerification: false,
     });
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'Verification failed' };
+    return { success: false, error: err instanceof Error ? err.message : '验证失败' };
   }
 
   if (!verification.verified || !verification.registrationInfo) {
-    return { success: false, error: 'Verification failed' };
+    return { success: false, error: '验证失败' };
   }
 
   const { credential, credentialDeviceType, credentialBackedUp, aaguid } = verification.registrationInfo;
@@ -274,7 +274,7 @@ export async function verifyPasskeyAuthentication(
   );
   
   if (!challengeResult.length || !challengeResult[0].values.length) {
-    return { success: false, error: 'Challenge expired or not found' };
+    return { success: false, error: '验证挑战已过期或不存在' };
   }
 
   const cols = challengeResult[0].columns;
@@ -286,16 +286,16 @@ export async function verifyPasskeyAuthentication(
   // Get the passkey
   const passkey = getPasskeyByCredentialId(response.id);
   if (!passkey) {
-    return { success: false, error: 'Passkey not found' };
+    return { success: false, error: '通行密钥不存在' };
   }
 
   if (passkey.disabled_at) {
-    return { success: false, error: 'Passkey has been disabled' };
+    return { success: false, error: '通行密钥已被停用' };
   }
 
   // Verify the user matches (for username-first flow)
   if (storedChallenge.user_id && passkey.user_id !== storedChallenge.user_id) {
-    return { success: false, error: 'Passkey does not belong to this user' };
+    return { success: false, error: '通行密钥不属于该用户' };
   }
 
   let verification: VerifiedAuthenticationResponse;
@@ -314,11 +314,11 @@ export async function verifyPasskeyAuthentication(
       requireUserVerification: false,
     });
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : 'Verification failed' };
+    return { success: false, error: err instanceof Error ? err.message : '验证失败' };
   }
 
   if (!verification.verified) {
-    return { success: false, error: 'Verification failed' };
+    return { success: false, error: '验证失败' };
   }
 
   // Update sign count and last used
@@ -403,7 +403,7 @@ export async function checkInactivePasskeys(): Promise<number> {
   let count = 0;
   for (const [passkeyId, userId] of result[0].values as [string, string][]) {
     db.run(
-      `UPDATE user_passkeys SET disabled_at = datetime('now'), revoked_reason = 'Disabled due to inactivity' WHERE id = ?`,
+      `UPDATE user_passkeys SET disabled_at = datetime('now'), revoked_reason = '因长期未使用已停用' WHERE id = ?`,
       [passkeyId],
     );
     count++;

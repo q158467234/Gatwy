@@ -22,7 +22,7 @@ describe('authorizeMoonlightAccess (HTTP GET /mlw/* and WS upgrade)', () => {
     assert.equal(result.ok, false);
     if (!result.ok) {
       assert.equal(result.status, 401);
-      assert.match(result.error, /Authentication required/);
+      assert.match(result.error, /需要登录/);
     }
   });
 

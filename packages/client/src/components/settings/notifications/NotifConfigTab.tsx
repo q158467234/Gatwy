@@ -236,7 +236,7 @@ export function NotifConfigTab() {
           </div>
           <div className="col-span-full space-y-1">
             <label className="block text-xs font-medium text-text-secondary">默认正文模板</label>
-            <textarea rows={5} value={cfg.smtp_default_body ?? '{{severity}} [{{app_name}}] Security Alert\n━━━━━━━━━━━━━━━━━━━━━\nRule:      {{rule}}\nEvent:     {{event}}\nUser:      {{user}}\nIP:        {{ip}}\nTarget:    {{target}}\nTime:      {{timestamp}}\n━━━━━━━━━━━━━━━━━━━━━\nThis is an automated alert from {{app_name}}.'}
+            <textarea rows={5} value={cfg.smtp_default_body ?? '{{severity}} [{{app_name}}] 安全告警\n━━━━━━━━━━━━━━━━━━━━━\n规则：{{rule}}\n事件：{{event}}\n用户：{{user}}\nIP：  {{ip}}\n目标：{{target}}\n时间：{{timestamp}}\n━━━━━━━━━━━━━━━━━━━━━\n此邮件由 {{app_name}} 自动发送。'}
               onChange={(e) => set('smtp_default_body', e.target.value)}
               className="w-full px-3 py-1.5 text-sm rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent resize-none" />
           </div>
@@ -250,7 +250,7 @@ export function NotifConfigTab() {
           <Field label="默认 Chat ID" name="telegram_chat_id" value={cfg.telegram_chat_id ?? ''} onChange={(v) => set('telegram_chat_id', v)} placeholder="-1001234567890" />
           <div className="col-span-full space-y-1">
             <label className="block text-xs font-medium text-text-secondary">默认消息模板（Markdown）</label>
-            <textarea rows={5} value={cfg.telegram_default_template ?? '{{severity}} *[{{app_name}}]* {{rule}}\n`{{event}}`\n\n👤 User: `{{user}}`\n🌐 IP: `{{ip}}`\n🎯 Target: `{{target}}`\n🕐 Time: `{{timestamp}}`\n\n_Automated alert from {{app_name}}_'}
+            <textarea rows={5} value={cfg.telegram_default_template ?? '{{severity}} *[{{app_name}}]* {{rule}}\n`{{event}}`\n\n👤 用户：`{{user}}`\n🌐 IP：`{{ip}}`\n🎯 目标：`{{target}}`\n🕐 时间：`{{timestamp}}`\n\n_来自 {{app_name}} 的自动告警_'}
               onChange={(e) => set('telegram_default_template', e.target.value)}
               className="w-full px-3 py-1.5 text-sm rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent resize-none font-mono text-xs" />
             <p className="text-[11px] text-text-secondary/70">变量：{'{{severity}} {{app_name}} {{event}} {{user}} {{ip}} {{timestamp}} {{rule}} {{target}} {{details}}'}</p>
@@ -266,7 +266,7 @@ export function NotifConfigTab() {
           </div>
           <div className="col-span-full space-y-1">
             <label className="block text-xs font-medium text-text-secondary">默认消息模板</label>
-            <textarea rows={4} value={cfg.slack_default_template ?? '{{severity}} *[{{app_name}}]* {{rule}}\n*Event:* `{{event}}` | *User:* `{{user}}` | *IP:* `{{ip}}`\n*Target:* `{{target}}` | *Time:* `{{timestamp}}`\n_Automated alert from {{app_name}}_'}
+            <textarea rows={4} value={cfg.slack_default_template ?? '{{severity}} *[{{app_name}}]* {{rule}}\n*事件：* `{{event}}` | *用户：* `{{user}}` | *IP：* `{{ip}}`\n*目标：* `{{target}}` | *时间：* `{{timestamp}}`\n_来自 {{app_name}} 的自动告警_'}
               onChange={(e) => set('slack_default_template', e.target.value)}
               className="w-full px-3 py-1.5 text-sm rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent resize-none font-mono text-xs" />
             <p className="text-[11px] text-text-secondary/70">变量：{'{{severity}} {{app_name}} {{event}} {{user}} {{ip}} {{timestamp}} {{rule}} {{target}} {{details}}'}</p>

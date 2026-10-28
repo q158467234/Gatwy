@@ -72,7 +72,7 @@ router.get('/', (req: Request, res: Response) => {
   );
 
   if (!user) {
-    res.status(404).json({ error: 'User not found' });
+    res.status(404).json({ error: '用户不存在' });
     return;
   }
 
@@ -105,7 +105,7 @@ router.put('/', (req: Request, res: Response) => {
   if (avatarText !== undefined) { updates.push('avatar_text = ?'); params.push(avatarText || null); }
 
   if (updates.length === 0) {
-    res.status(400).json({ error: 'No fields to update' });
+    res.status(400).json({ error: '没有需要更新的字段' });
     return;
   }
 
@@ -143,24 +143,24 @@ router.put('/password', async (req: Request, res: Response) => {
   };
 
   if (!currentPassword || !newPassword) {
-    res.status(400).json({ error: 'currentPassword and newPassword are required' });
+    res.status(400).json({ error: '当前密码和新密码为必填项' });
     return;
   }
 
   if (newPassword.length < 8) {
-    res.status(400).json({ error: 'New password must be at least 8 characters' });
+    res.status(400).json({ error: '新密码长度至少为 8 个字符' });
     return;
   }
 
   const user = queryOne<UserRow>('SELECT id, password_hash FROM users WHERE id = ?', [userId]);
   if (!user) {
-    res.status(404).json({ error: 'User not found' });
+    res.status(404).json({ error: '用户不存在' });
     return;
   }
 
   const valid = await bcrypt.compare(currentPassword, user.password_hash);
   if (!valid) {
-    res.status(400).json({ error: 'Current password is incorrect' });
+    res.status(400).json({ error: '当前密码不正确' });
     return;
   }
 
@@ -241,7 +241,7 @@ router.get('/mfa/status', (req: Request, res: Response) => {
 router.post('/mfa/setup', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const user = queryOne<UserRow>('SELECT username FROM users WHERE id = ?', [userId]);
-  if (!user) { res.status(404).json({ error: 'User not found' }); return; }
+  if (!user) { res.status(404).json({ error: '用户不存在' }); return; }
 
   const secret = otpGenerateSecret();
   const appName = getSetting('app.name') || 'Gatwy';
@@ -257,20 +257,20 @@ router.post('/mfa/setup', async (req: Request, res: Response) => {
 router.post('/mfa/verify', (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const { token } = req.body as { token?: string };
-  if (!token) { res.status(400).json({ error: 'token is required' }); return; }
+  if (!token) { res.status(400).json({ error: '验证码为必填项' }); return; }
 
   // Rate-limit MFA setup verification (C3)
   if (!checkMfaVerifyLimit(userId)) {
-    res.status(429).json({ error: 'Too many attempts. Please wait before trying again.' });
+    res.status(429).json({ error: '尝试次数过多，请稍后再试。' });
     return;
   }
 
   const user = queryOne<UserRow>('SELECT mfa_secret FROM users WHERE id = ?', [userId]);
   const secret = user?.mfa_secret ? (() => { try { return decrypt(user.mfa_secret); } catch { return null; } })() : null;
-  if (!secret) { res.status(400).json({ error: 'MFA setup not started' }); return; }
+  if (!secret) { res.status(400).json({ error: '尚未开始设置两步验证' }); return; }
 
   const { valid: isValid } = otpVerify({ token, secret });
-  if (!isValid) { res.status(400).json({ error: 'Invalid verification code' }); return; }
+  if (!isValid) { res.status(400).json({ error: '验证码无效' }); return; }
 
   execute('UPDATE users SET mfa_enabled = 1 WHERE id = ?', [userId]);
 
@@ -288,16 +288,16 @@ router.post('/mfa/verify', (req: Request, res: Response) => {
 router.post('/mfa/disable', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const { password } = req.body as { password?: string };
-  if (!password) { res.status(400).json({ error: 'password is required' }); return; }
+  if (!password) { res.status(400).json({ error: '密码为必填项' }); return; }
 
   const user = queryOne<UserRow>('SELECT password_hash, mfa_enabled FROM users WHERE id = ?', [userId]);
   if (!user || user.mfa_enabled !== 1) {
-    res.status(400).json({ error: 'MFA is not enabled' });
+    res.status(400).json({ error: '两步验证未启用' });
     return;
   }
 
   const valid = await bcrypt.compare(password, user.password_hash);
-  if (!valid) { res.status(400).json({ error: 'Incorrect password' }); return; }
+  if (!valid) { res.status(400).json({ error: '密码错误' }); return; }
 
   execute('UPDATE users SET mfa_enabled = 0, mfa_secret = NULL WHERE id = ?', [userId]);
 
@@ -315,7 +315,7 @@ router.post('/mfa/disable', async (req: Request, res: Response) => {
 router.post('/dismiss-warning', (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const { warning } = req.body as { warning?: string };
-  if (!warning) { res.status(400).json({ error: 'warning is required' }); return; }
+  if (!warning) { res.status(400).json({ error: 'warning 为必填项' }); return; }
 
   const row = queryOne<{ dismissed_warnings_json: string | null }>(
     'SELECT dismissed_warnings_json FROM users WHERE id = ?',
@@ -336,7 +336,7 @@ router.get('/passkeys', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
 
   if (!await isPasskeyEnabled()) {
-    res.status(400).json({ error: 'Passkeys are not enabled' });
+    res.status(400).json({ error: '未启用通行密钥' });
     return;
   }
 
@@ -359,12 +359,12 @@ router.post('/passkeys/register/options', async (req: Request, res: Response) =>
   const userId = req.user!.userId;
 
   if (!await isPasskeyEnabled()) {
-    res.status(400).json({ error: 'Passkeys are not enabled' });
+    res.status(400).json({ error: '未启用通行密钥' });
     return;
   }
 
   if (!canAddPasskey(userId)) {
-    res.status(400).json({ error: 'Maximum passkeys limit reached (3)' });
+    res.status(400).json({ error: '通行密钥数量已达上限（3 个）' });
     return;
   }
 
@@ -373,7 +373,7 @@ router.post('/passkeys/register/options', async (req: Request, res: Response) =>
     [userId],
   );
   if (!user) {
-    res.status(404).json({ error: 'User not found' });
+    res.status(404).json({ error: '用户不存在' });
     return;
   }
 
@@ -398,12 +398,12 @@ router.post('/passkeys/register/verify', async (req: Request, res: Response) => 
   };
 
   if (!challengeId || !response || !name) {
-    res.status(400).json({ error: 'challengeId, response, and name are required' });
+    res.status(400).json({ error: 'challengeId、response 和 name 为必填项' });
     return;
   }
 
   if (!await isPasskeyEnabled()) {
-    res.status(400).json({ error: 'Passkeys are not enabled' });
+    res.status(400).json({ error: '未启用通行密钥' });
     return;
   }
 
@@ -416,7 +416,7 @@ router.post('/passkeys/register/verify', async (req: Request, res: Response) => 
   );
 
   if (!result.success) {
-    res.status(400).json({ error: result.error || 'Registration failed' });
+    res.status(400).json({ error: result.error || '注册失败' });
     return;
   }
 
@@ -445,18 +445,18 @@ router.put('/passkeys/:id', (req: Request, res: Response) => {
   const { name } = req.body as { name?: string };
 
   if (!passkeyId) {
-    res.status(400).json({ error: 'Invalid passkey id' });
+    res.status(400).json({ error: '无效的通行密钥 ID' });
     return;
   }
 
   if (!name) {
-    res.status(400).json({ error: 'name is required' });
+    res.status(400).json({ error: '名称为必填项' });
     return;
   }
 
   const success = renamePasskey(passkeyId, userId, name);
   if (!success) {
-    res.status(404).json({ error: 'Passkey not found' });
+    res.status(404).json({ error: '通行密钥不存在' });
     return;
   }
 
@@ -477,13 +477,13 @@ router.delete('/passkeys/:id', (req: Request, res: Response) => {
   const passkeyId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
   if (!passkeyId) {
-    res.status(400).json({ error: 'Invalid passkey id' });
+    res.status(400).json({ error: '无效的通行密钥 ID' });
     return;
   }
 
   const success = removePasskey(passkeyId, userId);
   if (!success) {
-    res.status(404).json({ error: 'Passkey not found' });
+    res.status(404).json({ error: '通行密钥不存在' });
     return;
   }
 

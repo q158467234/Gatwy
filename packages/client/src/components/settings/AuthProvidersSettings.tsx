@@ -50,7 +50,7 @@ const DEFAULTS: AuthSettings = {
   'auth.oidc_username_claim': 'preferred_username',
   'auth.oidc_admin_group_claim': '',
   'auth.oidc_admin_group_value': '',
-  'auth.oidc_button_label': 'Sign in with SSO',
+  'auth.oidc_button_label': '使用 SSO 登录',
   'auth.oidc_token_auth_method': 'client_secret_basic',
 };
 

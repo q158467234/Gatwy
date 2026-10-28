@@ -96,7 +96,7 @@ function connectSftp(conn: ConnRow): Promise<{ ssh: SshClient; sftp: SFTPWrapper
 router.post('/:connectionId/list', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { path: dirPath = '/' } = req.body as { path?: string };
   let ssh: SshClient | null = null;
@@ -134,7 +134,7 @@ router.post('/:connectionId/list', async (req: Request, res: Response) => {
     logFileSessionEvent({ req, userId, connectionId: req.params.connectionId as string, protocol: 'sftp', action: 'browse', path: dirPath || '/', detail: { count: entries.length } });
     res.json({ files: entries });
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'SFTP error';
+    const msg = e instanceof Error ? e.message : 'SFTP 操作失败';
     console.error('[sftp] list error:', msg);
     res.status(500).json({ error: msg });
   } finally {
@@ -146,10 +146,10 @@ router.post('/:connectionId/list', async (req: Request, res: Response) => {
 router.get('/:connectionId/download', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const filePath = req.query.path as string;
-  if (!filePath) { res.status(400).json({ error: 'path required' }); return; }
+  if (!filePath) { res.status(400).json({ error: '缺少路径' }); return; }
 
   const rawName = filePath.split('/').pop() || 'download';
   // Encode filename per RFC 5987 to prevent header injection
@@ -176,7 +176,7 @@ router.get('/:connectionId/download', async (req: Request, res: Response) => {
     });
     logFileSessionEvent({ req, userId, connectionId: req.params.connectionId as string, protocol: 'sftp', action: 'download', path: filePath });
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'SFTP error';
+    const msg = e instanceof Error ? e.message : 'SFTP 操作失败';
     console.error('[sftp] download error:', msg);
     if (!res.headersSent) res.status(500).json({ error: msg });
   } finally {
@@ -190,12 +190,12 @@ router.get('/:connectionId/download', async (req: Request, res: Response) => {
 router.post('/:connectionId/upload', connectionAccessGuard('sftp', 'ssh'), express.raw({ limit: '100mb', type: '*/*' }), async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const filePath = req.query.path as string;
-  if (!filePath) { res.status(400).json({ error: 'path required' }); return; }
+  if (!filePath) { res.status(400).json({ error: '缺少路径' }); return; }
 
-  if (!Buffer.isBuffer(req.body)) { res.status(400).json({ error: 'Invalid upload body' }); return; }
+  if (!Buffer.isBuffer(req.body)) { res.status(400).json({ error: '无效的上传内容' }); return; }
 
   let ssh: SshClient | null = null;
 
@@ -215,7 +215,7 @@ router.post('/:connectionId/upload', connectionAccessGuard('sftp', 'ssh'), expre
     logFileSessionEvent({ req, userId, connectionId: req.params.connectionId as string, protocol: 'sftp', action: 'upload', path: filePath });
     res.json({ success: true });
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'SFTP error';
+    const msg = e instanceof Error ? e.message : 'SFTP 操作失败';
     console.error('[sftp] upload error:', msg);
     res.status(500).json({ error: msg });
   } finally {
@@ -227,10 +227,10 @@ router.post('/:connectionId/upload', connectionAccessGuard('sftp', 'ssh'), expre
 router.post('/:connectionId/mkdir', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { path: dirPath } = req.body as { path?: string };
-  if (!dirPath) { res.status(400).json({ error: 'path required' }); return; }
+  if (!dirPath) { res.status(400).json({ error: '缺少路径' }); return; }
 
   let ssh: SshClient | null = null;
 
@@ -249,7 +249,7 @@ router.post('/:connectionId/mkdir', async (req: Request, res: Response) => {
     logFileSessionEvent({ req, userId, connectionId: req.params.connectionId as string, protocol: 'sftp', action: 'mkdir', path: dirPath });
     res.json({ success: true });
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'SFTP error';
+    const msg = e instanceof Error ? e.message : 'SFTP 操作失败';
     console.error('[sftp] mkdir error:', msg);
     res.status(500).json({ error: msg });
   } finally {
@@ -316,10 +316,10 @@ async function sftpCopyDirRecursive(sftp: SFTPWrapper, srcPath: string, destPath
 router.delete('/:connectionId/file', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const rawPath = req.query.path as string;
-  if (!rawPath) { res.status(400).json({ error: 'path required' }); return; }
+  if (!rawPath) { res.status(400).json({ error: '缺少路径' }); return; }
   const filePath = rawPath.replace(/\/\/+/g, '/');
 
   let ssh: SshClient | null = null;
@@ -344,7 +344,7 @@ router.delete('/:connectionId/file', async (req: Request, res: Response) => {
     logFileSessionEvent({ req, userId, connectionId: req.params.connectionId as string, protocol: 'sftp', action: 'delete', path: filePath });
     res.json({ success: true });
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'SFTP error';
+    const msg = e instanceof Error ? e.message : 'SFTP 操作失败';
     res.status(500).json({ error: msg });
   } finally {
     ssh?.end();
@@ -355,10 +355,10 @@ router.delete('/:connectionId/file', async (req: Request, res: Response) => {
 router.post('/:connectionId/rename', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { oldPath, newPath } = req.body as { oldPath?: string; newPath?: string };
-  if (!oldPath || !newPath) { res.status(400).json({ error: 'oldPath and newPath required' }); return; }
+  if (!oldPath || !newPath) { res.status(400).json({ error: '缺少 oldPath 或 newPath' }); return; }
 
   let ssh: SshClient | null = null;
   try {
@@ -371,7 +371,7 @@ router.post('/:connectionId/rename', async (req: Request, res: Response) => {
     logFileSessionEvent({ req, userId, connectionId: req.params.connectionId as string, protocol: 'sftp', action: 'rename', path: `${oldPath} → ${newPath}` });
     res.json({ success: true });
   } catch (e: unknown) {
-    res.status(500).json({ error: e instanceof Error ? e.message : 'SFTP error' });
+    res.status(500).json({ error: e instanceof Error ? e.message : 'SFTP 操作失败' });
   } finally { ssh?.end(); }
 });
 
@@ -379,10 +379,10 @@ router.post('/:connectionId/rename', async (req: Request, res: Response) => {
 router.post('/:connectionId/stat', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { path: filePath } = req.body as { path?: string };
-  if (!filePath) { res.status(400).json({ error: 'path required' }); return; }
+  if (!filePath) { res.status(400).json({ error: '缺少路径' }); return; }
 
   let ssh: SshClient | null = null;
   try {
@@ -403,7 +403,7 @@ router.post('/:connectionId/stat', async (req: Request, res: Response) => {
       isDirectory: stats.isDirectory(),
     });
   } catch (e: unknown) {
-    res.status(500).json({ error: e instanceof Error ? e.message : 'SFTP error' });
+    res.status(500).json({ error: e instanceof Error ? e.message : 'SFTP 操作失败' });
   } finally { ssh?.end(); }
 });
 
@@ -411,10 +411,10 @@ router.post('/:connectionId/stat', async (req: Request, res: Response) => {
 router.post('/:connectionId/chmod', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { path: filePath, mode } = req.body as { path?: string; mode?: number };
-  if (!filePath || mode === undefined) { res.status(400).json({ error: 'path and mode required' }); return; }
+  if (!filePath || mode === undefined) { res.status(400).json({ error: '缺少路径或 mode' }); return; }
 
   let ssh: SshClient | null = null;
   try {
@@ -427,7 +427,7 @@ router.post('/:connectionId/chmod', async (req: Request, res: Response) => {
     logFileSessionEvent({ req, userId, connectionId: req.params.connectionId as string, protocol: 'sftp', action: 'chmod', path: `${filePath} → ${mode.toString(8)}` });
     res.json({ success: true });
   } catch (e: unknown) {
-    res.status(500).json({ error: e instanceof Error ? e.message : 'SFTP error' });
+    res.status(500).json({ error: e instanceof Error ? e.message : 'SFTP 操作失败' });
   } finally { ssh?.end(); }
 });
 
@@ -435,10 +435,10 @@ router.post('/:connectionId/chmod', async (req: Request, res: Response) => {
 router.post('/:connectionId/copy', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { srcPath, destPath } = req.body as { srcPath?: string; destPath?: string };
-  if (!srcPath || !destPath) { res.status(400).json({ error: 'srcPath and destPath required' }); return; }
+  if (!srcPath || !destPath) { res.status(400).json({ error: '缺少 srcPath 或 destPath' }); return; }
 
   let ssh: SshClient | null = null;
   try {
@@ -471,7 +471,7 @@ router.post('/:connectionId/copy', async (req: Request, res: Response) => {
     logFileSessionEvent({ req, userId, connectionId: req.params.connectionId as string, protocol: 'sftp', action: 'copy', path: `${srcPath} → ${destPath}` });
     res.json({ success: true });
   } catch (e: unknown) {
-    res.status(500).json({ error: e instanceof Error ? e.message : 'SFTP error' });
+    res.status(500).json({ error: e instanceof Error ? e.message : 'SFTP 操作失败' });
   } finally { ssh?.end(); }
 });
 

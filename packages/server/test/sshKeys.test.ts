@@ -40,12 +40,12 @@ describe('validatePrivateKey', () => {
 
   it('reports encrypted keys given no passphrase', () => {
     const err = validatePrivateKey(keyPem('rsa', 'pkcs1', 'secret'));
-    assert.match(err!, /encrypted .* passphrase is required/i);
+    assert.match(err!, /已加密，需要提供密码/);
   });
 
   it('reports a wrong passphrase', () => {
     const err = validatePrivateKey(keyPem('rsa', 'pkcs1', 'secret'), 'wrong');
-    assert.match(err!, /incorrect passphrase/i);
+    assert.match(err!, /私钥密码错误/);
   });
 
   it('accepts an encrypted key with the right passphrase', () => {
@@ -53,15 +53,15 @@ describe('validatePrivateKey', () => {
   });
 
   it('rejects text that is not a key', () => {
-    assert.match(validatePrivateKey('not a key')!, /invalid private key/i);
+    assert.match(validatePrivateKey('not a key')!, /无效的私钥/);
   });
 });
 
 describe('friendlyKeyError', () => {
   it('maps ssh2 wording to actionable messages', () => {
-    assert.match(friendlyKeyError('Encrypted OpenSSH private key detected, but no passphrase given'), /passphrase is required/i);
-    assert.match(friendlyKeyError('OpenSSH key integrity check failed -- bad passphrase?'), /incorrect passphrase/i);
-    assert.equal(friendlyKeyError('Unsupported key format'), 'Invalid private key: Unsupported key format');
+    assert.match(friendlyKeyError('Encrypted OpenSSH private key detected, but no passphrase given'), /需要提供密码/);
+    assert.match(friendlyKeyError('OpenSSH key integrity check failed -- bad passphrase?'), /私钥密码错误/);
+    assert.equal(friendlyKeyError('Unsupported key format'), '无效的私钥：Unsupported key format');
   });
 });
 
@@ -111,10 +111,10 @@ describe('prepareKey', () => {
     const pem = keyPem('rsa', 'pkcs8', 'secret');
     const missing = prepareKey(pem);
     assert.ok('error' in missing);
-    assert.match(missing.error, /passphrase is required/i);
+    assert.match(missing.error, /需要提供密码/);
     const wrong = prepareKey(pem, 'nope');
     assert.ok('error' in wrong);
-    assert.match(wrong.error, /incorrect passphrase/i);
+    assert.match(wrong.error, /私钥密码错误/);
   });
 
   it('rejects key types ssh2 cannot use', () => {
@@ -122,12 +122,12 @@ describe('prepareKey', () => {
       .privateKey.export({ type: 'pkcs8', format: 'pem' }) as string;
     const res = prepareKey(dsa);
     assert.ok('error' in res);
-    assert.match(res.error, /unsupported key type: dsa/i);
+    assert.match(res.error, /不支持的密钥类型：dsa/);
   });
 
   it('rejects a malformed PKCS#8 key without leaking OpenSSL internals', () => {
     const res = prepareKey('-----BEGIN PRIVATE KEY-----\ngarbage\n-----END PRIVATE KEY-----');
     assert.ok('error' in res);
-    assert.match(res.error, /could not be decoded/i);
+    assert.match(res.error, /无法解码/);
   });
 });

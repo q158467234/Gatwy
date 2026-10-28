@@ -171,7 +171,7 @@ async function waitForReady(
 }
 
 export const MOONLIGHT_UNAVAILABLE_BODY = {
-  error: 'Moonlight runtime not available in this installation',
+  error: '当前安装未提供 Moonlight 运行环境',
   available: false as const,
 };
 
@@ -417,7 +417,7 @@ export async function mlwRequest(
     req.on('error', reject);
     req.on('timeout', () => {
       req.destroy();
-      reject(new Error('Moonlight web request timed out'));
+      reject(new Error('Moonlight web 请求超时'));
     });
     if (payload) req.write(payload);
     req.end();
@@ -456,7 +456,7 @@ export async function mlwNdjson(
           const chunks: Buffer[] = [];
           res.on('data', (c) => chunks.push(c));
           res.on('end', () => {
-            reject(new Error(`Moonlight API ${res.statusCode}: ${Buffer.concat(chunks).toString('utf8')}`));
+            reject(new Error(`Moonlight API 错误 ${res.statusCode}：${Buffer.concat(chunks).toString('utf8')}`));
           });
           return;
         }
@@ -500,7 +500,7 @@ export async function mlwNdjson(
     req.on('error', reject);
     req.on('timeout', () => {
       req.destroy();
-      reject(new Error('Moonlight NDJSON request timed out'));
+      reject(new Error('Moonlight NDJSON 请求超时'));
     });
     if (payload) req.write(payload);
     req.end();
@@ -509,7 +509,7 @@ export async function mlwNdjson(
 
 export async function mlwGetHost(hostId: number): Promise<MlwHost> {
   const res = await mlwRequest('GET', `${pathPrefix()}/api/host?host_id=${hostId}`);
-  if (res.status >= 400) throw new Error(`Failed to get host: ${res.body.toString('utf8')}`);
+  if (res.status >= 400) throw new Error(`获取主机失败：${res.body.toString('utf8')}`);
   const data = JSON.parse(res.body.toString('utf8')) as { host: MlwHost };
   return data.host;
 }
@@ -523,10 +523,10 @@ export async function mlwAddHost(address: string, httpPort: number): Promise<Mlw
     const raw = res.body.toString('utf8');
     if (/Connect|Connection reset|timed out|HostNotFound|os error/i.test(raw)) {
       throw new Error(
-        `Cannot reach Sunshine at ${address}:${httpPort}. Check host power, firewall (TCP 47989/47984), and that Sunshine is running.`,
+        `无法连接 Sunshine（${address}:${httpPort}）。请检查主机是否开机、防火墙（TCP 47989/47984）以及 Sunshine 是否正在运行。`,
       );
     }
-    throw new Error(`Failed to add host: ${raw}`);
+    throw new Error(`添加主机失败：${raw}`);
   }
   const data = JSON.parse(res.body.toString('utf8')) as { host: MlwHost };
   return data.host;
@@ -535,13 +535,13 @@ export async function mlwAddHost(address: string, httpPort: number): Promise<Mlw
 export async function mlwDeleteHost(hostId: number): Promise<void> {
   const res = await mlwRequest('DELETE', `${pathPrefix()}/api/host?host_id=${hostId}`);
   if (res.status >= 400 && res.status !== 404) {
-    throw new Error(`Failed to delete host: ${res.body.toString('utf8')}`);
+    throw new Error(`删除主机失败：${res.body.toString('utf8')}`);
   }
 }
 
 export async function mlwListApps(hostId: number): Promise<MlwApp[]> {
   const res = await mlwRequest('GET', `${pathPrefix()}/api/apps?host_id=${hostId}`);
-  if (res.status >= 400) throw new Error(`Failed to list apps: ${res.body.toString('utf8')}`);
+  if (res.status >= 400) throw new Error(`获取应用列表失败：${res.body.toString('utf8')}`);
   const data = JSON.parse(res.body.toString('utf8')) as { apps: MlwApp[] };
   return data.apps ?? [];
 }
@@ -567,14 +567,14 @@ export async function mlwPair(
       } else if (obj && typeof obj === 'object' && 'Paired' in (obj as object)) {
         paired = (obj as { Paired: MlwHost }).Paired;
       } else if (obj === 'PairError' || (obj && typeof obj === 'object' && 'PairError' in (obj as object))) {
-        error = 'Pairing failed or was cancelled on the Sunshine host';
+        error = '配对失败或已在 Sunshine 主机上取消';
       }
     },
     180000,
   );
 
   if (error) throw new Error(error);
-  if (!paired) throw new Error('Pairing did not complete');
+  if (!paired) throw new Error('配对未完成');
   return paired;
 }
 

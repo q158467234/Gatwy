@@ -94,8 +94,8 @@ router.get('/:id/export', (req: Request, res: Response) => {
      WHERE fs.id = ?`,
     [sessionId],
   );
-  if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
-  if (!canViewAny && session.user_id !== userId) { res.status(403).json({ error: 'Forbidden' }); return; }
+  if (!session) { res.status(404).json({ error: '会话不存在' }); return; }
+  if (!canViewAny && session.user_id !== userId) { res.status(403).json({ error: '无权访问' }); return; }
 
   const events = queryAll<FileSessionEventRow>(
     'SELECT id, session_id, timestamp, action, path, detail_json FROM file_session_events WHERE session_id = ? ORDER BY timestamp ASC',
@@ -160,8 +160,8 @@ router.get('/:id/events', (req: Request, res: Response) => {
     'SELECT user_id FROM file_sessions WHERE id = ?',
     [sessionId],
   );
-  if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
-  if (!canViewAny && session.user_id !== userId) { res.status(403).json({ error: 'Forbidden' }); return; }
+  if (!session) { res.status(404).json({ error: '会话不存在' }); return; }
+  if (!canViewAny && session.user_id !== userId) { res.status(403).json({ error: '无权访问' }); return; }
 
   const events = queryAll<FileSessionEventRow>(
     'SELECT id, session_id, timestamp, action, path, detail_json FROM file_session_events WHERE session_id = ? ORDER BY timestamp ASC',

@@ -127,7 +127,7 @@ router.get('/event-types', (_req: Request, res: Response) => {
 // GET /users — audit.view_any permission, distinct users with audit entries
 router.get('/users', (req: Request, res: Response) => {
   if (!userCan(req, 'audit.view_any')) {
-    res.status(403).json({ error: 'Insufficient permissions' });
+    res.status(403).json({ error: '权限不足' });
     return;
   }
 

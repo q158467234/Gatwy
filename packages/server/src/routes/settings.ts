@@ -56,7 +56,7 @@ router.use(authRequired);
 
 router.get('/ip-rules', (req: Request, res: Response) => {
   if (!userCan(req, 'settings.security')) {
-    res.status(403).json({ error: 'Insufficient permissions' });
+    res.status(403).json({ error: '权限不足' });
     return;
   }
 
@@ -68,7 +68,7 @@ router.get('/ip-rules', (req: Request, res: Response) => {
 
 router.put('/ip-rules', (req: Request, res: Response) => {
   if (!userCan(req, 'settings.security')) {
-    res.status(403).json({ error: 'Insufficient permissions' });
+    res.status(403).json({ error: '权限不足' });
     return;
   }
 
@@ -79,7 +79,7 @@ router.put('/ip-rules', (req: Request, res: Response) => {
   };
 
   if (!body || typeof body !== 'object') {
-    res.status(400).json({ error: 'Invalid payload' });
+    res.status(400).json({ error: '无效的请求数据' });
     return;
   }
 
@@ -90,12 +90,12 @@ router.put('/ip-rules', (req: Request, res: Response) => {
 
   for (const rule of rules) {
     if (!rule || (rule.type !== 'allow' && rule.type !== 'deny') || !rule.cidr?.trim()) {
-      res.status(400).json({ error: 'Invalid IP rule' });
+      res.status(400).json({ error: '无效的 IP 规则' });
       return;
     }
     if (!isValidIpRule(rule.cidr)) {
       // A malformed rule would silently never match (and in an allowlist lock everyone out)
-      res.status(400).json({ error: `Invalid IP address or CIDR range: ${rule.cidr.trim()}` });
+      res.status(400).json({ error: `无效的 IP 地址或 CIDR 范围：${rule.cidr.trim()}` });
       return;
     }
 
@@ -133,7 +133,7 @@ router.put('/ip-rules', (req: Request, res: Response) => {
 // GET / — return all settings (settings.manage permission)
 router.get('/', (req: Request, res: Response) => {
   if (!userCan(req, 'settings.manage')) {
-    res.status(403).json({ error: 'Insufficient permissions' });
+    res.status(403).json({ error: '权限不足' });
     return;
   }
   const settings = getAllSettings();
@@ -146,14 +146,14 @@ router.get('/', (req: Request, res: Response) => {
 // users can make the server buffer up to SETTINGS_JSON_LIMIT.
 router.put('/', (req: Request, res: Response, next: NextFunction) => {
   if (!userCan(req, 'settings.manage')) {
-    res.status(403).json({ error: 'Insufficient permissions' });
+    res.status(403).json({ error: '权限不足' });
     return;
   }
   next();
 }, largeJson(SETTINGS_JSON_LIMIT), (req: Request, res: Response) => {
   const updates = req.body as Record<string, string>;
   if (typeof updates !== 'object' || Array.isArray(updates) || updates === null) {
-    res.status(400).json({ error: 'Body must be a JSON object of key-value pairs' });
+    res.status(400).json({ error: '请求体必须是键值对形式的 JSON 对象' });
     return;
   }
 

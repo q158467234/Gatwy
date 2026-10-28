@@ -14,7 +14,7 @@ function limiter(windowMs: number, limit: number) {
     standardHeaders: true,
     legacyHeaders: false,
     validate: { keyGeneratorIpFallback: false },
-    message: { error: 'Too many requests, please try again later' },
+    message: { error: '请求过于频繁，请稍后再试' },
   });
 }
 

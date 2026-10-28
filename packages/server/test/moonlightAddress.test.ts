@@ -20,7 +20,7 @@ describe('resolveMoonlightHostAddress', () => {
   it('rejects an empty host', async () => {
     await assert.rejects(
       () => resolveMoonlightHostAddress(''),
-      /empty/i,
+      /为空/,
     );
   });
 });

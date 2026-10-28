@@ -290,7 +290,7 @@ export function setupTelnetProxy(server: https.Server, basePath = ''): void {
     if (isSessionRevoked(tokenHash)) { ws.close(4001, 'Session revoked'); return; }
 
     // Protocol permission check
-    if (!userHasPermission(userId, 'protocols.telnet')) { ws.close(4003, 'Protocol not permitted'); return; }
+    if (!userHasPermission(userId, 'protocols.telnet')) { ws.close(4003, '无权使用 Telnet 协议'); return; }
 
     registerWs(tokenHash, ws);
     ws.once('close', () => unregisterWs(tokenHash, ws));
@@ -321,11 +321,11 @@ export function setupTelnetProxy(server: https.Server, basePath = ''): void {
       [connectionId, ...access.params],
     );
     const conn = connRow ? applyCredential(connRow, userId) : undefined;
-    if (!conn || conn.protocol !== 'telnet') { ws.close(4002, 'Not found or not Telnet'); return; }
+    if (!conn || conn.protocol !== 'telnet') { ws.close(4002, '连接不存在或不是 Telnet 连接'); return; }
 
     // Enforce per-user and global connection limits (H2)
     const limit = acquireConnection(userId);
-    if (!limit.allowed) { ws.close(4008, limit.reason ?? 'Connection limit'); return; }
+    if (!limit.allowed) { ws.close(4008, limit.reason ?? '连接数已达上限'); return; }
     // From here on the slot belongs to teardownSession() once the session is cached; until then
     // every failure ends with the browser socket closing, so release it there. A browser that
     // leaves while the TCP connect is in progress would otherwise get a session cached for a
@@ -467,7 +467,7 @@ export function setupTelnetProxy(server: https.Server, basePath = ''): void {
 
       socket.on('close', () => {
         const s = sessions.get(clientSessionId);
-        if (s?.ws?.readyState === WebSocket.OPEN) s.ws.close(1000, 'Connection closed');
+        if (s?.ws?.readyState === WebSocket.OPEN) s.ws.close(1000, '连接已关闭');
         teardownSession(clientSessionId, session, userId, conn.host, conn.port, connectionId, sessionDbId, clientIp);
       });
 
@@ -493,8 +493,8 @@ export function setupTelnetProxy(server: https.Server, basePath = ''): void {
 
     socket.setTimeout(15000, () => {
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'error', message: 'Connection timed out' }));
-        ws.close(4003, 'Timeout');
+        ws.send(JSON.stringify({ type: 'error', message: '连接超时' }));
+        ws.close(4003, '连接超时');
       }
       socket.destroy();
     });

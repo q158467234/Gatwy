@@ -133,7 +133,7 @@ async function ensureHost(conn: ConnRow, extra: MoonlightExtraConfig): Promise<{
 
 router.get('/:id/status', async (req: Request, res: Response) => {
   const conn = getAccessibleMoonlightConn(req, paramId(req));
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   if (rejectIfMoonlightUnavailable(res)) return;
 
@@ -176,13 +176,13 @@ router.get('/:id/status', async (req: Request, res: Response) => {
       ...(runtimeError ? { runtimeWarning: runtimeError } : {}),
     });
   } catch (err) {
-    res.status(502).json({ error: err instanceof Error ? err.message : 'Moonlight status failed' });
+    res.status(502).json({ error: err instanceof Error ? err.message : '获取 Moonlight 状态失败' });
   }
 });
 
 router.put('/:id/settings', (req: Request, res: Response) => {
   const conn = getAccessibleMoonlightConn(req, paramId(req));
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const extra = applyMoonlightSettingsPatch(
     parseMoonlightExtra(conn.extra_config_json),
@@ -194,7 +194,7 @@ router.put('/:id/settings', (req: Request, res: Response) => {
 
 router.post('/:id/pair', async (req: Request, res: Response) => {
   const conn = getAccessibleMoonlightConn(req, paramId(req));
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
   if (rejectIfMoonlightUnavailable(res)) return;
 
   const clientIp = resolveClientIp(req);
@@ -261,7 +261,7 @@ router.post('/:id/pair', async (req: Request, res: Response) => {
     write({ paired: true, hostId, name: pairedHost.name ?? conn.name });
     res.end();
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Pairing failed';
+    const message = err instanceof Error ? err.message : '配对失败';
     logAudit({
       userId: req.user!.userId,
       eventType: 'session.moonlight.pair',
@@ -276,7 +276,7 @@ router.post('/:id/pair', async (req: Request, res: Response) => {
 
 router.delete('/:id/pairing', async (req: Request, res: Response) => {
   const conn = getAccessibleMoonlightConn(req, paramId(req));
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
   if (rejectIfMoonlightUnavailable(res)) return;
 
   try {
@@ -303,13 +303,13 @@ router.delete('/:id/pairing', async (req: Request, res: Response) => {
 
     res.json({ ok: true });
   } catch (err) {
-    res.status(502).json({ error: err instanceof Error ? err.message : 'Failed to forget pairing' });
+    res.status(502).json({ error: err instanceof Error ? err.message : '取消配对失败' });
   }
 });
 
 router.get('/:id/apps', async (req: Request, res: Response) => {
   const conn = getAccessibleMoonlightConn(req, paramId(req));
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
   if (rejectIfMoonlightUnavailable(res)) return;
 
   try {
@@ -321,13 +321,13 @@ router.get('/:id/apps', async (req: Request, res: Response) => {
       apps: apps.map((a) => ({ appId: a.app_id, title: a.title, hdr: !!a.is_hdr_supported })),
     });
   } catch (err) {
-    res.status(502).json({ error: err instanceof Error ? err.message : 'Failed to list apps' });
+    res.status(502).json({ error: err instanceof Error ? err.message : '获取应用列表失败' });
   }
 });
 
 router.post('/:id/session', async (req: Request, res: Response) => {
   const conn = getAccessibleMoonlightConn(req, paramId(req));
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
   if (rejectIfMoonlightUnavailable(res)) return;
 
   try {
@@ -337,7 +337,7 @@ router.post('/:id/session', async (req: Request, res: Response) => {
 
     const host = await mlwGetHost(hostId);
     if (host.paired !== 'Paired') {
-      res.status(409).json({ error: 'Host is not paired', needsPairing: true, hostId });
+      res.status(409).json({ error: '主机尚未配对', needsPairing: true, hostId });
       return;
     }
 
@@ -358,7 +358,7 @@ router.post('/:id/session', async (req: Request, res: Response) => {
         || apps[0];
     }
     if (!app) {
-      res.status(404).json({ error: 'No apps available on Sunshine host' });
+      res.status(404).json({ error: 'Sunshine 主机上没有可用的应用' });
       return;
     }
 
@@ -408,13 +408,13 @@ router.post('/:id/session', async (req: Request, res: Response) => {
       touchMode,
     });
   } catch (err) {
-    res.status(502).json({ error: err instanceof Error ? err.message : 'Failed to start session' });
+    res.status(502).json({ error: err instanceof Error ? err.message : '启动会话失败' });
   }
 });
 
 router.post('/:id/disconnect-audit', (req: Request, res: Response) => {
   const conn = getAccessibleMoonlightConn(req, paramId(req));
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   logAudit({
     userId: req.user!.userId,

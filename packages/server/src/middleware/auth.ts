@@ -21,7 +21,7 @@ export function authRequired(req: Request, res: Response, next: NextFunction): v
   const token = bearerToken ?? cookieToken ?? null;
 
   if (!token) {
-    res.status(401).json({ error: 'Authentication required' });
+    res.status(401).json({ error: '需要登录' });
     return;
   }
 
@@ -34,18 +34,18 @@ export function authRequired(req: Request, res: Response, next: NextFunction): v
     // pre-login_sessions compat path below lets through. A token for a user that no
     // longer exists is never legitimate, so reject it independently of the session row.
     if (!queryOne('SELECT 1 FROM users WHERE id = ?', [payload.userId])) {
-      res.status(401).json({ error: 'User no longer exists' });
+      res.status(401).json({ error: '用户已不存在' });
       return;
     }
 
     const isHeartbeat = req.query['heartbeat'] === '1';
     const sessionStatus = checkAndTouchSession(tokenHash, isHeartbeat);
     if (sessionStatus === 'revoked') {
-      res.status(401).json({ error: 'Session has been revoked' });
+      res.status(401).json({ error: '会话已被撤销' });
       return;
     }
     if (sessionStatus === 'idle_expired') {
-      res.status(401).json({ error: 'Session expired due to inactivity' });
+      res.status(401).json({ error: '会话因长时间无操作已过期' });
       return;
     }
 
@@ -62,14 +62,14 @@ export function authRequired(req: Request, res: Response, next: NextFunction): v
         // Best-effort cleanup; do not block the 401 response.
       }
     }
-    res.status(401).json({ error: 'Invalid or expired token' });
+    res.status(401).json({ error: '令牌无效或已过期' });
   }
 }
 
 export function adminRequired(req: Request, res: Response, next: NextFunction): void {
   authRequired(req, res, () => {
     if (req.user?.role !== 'admin') {
-      res.status(403).json({ error: 'Admin access required' });
+      res.status(403).json({ error: '需要管理员权限' });
       return;
     }
     next();
@@ -84,10 +84,10 @@ export function requirePermission(...perms: PermissionKey[]) {
   return (req: Request, res: Response, next: NextFunction): void => {
     authRequired(req, res, () => {
       const role = req.user?.role;
-      if (!role) { res.status(403).json({ error: 'Forbidden' }); return; }
+      if (!role) { res.status(403).json({ error: '无权访问' }); return; }
       const has = perms.some(p => roleHasPermission(role, p));
       if (!has) {
-        res.status(403).json({ error: 'Insufficient permissions' });
+        res.status(403).json({ error: '权限不足' });
         return;
       }
       next();

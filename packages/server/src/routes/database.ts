@@ -47,12 +47,12 @@ function getUserSessions(userId: string): Map<string, string> {
 
 function requireDbPermission(req: Request, res: Response, next: () => void): void {
   const conn = getConn(req.params['connectionId'] as string, req);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const role = req.user!.role;
   const perm = conn.protocol === 'postgres' ? 'protocols.postgres' : 'protocols.mysql';
   if (!roleHasPermission(role, perm)) {
-    res.status(403).json({ error: 'Insufficient permissions' });
+    res.status(403).json({ error: '权限不足' });
     return;
   }
   (req as Request & { dbConn: ConnRow }).dbConn = conn;
@@ -69,11 +69,11 @@ router.post('/:connectionId/connect', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
 
   const conn = getConn(connectionId, req);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const perm = conn.protocol === 'postgres' ? 'protocols.postgres' : 'protocols.mysql';
   if (!roleHasPermission(req.user!.role, perm)) {
-    res.status(403).json({ error: 'Insufficient permissions' }); return;
+    res.status(403).json({ error: '权限不足' }); return;
   }
 
   try {
@@ -90,7 +90,7 @@ router.post('/:connectionId/connect', async (req: Request, res: Response) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[db] connect error:', message);
-    res.status(500).json({ error: `Failed to connect: ${message}` });
+    res.status(500).json({ error: `连接失败：${message}` });
   }
 });
 
@@ -118,7 +118,7 @@ router.post('/:connectionId/disconnect', async (req: Request, res: Response) => 
 router.get('/:connectionId/databases', async (req: Request, res: Response) => {
   const { connectionId } = req.params as { connectionId: string };
   const conn = getConn(connectionId, req);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
   try {
     const pool = await getPool(connectionId);
     let databases: string[] = [];
@@ -145,7 +145,7 @@ router.get('/:connectionId/databases', async (req: Request, res: Response) => {
 router.get('/:connectionId/schemas', async (req: Request, res: Response) => {
   const { connectionId } = req.params as { connectionId: string };
   const conn = getConn(connectionId, req);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
   try {
     const pool = await getPool(connectionId);
     let schemas: string[] = [];
@@ -176,7 +176,7 @@ router.get('/:connectionId/tables', async (req: Request, res: Response) => {
   const { connectionId } = req.params as { connectionId: string };
   const schema = (req.query.schema as string) || 'public';
   const conn = getConn(connectionId, req);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
   try {
     const pool = await getPool(connectionId);
     let tables: Array<{ name: string; type: string }> = [];
@@ -218,7 +218,7 @@ router.get('/:connectionId/table/:tableName', async (req: Request, res: Response
   const { connectionId, tableName } = req.params as { connectionId: string; tableName: string };
   const schema = (req.query.schema as string) || 'public';
   const conn = getConn(connectionId, req);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
   try {
     const pool = await getPool(connectionId);
     let columns: Array<{ name: string; type: string; nullable: boolean; isPrimaryKey: boolean }> = [];
@@ -278,11 +278,11 @@ router.post('/:connectionId/query', async (req: Request, res: Response) => {
   const { connectionId } = req.params as { connectionId: string };
   const userId = req.user!.userId;
   const conn = getConn(connectionId, req);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { sql: queryText, page: rawPage } = req.body as { sql?: string; page?: number };
   if (!queryText || typeof queryText !== 'string' || !queryText.trim()) {
-    res.status(400).json({ error: 'sql is required' }); return;
+    res.status(400).json({ error: '缺少 sql' }); return;
   }
   const pageNum = Math.max(0, Math.floor(Number(rawPage ?? 0)));
 
@@ -338,7 +338,7 @@ router.post('/:connectionId/query', async (req: Request, res: Response) => {
           // multiple statements and returns an array of results instead of a single
           // one — reject explicitly rather than crash on the missing .fields below.
           if (Array.isArray(result)) {
-            throw new Error('Multiple statements in a single query are not supported. Run one statement at a time.');
+            throw new Error('不支持在一次查询中执行多条语句，请逐条执行。');
           }
           columns = result.fields.map((f: { name: string }) => f.name);
           if (columns.length > 0) {
@@ -443,7 +443,7 @@ router.get('/:connectionId/history', (req: Request, res: Response) => {
   const { connectionId } = req.params as { connectionId: string };
   const userId = req.user!.userId;
   const conn = getConn(connectionId, req);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const limit = Math.min(parseInt(req.query.limit as string ?? '100', 10) || 100, 500);
   const history = queryAll<{
@@ -467,7 +467,7 @@ router.delete('/:connectionId/history', (req: Request, res: Response) => {
   const { connectionId } = req.params as { connectionId: string };
   const userId = req.user!.userId;
   const conn = getConn(connectionId, req);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   execute(`DELETE FROM db_query_history WHERE user_id = ? AND connection_id = ?`, [userId, connectionId]);
   res.json({ ok: true });
@@ -482,11 +482,11 @@ router.post('/:connectionId/export', async (req: Request, res: Response) => {
   const { connectionId } = req.params as { connectionId: string };
   const userId = req.user!.userId;
   const conn = getConn(connectionId, req);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { sql: queryText, format } = req.body as { sql?: string; format?: string };
   if (!queryText || typeof queryText !== 'string' || !queryText.trim()) {
-    res.status(400).json({ error: 'sql is required' }); return;
+    res.status(400).json({ error: '缺少 sql' }); return;
   }
   const fmt = format === 'json' ? 'json' : 'csv';
 
@@ -501,7 +501,7 @@ router.post('/:connectionId/export', async (req: Request, res: Response) => {
         await pgClient.query(`SET statement_timeout = ${pool.queryTimeoutMs}`);
         const result = await pgClient.query(queryText);
         if (Array.isArray(result)) {
-          res.status(400).json({ error: 'Multiple statements in a single query are not supported. Run one statement at a time.' });
+          res.status(400).json({ error: '不支持在一次查询中执行多条语句，请逐条执行。' });
           return;
         }
         columns = result.fields.map((f: { name: string }) => f.name);

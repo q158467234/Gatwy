@@ -437,18 +437,18 @@ function estimateBackupSizeBytes(includeRecordings: boolean): number {
 }
 
 function validateConfig(config: AutoBackupConfig, sensitive: AutoBackupSensitive): string | null {
-  if (!validTimeHHMM(config.scheduleTime)) return 'Schedule time must be in HH:MM format.';
+  if (!validTimeHHMM(config.scheduleTime)) return '计划时间必须为 HH:MM 格式。';
   if (config.scheduleType === 'weekly' && (config.scheduleWeekday < 0 || config.scheduleWeekday > 6)) {
-    return 'Weekly schedule day must be between 0 and 6.';
+    return '每周计划的星期值必须在 0 到 6 之间。';
   }
-  if (config.retentionCount < 1) return 'Retention count must be at least 1.';
-  if (!sensitive.password || sensitive.password.length < 8) return 'Global backup password must be at least 8 characters.';
+  if (config.retentionCount < 1) return '保留份数至少为 1。';
+  if (!sensitive.password || sensitive.password.length < 8) return '全局备份密码至少需要 8 个字符。';
 
   if (config.destinationMode === 'saved') {
-    if (!config.connectionId) return 'Saved SMB connection is required.';
+    if (!config.connectionId) return '已保存的 SMB 连接为必填项。';
   } else {
-    if (!sensitive.adhoc.host) return 'Ad-hoc SMB host is required.';
-    if (!sensitive.adhoc.share) return 'Ad-hoc SMB share is required.';
+    if (!sensitive.adhoc.host) return '临时 SMB 主机为必填项。';
+    if (!sensitive.adhoc.share) return '临时 SMB 共享为必填项。';
   }
 
   return null;
@@ -480,10 +480,10 @@ function resolveSavedConnection(connectionId: string): SavedSmbConnection | null
 function resolveTarget(config: AutoBackupConfig, sensitive: AutoBackupSensitive): { target: SmbTarget; label: string } {
   if (config.destinationMode === 'saved') {
     const row = resolveSavedConnection(config.connectionId);
-    if (!row) throw new Error('Configured SMB destination connection not found or not admin-owned.');
+    if (!row) throw new Error('配置的 SMB 目标连接不存在或不属于管理员。');
 
     const extra = parseSmbConfigExtra(row.extra_config_json);
-    if (!extra.share) throw new Error('SMB destination share is missing on selected connection.');
+    if (!extra.share) throw new Error('所选连接未配置 SMB 目标共享。');
 
     const password = row.encrypted_password
       ? (() => { try { return decrypt(row.encrypted_password); } catch { return ''; } })()
@@ -587,7 +587,7 @@ async function uploadBackup(smb: SMB2, destinationPath: string, backupBuf: Buffe
   const stat = await smbOp(() => smb.stat(destinationPath));
   const size = Number((stat as { size?: number }).size ?? -1);
   if (size !== backupBuf.length) {
-    throw new Error('SMB upload verification failed: remote file size mismatch.');
+    throw new Error('SMB 上传校验失败：远程文件大小不一致。');
   }
 }
 
@@ -608,7 +608,7 @@ async function runWithTimeout<T>(promiseFactory: () => Promise<T>, timeoutMs: nu
   return await Promise.race([
     promiseFactory(),
     new Promise<T>((_, reject) => {
-      setTimeout(() => reject(new Error('Auto-backup run timed out after 5 minutes.')), timeoutMs);
+      setTimeout(() => reject(new Error('自动备份运行超时（5 分钟）。')), timeoutMs);
     }),
   ]);
 }
@@ -619,7 +619,7 @@ async function executeBackup(triggerType: 'scheduled' | 'manual'): Promise<void>
       queuedScheduledRun = true;
       return;
     }
-    throw new Error('Auto-backup run already in progress.');
+    throw new Error('自动备份正在运行中。');
   }
 
   runInProgress = true;
@@ -638,13 +638,13 @@ async function executeBackup(triggerType: 'scheduled' | 'manual'): Promise<void>
     await runWithTimeout(async () => {
       const estimated = estimateBackupSizeBytes(config.includeRecordings);
       if (estimated > MAX_BACKUP_BYTES) {
-        throw new Error('Estimated backup size exceeds 4 GB limit.');
+        throw new Error('预计备份大小超出 4 GB 上限。');
       }
 
       const dbBytes = Buffer.from(exportDbBytes());
       const backupBuf = createBackup(sensitive.password, dbBytes, config.includeRecordings);
       if (backupBuf.length > MAX_BACKUP_BYTES) {
-        throw new Error('Backup size exceeds 4 GB limit.');
+        throw new Error('备份大小超出 4 GB 上限。');
       }
 
       const filename = buildAutoFilename();
@@ -680,7 +680,7 @@ async function executeBackup(triggerType: 'scheduled' | 'manual'): Promise<void>
       }
     }, RUN_TIMEOUT_MS);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Auto-backup failed.';
+    const message = error instanceof Error ? error.message : '自动备份失败。';
     updateStatusFields({ status: 'failed', error: message });
     const failCount = getFailureCount() + 1;
     setFailureCount(failCount);
@@ -957,7 +957,7 @@ export async function testAutoBackupDestination(payload: {
 
 export async function runAutoBackupNow(): Promise<{ started: true }> {
   if (runInProgress) {
-    throw new Error('Auto-backup run already in progress.');
+    throw new Error('自动备份正在运行中。');
   }
   await executeBackup('manual');
   scheduleNextRunFromNow();

@@ -192,7 +192,7 @@ router.get('/providers', (_req: Request, res: Response) => {
   const localEnabled = getSetting('auth.local_enabled') !== 'false';
   const ldapEnabled = getSetting('auth.ldap_enabled') === 'true';
   const oidcEnabled = isOidcEnabled();
-  const oidcButtonLabel = getSetting('auth.oidc_button_label') || 'Sign in with SSO';
+  const oidcButtonLabel = getSetting('auth.oidc_button_label') || '使用 SSO 登录';
   res.json({ local: localEnabled, ldap: ldapEnabled, oidc: oidcEnabled, oidcButtonLabel });
 });
 
@@ -277,18 +277,18 @@ router.post('/setup', async (req: Request, res: Response) => {
   const row = queryOne<{ 'COUNT(*)': number }>('SELECT COUNT(*) FROM users');
   const count = row ? row['COUNT(*)'] : 0;
   if (count > 0) {
-    res.status(400).json({ error: 'Setup already completed' });
+    res.status(400).json({ error: '初始化已完成' });
     return;
   }
 
   const { username, password, displayName } = req.body;
   if (!username || !password || !displayName) {
-    res.status(400).json({ error: 'Username, password, and display name are required' });
+    res.status(400).json({ error: '用户名、密码和显示名称为必填项' });
     return;
   }
 
   if (typeof password !== 'string' || password.length < 8) {
-    res.status(400).json({ error: 'Password must be at least 8 characters' });
+    res.status(400).json({ error: '密码长度至少为 8 个字符' });
     return;
   }
 
@@ -322,19 +322,19 @@ router.post('/setup', async (req: Request, res: Response) => {
 router.post('/login', async (req: Request, res: Response) => {
   const { username, password } = req.body;
   if (!username || !password) {
-    res.status(400).json({ error: 'Username and password are required' });
+    res.status(400).json({ error: '用户名和密码为必填项' });
     return;
   }
 
   if (getSetting('auth.local_enabled') === 'false') {
-    res.status(403).json({ error: 'Local authentication is disabled' });
+    res.status(403).json({ error: '本地登录已禁用' });
     return;
   }
 
   // IP-based rate limiting(guards against password spraying / distributed brute force)
   const clientIp = (req.ip ?? 'unknown').replace(/^::ffff:/i, '');
   if (!checkIpRateLimit(clientIp)) {
-    res.status(429).json({ error: 'Too many login attempts. Please try again later.' });
+    res.status(429).json({ error: '登录尝试次数过多，请稍后再试。' });
     return;
   }
 
@@ -347,7 +347,7 @@ router.post('/login', async (req: Request, res: Response) => {
     // Apply lockout to unknown usernames too (in-memory, resets on restart)
     const lockedUntil = checkUnknownLock(username);
     if (lockedUntil) {
-      res.status(429).json({ error: `Account locked until ${lockedUntil.toLocaleString()}` });
+      res.status(429).json({ error: `账户已锁定，解锁时间：${lockedUntil.toLocaleString()}` });
       return;
     }
     recordUnknownFail(username, maxFailed, lockoutMinutes);
@@ -357,7 +357,7 @@ router.post('/login', async (req: Request, res: Response) => {
       details: { reason: 'user_not_found' },
       ipAddress: req.ip,
     });
-    res.status(401).json({ error: 'Invalid username or password' });
+    res.status(401).json({ error: '用户名或密码错误' });
     return;
   }
 
@@ -373,7 +373,7 @@ router.post('/login', async (req: Request, res: Response) => {
       ipAddress: req.ip,
     });
     const until = lockedUntilDate.toLocaleString();
-    res.status(429).json({ error: `Account locked until ${until}` });
+    res.status(429).json({ error: `账户已锁定，解锁时间：${until}` });
     return;
   }
 
@@ -408,7 +408,7 @@ router.post('/login', async (req: Request, res: Response) => {
       details: { reason: 'invalid_password', failedCount: newCount },
       ipAddress: req.ip,
     });
-    res.status(401).json({ error: 'Invalid username or password' });
+    res.status(401).json({ error: '用户名或密码错误' });
     return;
   }
 
@@ -461,7 +461,7 @@ router.post('/login/mfa', async (req: Request, res: Response) => {
   const { mfaToken, code, trustDevice } = req.body as { mfaToken?: string; code?: string; trustDevice?: boolean };
 
   if (!mfaToken || !code) {
-    res.status(400).json({ error: 'mfaToken and code are required' });
+    res.status(400).json({ error: 'mfaToken 和 code 为必填项' });
     return;
   }
 
@@ -470,13 +470,13 @@ router.post('/login/mfa', async (req: Request, res: Response) => {
     const payload = verifyMfaToken(mfaToken);
     userId = payload.userId;
   } catch {
-    res.status(401).json({ error: 'Invalid or expired MFA token' });
+    res.status(401).json({ error: '两步验证令牌无效或已过期' });
     return;
   }
 
   // MFA brute-force protection (C3)
   if (!checkMfaRateLimit(userId)) {
-    res.status(429).json({ error: 'Too many MFA attempts. Please try again later.' });
+    res.status(429).json({ error: '两步验证尝试次数过多，请稍后再试。' });
     return;
   }
 
@@ -486,18 +486,18 @@ router.post('/login/mfa', async (req: Request, res: Response) => {
   );
 
   if (!user || !user.mfa_secret || user.mfa_enabled !== 1) {
-    res.status(400).json({ error: 'MFA not configured for this user' });
+    res.status(400).json({ error: '该用户未配置两步验证' });
     return;
   }
 
   const decryptedSecret = (() => { try { return decrypt(user.mfa_secret!); } catch { return null; } })();
   if (!decryptedSecret) {
-    res.status(400).json({ error: 'MFA configuration error' });
+    res.status(400).json({ error: '两步验证配置错误' });
     return;
   }
   const { valid: isValid } = otpVerify({ token: code, secret: decryptedSecret });
   if (!isValid) {
-    res.status(401).json({ error: 'Invalid verification code' });
+    res.status(401).json({ error: '验证码无效' });
     return;
   }
 
@@ -544,13 +544,13 @@ router.post('/login/passkey/options', async (req: Request, res: Response) => {
 
   // Check if passkeys are enabled globally
   if (!await isPasskeyEnabled()) {
-    res.status(400).json({ error: 'Passkeys are not enabled' });
+    res.status(400).json({ error: '未启用通行密钥' });
     return;
   }
 
   const clientIp = (req.ip ?? 'unknown').replace(/^::ffff:/i, '');
   if (!checkIpRateLimit(clientIp)) {
-    res.status(429).json({ error: 'Too many login attempts. Please try again later.' });
+    res.status(429).json({ error: '登录尝试次数过多，请稍后再试。' });
     return;
   }
 
@@ -560,7 +560,7 @@ router.post('/login/passkey/options', async (req: Request, res: Response) => {
       const payload = verifyMfaToken(mfaToken);
       userId = payload.userId;
     } catch {
-      res.status(401).json({ error: 'Invalid or expired MFA token' });
+      res.status(401).json({ error: '两步验证令牌无效或已过期' });
       return;
     }
   } else if (username) {
@@ -569,18 +569,18 @@ router.post('/login/passkey/options', async (req: Request, res: Response) => {
       [username],
     );
     if (!user) {
-      res.status(400).json({ error: 'Passkey sign in is not available for this account' });
+      res.status(400).json({ error: '该账户无法使用通行密钥登录' });
       return;
     }
     userId = user.id;
   } else {
-    res.status(400).json({ error: 'mfaToken or username is required' });
+    res.status(400).json({ error: 'mfaToken 或 username 为必填项' });
     return;
   }
 
   // Check if user has active passkeys
   if (getActivePasskeys(userId).length === 0) {
-    res.status(400).json({ error: 'Passkey sign in is not available for this account' });
+    res.status(400).json({ error: '该账户无法使用通行密钥登录' });
     return;
   }
 
@@ -588,7 +588,7 @@ router.post('/login/passkey/options', async (req: Request, res: Response) => {
   const result = await generatePasskeyAuthenticationOptions(userId, origin);
   
   if (!result) {
-    res.status(400).json({ error: 'No active passkeys found' });
+    res.status(400).json({ error: '未找到可用的通行密钥' });
     return;
   }
 
@@ -605,13 +605,13 @@ router.post('/login/passkey', async (req: Request, res: Response) => {
   };
 
   if (!challengeId || !response) {
-    res.status(400).json({ error: 'challengeId and response are required' });
+    res.status(400).json({ error: 'challengeId 和 response 为必填项' });
     return;
   }
 
   const clientIp = (req.ip ?? 'unknown').replace(/^::ffff:/i, '');
   if (!checkIpRateLimit(clientIp)) {
-    res.status(429).json({ error: 'Too many login attempts. Please try again later.' });
+    res.status(429).json({ error: '登录尝试次数过多，请稍后再试。' });
     return;
   }
 
@@ -621,14 +621,14 @@ router.post('/login/passkey', async (req: Request, res: Response) => {
       const payload = verifyMfaToken(mfaToken);
       expectedUserId = payload.userId;
     } catch {
-      res.status(401).json({ error: 'Invalid or expired MFA token' });
+      res.status(401).json({ error: '两步验证令牌无效或已过期' });
       return;
     }
   }
 
   // MFA brute-force protection
   if (expectedUserId && !checkMfaRateLimit(expectedUserId)) {
-    res.status(429).json({ error: 'Too many MFA attempts. Please try again later.' });
+    res.status(429).json({ error: '两步验证尝试次数过多，请稍后再试。' });
     return;
   }
 
@@ -646,13 +646,13 @@ router.post('/login/passkey', async (req: Request, res: Response) => {
       details: { error: result.error },
       ipAddress: req.ip,
     });
-    res.status(401).json({ error: result.error || 'Passkey verification failed' });
+    res.status(401).json({ error: result.error || '通行密钥验证失败' });
     return;
   }
 
   // Verify the passkey belongs to the expected user
   if (expectedUserId && result.userId !== expectedUserId) {
-    res.status(401).json({ error: 'Passkey does not belong to this user' });
+    res.status(401).json({ error: '该通行密钥不属于此用户' });
     return;
   }
 
@@ -666,7 +666,7 @@ router.post('/login/passkey', async (req: Request, res: Response) => {
   );
 
   if (!user) {
-    res.status(401).json({ error: 'User not found' });
+    res.status(401).json({ error: '用户不存在' });
     return;
   }
 
@@ -747,7 +747,7 @@ router.get('/me', authRequired, (req: Request, res: Response) => {
   );
 
   if (!user) {
-    res.status(401).json({ error: 'User not found' });
+    res.status(401).json({ error: '用户不存在' });
     return;
   }
 
@@ -768,19 +768,19 @@ router.get('/me', authRequired, (req: Request, res: Response) => {
 // POST /login/ldap — authenticate via LDAP/Active Directory
 router.post('/login/ldap', async (req: Request, res: Response) => {
   if (getSetting('auth.ldap_enabled') !== 'true') {
-    res.status(400).json({ error: 'LDAP authentication is not enabled' });
+    res.status(400).json({ error: 'LDAP 登录未启用' });
     return;
   }
 
   const { username, password } = req.body as { username?: string; password?: string };
   if (!username || !password) {
-    res.status(400).json({ error: 'Username and password are required' });
+    res.status(400).json({ error: '用户名和密码为必填项' });
     return;
   }
 
   const clientIp = (req.ip ?? 'unknown').replace(/^::ffff:/i, '');
   if (!checkIpRateLimit(clientIp)) {
-    res.status(429).json({ error: 'Too many login attempts. Please try again later.' });
+    res.status(429).json({ error: '登录尝试次数过多，请稍后再试。' });
     return;
   }
 
@@ -792,7 +792,7 @@ router.post('/login/ldap', async (req: Request, res: Response) => {
       details: { reason: 'ldap_auth_failed', provider: 'ldap' },
       ipAddress: req.ip,
     });
-    res.status(401).json({ error: 'Invalid username or password' });
+    res.status(401).json({ error: '用户名或密码错误' });
     return;
   }
 
@@ -840,7 +840,7 @@ function stateMatchesCookie(state: string, cookie: unknown): boolean {
 // GET /oidc/authorize — redirect the browser to the OIDC provider
 router.get('/oidc/authorize', async (_req: Request, res: Response) => {
   if (!isOidcEnabled()) {
-    res.status(400).json({ error: 'OIDC authentication is not enabled' });
+    res.status(400).json({ error: 'OIDC 登录未启用' });
     return;
   }
 
@@ -871,7 +871,7 @@ router.get('/oidc/callback', async (req: Request, res: Response) => {
   res.clearCookie(OIDC_STATE_COOKIE, { path: OIDC_STATE_COOKIE_PATH });
 
   if (error) {
-    const msg = encodeURIComponent(error_description ?? error ?? 'OIDC error');
+    const msg = encodeURIComponent(error_description ?? error ?? 'OIDC 错误');
     res.redirect(`${config.basePathPrefix}/?sso_error=${msg}`);
     return;
   }
@@ -924,7 +924,7 @@ router.post('/ldap/test', adminRequired, async (req: Request, res: Response) => 
     url?: string; bindDn?: string; bindPassword?: string; searchBase?: string;
   };
   if (!url || !searchBase) {
-    res.status(400).json({ success: false, error: 'url and searchBase are required' });
+    res.status(400).json({ success: false, error: 'url 和 searchBase 为必填项' });
     return;
   }
   try {
@@ -935,7 +935,7 @@ router.post('/ldap/test', adminRequired, async (req: Request, res: Response) => 
     await client.unbind();
     res.json({ success: true });
   } catch (err) {
-    res.json({ success: false, error: err instanceof Error ? err.message : 'Connection failed' });
+    res.json({ success: false, error: err instanceof Error ? err.message : '连接失败' });
   }
 });
 

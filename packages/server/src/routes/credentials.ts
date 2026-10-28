@@ -86,12 +86,12 @@ router.post('/', (req: Request, res: Response) => {
     privateKey?: string; passphrase?: string; shared?: boolean; domain?: string;
   };
 
-  if (!name?.trim()) { res.status(400).json({ error: 'Name is required' }); return; }
+  if (!name?.trim()) { res.status(400).json({ error: '名称为必填项' }); return; }
   if (!type || !(CREDENTIAL_TYPES as readonly string[]).includes(type)) {
-    res.status(400).json({ error: 'Invalid credential type' }); return;
+    res.status(400).json({ error: '无效的凭据类型' }); return;
   }
   if (type === 'key' && !privateKey?.trim()) {
-    res.status(400).json({ error: 'Private key is required' }); return;
+    res.status(400).json({ error: '私钥为必填项' }); return;
   }
   // PKCS#8 keys are converted to an unencrypted format ssh2 reads; the
   // passphrase is then no longer needed (secrets are encrypted at rest anyway).
@@ -102,7 +102,7 @@ router.post('/', (req: Request, res: Response) => {
     key = prepared.key;
   }
   if (shared && !userCan(req, 'credentials.share')) {
-    res.status(403).json({ error: 'Not permitted to create shared credentials' }); return;
+    res.status(403).json({ error: '无权创建共享凭据' }); return;
   }
 
   const id = uuid();
@@ -139,9 +139,9 @@ router.put('/:id', (req: Request, res: Response) => {
   const id = req.params.id as string;
   const cred = queryOne<CredentialRow>('SELECT * FROM credentials WHERE id = ?', [id]);
   if (!cred || (cred.user_id !== userId && !cred.shared)) {
-    res.status(404).json({ error: 'Credential not found' }); return;
+    res.status(404).json({ error: '凭据不存在' }); return;
   }
-  if (!canEdit(req, cred)) { res.status(403).json({ error: 'Not authorized' }); return; }
+  if (!canEdit(req, cred)) { res.status(403).json({ error: '无权访问' }); return; }
 
   const { name, username, password, privateKey, passphrase, shared, domain, clearPassword, clearPassphrase } = req.body as {
     name?: string; username?: string; password?: string; privateKey?: string; passphrase?: string;
@@ -159,7 +159,7 @@ router.put('/:id', (req: Request, res: Response) => {
       if (!nextKey && cred.private_key) nextKey = decrypt(cred.private_key);
       if (!nextPassphrase && !clearPassphrase && cred.encrypted_passphrase) nextPassphrase = decrypt(cred.encrypted_passphrase);
     } catch { /* stored value unreadable — validate what we have */ }
-    if (!nextKey) { res.status(400).json({ error: 'Private key is required' }); return; }
+    if (!nextKey) { res.status(400).json({ error: '私钥为必填项' }); return; }
     const prepared = prepareKey(nextKey, nextPassphrase);
     if ('error' in prepared) { res.status(400).json({ error: prepared.error }); return; }
     key = prepared.key;
@@ -167,12 +167,12 @@ router.put('/:id', (req: Request, res: Response) => {
 
   if (shared !== undefined && !!shared !== (cred.shared === 1)) {
     if (!userCan(req, 'credentials.share')) {
-      res.status(403).json({ error: 'Not permitted to change credential sharing' }); return;
+      res.status(403).json({ error: '无权修改凭据的共享设置' }); return;
     }
     if (!shared) {
       const blocking = nonOwnerUsages(cred);
       if (blocking.length) {
-        res.status(409).json(inUseBody(req, 'Credential is used by shared or other users\' connections', blocking));
+        res.status(409).json(inUseBody(req, '该凭据正被共享连接或其他用户的连接使用', blocking));
         return;
       }
     }
@@ -181,7 +181,7 @@ router.put('/:id', (req: Request, res: Response) => {
   const updates: string[] = [];
   const params: unknown[] = [];
   if (name !== undefined) {
-    if (!name.trim()) { res.status(400).json({ error: 'Name is required' }); return; }
+    if (!name.trim()) { res.status(400).json({ error: '名称为必填项' }); return; }
     updates.push('name = ?'); params.push(name.trim());
   }
   if (username !== undefined) { updates.push('username = ?'); params.push(username.trim() || null); }
@@ -201,7 +201,7 @@ router.put('/:id', (req: Request, res: Response) => {
   }
   if (shared !== undefined) { updates.push('shared = ?'); params.push(shared ? 1 : 0); }
 
-  if (updates.length === 0) { res.status(400).json({ error: 'No fields to update' }); return; }
+  if (updates.length === 0) { res.status(400).json({ error: '没有需要更新的字段' }); return; }
   updates.push("updated_at = datetime('now')");
   params.push(id);
   execute(`UPDATE credentials SET ${updates.join(', ')} WHERE id = ?`, params);
@@ -228,15 +228,15 @@ router.delete('/:id', (req: Request, res: Response) => {
   const id = req.params.id as string;
   const cred = queryOne<CredentialRow>('SELECT * FROM credentials WHERE id = ?', [id]);
   if (!cred || (cred.user_id !== userId && !cred.shared)) {
-    res.status(404).json({ error: 'Credential not found' }); return;
+    res.status(404).json({ error: '凭据不存在' }); return;
   }
-  if (!canEdit(req, cred)) { res.status(403).json({ error: 'Not authorized' }); return; }
+  if (!canEdit(req, cred)) { res.status(403).json({ error: '无权访问' }); return; }
 
   const inUse = queryAll<{ id: string; name: string; user_id: string }>(
     'SELECT id, name, user_id FROM connections WHERE credential_id = ? ORDER BY name COLLATE NOCASE', [id],
   );
   if (inUse.length) {
-    res.status(409).json(inUseBody(req, 'Credential is in use', inUse));
+    res.status(409).json(inUseBody(req, '该凭据正在使用中', inUse));
     return;
   }
 

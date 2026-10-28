@@ -155,7 +155,7 @@ export function setupSshProxy(server: https.Server, basePath = ''): void {
     if (isSessionRevoked(tokenHash)) { ws.close(4001, 'Session revoked'); return; }
 
     // Protocol permission check
-    if (!userHasPermission(userId, 'protocols.ssh')) { ws.close(4003, 'Protocol not permitted'); return; }
+    if (!userHasPermission(userId, 'protocols.ssh')) { ws.close(4003, '无权使用 SSH 协议'); return; }
 
     registerWs(tokenHash, ws);
     ws.once('close', () => unregisterWs(tokenHash, ws));
@@ -187,11 +187,11 @@ export function setupSshProxy(server: https.Server, basePath = ''): void {
       [connectionId, ...access.params],
     );
     const conn = connRow ? applyCredential(connRow, userId) : undefined;
-    if (!conn || conn.protocol !== 'ssh') { ws.close(4002, 'Not found or not SSH'); return; }
+    if (!conn || conn.protocol !== 'ssh') { ws.close(4002, '连接不存在或不是 SSH 连接'); return; }
 
     // Enforce per-user and global connection limits (H2)
     const limit = acquireConnection(userId);
-    if (!limit.allowed) { ws.close(4008, limit.reason ?? 'Connection limit'); return; }
+    if (!limit.allowed) { ws.close(4008, limit.reason ?? '连接数已达上限'); return; }
     // From here on the slot belongs to teardownSession() once the session is cached; until then
     // every failure ends with the browser socket closing, so release it there. A browser that
     // leaves mid-handshake would otherwise get a session cached for a socket that is already gone,
@@ -305,8 +305,8 @@ export function setupSshProxy(server: https.Server, basePath = ''): void {
           srv.once('error', (err: NodeJS.ErrnoException) => {
             statusEntry.status = 'failed';
             statusEntry.error = err.code === 'EADDRINUSE'
-              ? `Port ${tunnel.localPort} already in use`
-              : (err.message ?? 'Unknown error');
+              ? `端口 ${tunnel.localPort} 已被占用`
+              : (err.message ?? '未知错误');
             pending--;
             if (pending === 0 && ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({ type: 'tunnels', tunnels: tunnelStatuses }));
@@ -322,7 +322,7 @@ export function setupSshProxy(server: https.Server, basePath = ''): void {
         if (err) {
           if (ws.readyState === WebSocket.OPEN)
             ws.send(JSON.stringify({ type: 'error', message: err.message }));
-          ws.close(4003, 'Shell error'); return;
+          ws.close(4003, 'Shell 错误'); return;
         }
 
         const session: SshCachedSession = {
@@ -369,7 +369,7 @@ export function setupSshProxy(server: https.Server, basePath = ''): void {
         });
         shellStream.on('close', () => {
           const s = getSession(clientSessionId);
-          if (s?.ws?.readyState === WebSocket.OPEN) s.ws.close(1000, 'Shell closed');
+          if (s?.ws?.readyState === WebSocket.OPEN) s.ws.close(1000, 'Shell 已关闭');
           teardownSession(clientSessionId, session, userId, conn.host, conn.port, connectionId, sessionDbId, clientIp);
         });
 
@@ -393,7 +393,7 @@ export function setupSshProxy(server: https.Server, basePath = ''): void {
             previousFingerprint: hostKeyMismatch.previous,
             fingerprint: hostKeyMismatch.current,
           }));
-          ws.close(4003, 'Host key changed');
+          ws.close(4003, '主机密钥已变更');
         }
         return;
       }
@@ -456,8 +456,8 @@ export function setupSshProxy(server: https.Server, basePath = ''): void {
     if (promptOnConnect) {
       const authTimeout = setTimeout(() => {
         if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: 'error', message: 'Authentication timeout' }));
-          ws.close(4007, 'Auth timeout');
+          ws.send(JSON.stringify({ type: 'error', message: '身份验证超时' }));
+          ws.close(4007, '身份验证超时');
         }
       }, 30000);
       ws.once('close', () => clearTimeout(authTimeout));
@@ -468,12 +468,12 @@ export function setupSshProxy(server: https.Server, basePath = ''): void {
         try {
           const json = JSON.parse(typeof authMsg === 'string' ? authMsg : authMsg.toString('utf8'));
           if (json.type !== 'auth' || typeof json.password !== 'string') {
-            if (ws.readyState === WebSocket.OPEN) ws.close(4007, 'Expected auth message');
+            if (ws.readyState === WebSocket.OPEN) ws.close(4007, '未收到身份验证消息');
             return;
           }
           oneTimePassword = json.password;
         } catch {
-          if (ws.readyState === WebSocket.OPEN) ws.close(4007, 'Expected auth message');
+          if (ws.readyState === WebSocket.OPEN) ws.close(4007, '未收到身份验证消息');
           return;
         }
         ws.once('message', (resizeMsg: Buffer | string) => {

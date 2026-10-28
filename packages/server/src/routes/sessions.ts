@@ -63,13 +63,13 @@ router.get('/active', requirePermission('sessions.view_active'), (_req: Request,
 // it answers a yes or no for a connection the caller can open, and never says who or how many.
 router.get('/rdp-in-use', sessionsReadLimiter, requirePermission('protocols.rdp'), (req: Request, res: Response) => {
   const connectionId = typeof req.query.connectionId === 'string' ? req.query.connectionId : '';
-  if (!connectionId) { res.status(400).json({ error: 'connectionId required' }); return; }
+  if (!connectionId) { res.status(400).json({ error: '缺少 connectionId' }); return; }
   const access = connectionAccessWhere('connections', req.user!.userId, req.user!.role);
   const conn = queryOne<{ host: string; port: number }>(
     `SELECT host, port FROM connections WHERE id = ? AND protocol = 'rdp' AND ${access.where}`,
     [connectionId, ...access.params],
   );
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
   res.json({ inUse: isTargetInUseByOthers('rdp', targetKey(conn.host, conn.port), req.user!.userId) });
 });
 
@@ -78,7 +78,7 @@ router.get('/rdp-in-use', sessionsReadLimiter, requirePermission('protocols.rdp'
 router.post('/active/:id/disconnect', sessionsActionLimiter, requirePermission('sessions.disconnect'), (req: Request, res: Response) => {
   const id = String(req.params.id);
   const target = getActiveSession(id);
-  if (!target) { res.status(404).json({ error: 'Session not found or already ended' }); return; }
+  if (!target) { res.status(404).json({ error: '会话不存在或已结束' }); return; }
   logAudit({
     userId: req.user!.userId,
     eventType: 'session.disconnect.forced',
@@ -195,10 +195,10 @@ router.get('/:id/recording', (req: Request, res: Response) => {
     [id],
   );
 
-  if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
-  if (!canViewAny && session.user_id !== userId) { res.status(403).json({ error: 'Forbidden' }); return; }
+  if (!session) { res.status(404).json({ error: '会话不存在' }); return; }
+  if (!canViewAny && session.user_id !== userId) { res.status(403).json({ error: '无权访问' }); return; }
   if (!session.recording_path || !fs.existsSync(session.recording_path)) {
-    res.status(404).json({ error: 'Recording not found' }); return;
+    res.status(404).json({ error: '录像不存在' }); return;
   }
 
   const filePath = session.recording_path;
@@ -243,7 +243,7 @@ router.get('/:id/recording', (req: Request, res: Response) => {
 router.post('/rdp-session', (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const { connectionId } = req.body as { connectionId?: string };
-  if (!connectionId) { res.status(400).json({ error: 'connectionId required' }); return; }
+  if (!connectionId) { res.status(400).json({ error: '缺少 connectionId' }); return; }
 
   const role = req.user!.role;
   const access = connectionAccessWhere('connections', userId, role);
@@ -251,7 +251,7 @@ router.post('/rdp-session', (req: Request, res: Response) => {
     `SELECT id, name, recording_enabled FROM connections WHERE id = ? AND ${access.where}`,
     [connectionId, ...access.params],
   );
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const globalRecording = getSetting('session.recording_enabled') === 'true';
   const shouldRecord = globalRecording && conn.recording_enabled === 1;
@@ -279,7 +279,7 @@ router.post('/rdp-file-transfer', (req: Request, res: Response) => {
     direction?: 'upload' | 'download';
   };
   if (!connectionId || !fileName || !direction) {
-    res.status(400).json({ error: 'connectionId, fileName, and direction are required' });
+    res.status(400).json({ error: '缺少 connectionId、fileName 或 direction' });
     return;
   }
 
@@ -297,23 +297,23 @@ router.post('/rdp-file-transfer', (req: Request, res: Response) => {
 // SECURITY: express.raw() here (not at the app level) so the body is only read after
 // router.use(authRequired) and recordingSessionGuard (ownership) have run.
 router.post('/:id/recording/chunk', recordingChunkLimiter, recordingSessionGuard, express.raw({ limit: '100mb', type: '*/*' }), (req: Request, res: Response) => {
-  if (!Buffer.isBuffer(req.body)) { res.status(400).json({ error: 'Invalid chunk body' }); return; }
+  if (!Buffer.isBuffer(req.body)) { res.status(400).json({ error: '无效的数据块' }); return; }
   const userId = req.user!.userId;
   const id = req.params.id as string;
   // Validate UUID format to prevent path traversal in recording file path
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-    res.status(400).json({ error: 'Invalid session id' }); return;
+    res.status(400).json({ error: '无效的会话 ID' }); return;
   }
 
   const session = queryOne<{ recording_path: string | null; user_id: string; protocol: string; ended_at: string | null }>(
     'SELECT recording_path, user_id, protocol, ended_at FROM sessions WHERE id = ?',
     [id],
   );
-  if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
-  if (session.user_id !== userId) { res.status(403).json({ error: 'Forbidden' }); return; }
+  if (!session) { res.status(404).json({ error: '会话不存在' }); return; }
+  if (session.user_id !== userId) { res.status(403).json({ error: '无权访问' }); return; }
   // SSH and Telnet recordings are written by the server, never through this route.
-  if (session.protocol !== 'rdp') { res.status(400).json({ error: 'Not an RDP session' }); return; }
-  if (session.ended_at) { res.status(409).json({ error: 'Session already ended' }); return; }
+  if (session.protocol !== 'rdp') { res.status(400).json({ error: '不是 RDP 会话' }); return; }
+  if (session.ended_at) { res.status(409).json({ error: '会话已结束' }); return; }
 
   // Path is derived from the validated id, never from the stored value
   const filePath = path.join(config.recordingsDir, `${id}.webm`);
@@ -334,7 +334,7 @@ router.post('/:id/recording/chunk', recordingChunkLimiter, recordingSessionGuard
   } catch {
     // A failed append leaves the cipher out of step with the file, so later chunks must not reuse it
     rdpWriters.delete(id);
-    res.status(500).json({ error: 'Failed to write chunk' }); return;
+    res.status(500).json({ error: '写入数据块失败' }); return;
   }
   res.json({ ok: true });
 });
@@ -348,9 +348,9 @@ router.post('/:id/recording/finalize', (req: Request, res: Response) => {
     'SELECT user_id, protocol FROM sessions WHERE id = ?',
     [id],
   );
-  if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
-  if (session.user_id !== userId) { res.status(403).json({ error: 'Forbidden' }); return; }
-  if (session.protocol !== 'rdp') { res.status(400).json({ error: 'Not an RDP session' }); return; }
+  if (!session) { res.status(404).json({ error: '会话不存在' }); return; }
+  if (session.user_id !== userId) { res.status(403).json({ error: '无权访问' }); return; }
+  if (session.protocol !== 'rdp') { res.status(400).json({ error: '不是 RDP 会话' }); return; }
 
   // The client may finalize more than once (recorder stop and tab close), keep the first end time
   execute("UPDATE sessions SET ended_at = COALESCE(ended_at, datetime('now')) WHERE id = ?", [id]);
@@ -368,8 +368,8 @@ router.post('/:id/recording/events', (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const id = req.params.id as string;
   const session = queryOne<{ user_id: string }>('SELECT user_id FROM sessions WHERE id = ?', [id]);
-  if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
-  if (session.user_id !== userId) { res.status(403).json({ error: 'Forbidden' }); return; }
+  if (!session) { res.status(404).json({ error: '会话不存在' }); return; }
+  if (session.user_id !== userId) { res.status(403).json({ error: '无权访问' }); return; }
 
   const events = req.body as { elapsed: number; type: string }[];
   if (!Array.isArray(events) || events.length === 0) { res.json({ ok: true }); return; }
@@ -384,7 +384,7 @@ router.post('/:id/recording/events', (req: Request, res: Response) => {
     res.json({ ok: true });
   } catch (e) {
     console.error('[sessions] Failed to insert RDP events:', e);
-    res.status(500).json({ error: 'Failed to store events' });
+    res.status(500).json({ error: '保存事件失败' });
   }
 });
 
@@ -394,8 +394,8 @@ router.get('/:id/recording/events', (req: Request, res: Response) => {
   const canViewAny = userCan(req, 'sessions.view_any');
   const id = req.params.id as string;
   const session = queryOne<{ user_id: string }>('SELECT user_id FROM sessions WHERE id = ?', [id]);
-  if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
-  if (!canViewAny && session.user_id !== userId) { res.status(403).json({ error: 'Forbidden' }); return; }
+  if (!session) { res.status(404).json({ error: '会话不存在' }); return; }
+  if (!canViewAny && session.user_id !== userId) { res.status(403).json({ error: '无权访问' }); return; }
 
   const events = queryAll<{ elapsed: number; event_type: string }>(
     'SELECT elapsed, event_type FROM rdp_events WHERE session_id = ? ORDER BY elapsed ASC',
@@ -414,8 +414,8 @@ router.get('/:id/commands', (req: Request, res: Response) => {
     'SELECT user_id, protocol FROM sessions WHERE id = ?',
     [id],
   );
-  if (!session) { res.status(404).json({ error: 'Session not found' }); return; }
-  if (!canViewAny && session.user_id !== userId) { res.status(403).json({ error: 'Forbidden' }); return; }
+  if (!session) { res.status(404).json({ error: '会话不存在' }); return; }
+  if (!canViewAny && session.user_id !== userId) { res.status(403).json({ error: '无权访问' }); return; }
 
   const commands = queryAll<{ id: string; timestamp: string; elapsed: number; command: string; output_preview: string | null }>(
     'SELECT id, timestamp, elapsed, command, output_preview FROM ssh_commands WHERE session_id = ? ORDER BY elapsed ASC',

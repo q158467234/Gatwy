@@ -87,17 +87,17 @@ export async function getPool(connectionId: string): Promise<PoolWrapper> {
      FROM connections WHERE id = ?`,
     [connectionId],
   );
-  if (!row) throw new Error('Connection not found');
+  if (!row) throw new Error('连接不存在');
   const conn = applyCredential(row, null);
   if (conn.protocol !== 'postgres' && conn.protocol !== 'mysql') {
-    throw new Error(`Protocol '${conn.protocol}' is not a database protocol`);
+    throw new Error(`协议 '${conn.protocol}' 不是数据库协议`);
   }
 
   const extra: DbExtraConfig = conn.extra_config_json
     ? (() => { try { return JSON.parse(conn.extra_config_json!) as DbExtraConfig; } catch { return {}; } })()
     : {};
 
-  if (!extra.defaultDatabase) throw new Error('defaultDatabase is required in connection config');
+  if (!extra.defaultDatabase) throw new Error('连接配置中的默认数据库为必填项');
 
   const password = conn.encrypted_password
     ? (() => { try { return decrypt(conn.encrypted_password!); } catch { return ''; } })()

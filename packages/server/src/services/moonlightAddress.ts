@@ -8,7 +8,7 @@ import net from 'node:net';
 export async function resolveMoonlightHostAddress(host: string): Promise<string> {
   const trimmed = host.trim();
   if (!trimmed) {
-    throw new Error('Sunshine host is empty');
+    throw new Error('Sunshine 主机地址为空');
   }
   if (net.isIP(trimmed)) {
     return trimmed;
@@ -20,7 +20,7 @@ export async function resolveMoonlightHostAddress(host: string): Promise<string>
   } catch {
     const { address } = await dns.lookup(trimmed);
     if (!net.isIP(address)) {
-      throw new Error(`Could not resolve Sunshine host ${trimmed} to an IP address`);
+      throw new Error(`无法将 Sunshine 主机 ${trimmed} 解析为 IP 地址`);
     }
     return address;
   }

@@ -54,7 +54,7 @@ router.put('/channels/:type', (req: Request, res: Response) => {
   const { type } = req.params as { type: string };
   const validTypes: ChannelType[] = ['smtp', 'telegram', 'slack', 'webhook'];
   if (!validTypes.includes(type as ChannelType)) {
-    res.status(400).json({ error: 'Invalid channel type' });
+    res.status(400).json({ error: '无效的渠道类型' });
     return;
   }
 
@@ -128,7 +128,7 @@ router.post('/channels/:type/test', async (req: Request, res: Response) => {
   const { type } = req.params as { type: string };
   const validTypes: ChannelType[] = ['smtp', 'telegram', 'slack', 'webhook'];
   if (!validTypes.includes(type as ChannelType)) {
-    res.status(400).json({ error: 'Invalid channel type' });
+    res.status(400).json({ error: '无效的渠道类型' });
     return;
   }
 
@@ -231,7 +231,7 @@ router.post('/rules', (req: Request, res: Response) => {
     : [];
 
   if (!body.name?.trim() || eventsArr.length === 0) {
-    res.status(400).json({ error: 'name and at least one event are required' });
+    res.status(400).json({ error: '名称和至少一个事件为必填项' });
     return;
   }
 
@@ -265,7 +265,7 @@ router.post('/rules', (req: Request, res: Response) => {
 router.put('/rules/:id', (req: Request, res: Response) => {
   const { id } = req.params;
   const existing = queryOne<RuleRow>('SELECT * FROM notification_rules WHERE id = ?', [id]);
-  if (!existing) { res.status(404).json({ error: 'Rule not found' }); return; }
+  if (!existing) { res.status(404).json({ error: '规则不存在' }); return; }
 
   const body = req.body as {
     name?: string;
@@ -342,7 +342,7 @@ router.put('/rules/:id', (req: Request, res: Response) => {
 router.patch('/rules/:id/toggle', (req: Request, res: Response) => {
   const { id } = req.params;
   const row = queryOne<{ enabled: number; name: string }>('SELECT enabled, name FROM notification_rules WHERE id = ?', [id]);
-  if (!row) { res.status(404).json({ error: 'Rule not found' }); return; }
+  if (!row) { res.status(404).json({ error: '规则不存在' }); return; }
 
   const newEnabled = row.enabled === 1 ? 0 : 1;
   execute('UPDATE notification_rules SET enabled = ? WHERE id = ?', [newEnabled, id]);
@@ -361,7 +361,7 @@ router.patch('/rules/:id/toggle', (req: Request, res: Response) => {
 router.delete('/rules/:id', (req: Request, res: Response) => {
   const { id } = req.params;
   const row = queryOne<{ name: string }>('SELECT name FROM notification_rules WHERE id = ?', [id]);
-  if (!row) { res.status(404).json({ error: 'Rule not found' }); return; }
+  if (!row) { res.status(404).json({ error: '规则不存在' }); return; }
 
   execute('DELETE FROM notification_rules WHERE id = ?', [id]);
 
@@ -427,12 +427,12 @@ router.get('/log', (req: Request, res: Response) => {
 router.post('/log/:id/retry', async (req: Request, res: Response) => {
   const { id } = req.params;
   const row = queryOne<LogRow>('SELECT * FROM notification_log WHERE id = ?', [id]);
-  if (!row) { res.status(404).json({ error: 'Log entry not found' }); return; }
+  if (!row) { res.status(404).json({ error: '日志记录不存在' }); return; }
 
   const payload = row.payload_json ? safeJson<{ action?: unknown }>(row.payload_json, {}) : {};
   const action = payload.action as Parameters<typeof sendTestNotification>[1] & { channel: ChannelType } | undefined;
 
-  if (!action) { res.status(400).json({ error: 'No action payload to retry' }); return; }
+  if (!action) { res.status(400).json({ error: '没有可重试的动作内容' }); return; }
 
   try {
     const { dispatch } = await import('../services/notificationSender.js');
@@ -476,7 +476,7 @@ router.put('/settings', (req: Request, res: Response) => {
   const { retentionDays } = req.body as { retentionDays?: number };
   const days = parseInt(String(retentionDays ?? ''), 10);
   if (!days || days < 1) {
-    res.status(400).json({ error: 'retentionDays must be a positive integer' });
+    res.status(400).json({ error: '保留天数必须为正整数' });
     return;
   }
   const old = parseInt(getSetting('notifications.log_retention_days') ?? '90', 10);
@@ -499,7 +499,7 @@ router.delete('/log/:id', (req: Request, res: Response) => {
   const row = queryOne<{ rule_name: string; channel: string }>(
     'SELECT rule_name, channel FROM notification_log WHERE id = ?', [id],
   );
-  if (!row) { res.status(404).json({ error: 'Log entry not found' }); return; }
+  if (!row) { res.status(404).json({ error: '日志记录不存在' }); return; }
 
   execute('DELETE FROM notification_log WHERE id = ?', [id]);
 

@@ -290,14 +290,14 @@ export function setupRdpProxy(server: https.Server, basePath = ''): void {
     if (isSessionRevoked(tokenHash)) { ws.close(4001, 'Session revoked'); return; }
 
     // Protocol permission check
-    if (!userHasPermission(userId, 'protocols.rdp')) { ws.close(4003, 'Protocol not permitted'); return; }
+    if (!userHasPermission(userId, 'protocols.rdp')) { ws.close(4003, '无权使用 RDP 协议'); return; }
 
     registerWs(tokenHash, ws);
     ws.once('close', () => unregisterWs(tokenHash, ws));
 
     // Enforce per-user and global connection limits (H2)
     const limit = acquireConnection(userId);
-    if (!limit.allowed) { ws.close(4008, limit.reason ?? 'Connection limit'); return; }
+    if (!limit.allowed) { ws.close(4008, limit.reason ?? '连接数已达上限'); return; }
     // Only a slot that was actually acquired may be released.
     ws.once('close', () => releaseConnection(userId));
 
@@ -307,7 +307,7 @@ export function setupRdpProxy(server: https.Server, basePath = ''): void {
       [connectionId, ...access.params],
     );
     const conn = connRow ? applyCredential(connRow, userId) : undefined;
-    if (!conn || conn.protocol !== 'rdp') { ws.close(4002, 'Connection not found or not RDP'); return; }
+    if (!conn || conn.protocol !== 'rdp') { ws.close(4002, '连接不存在或不是 RDP 连接'); return; }
 
     const sessionId = uuid();
     // RDP has no recording support — sessions are tracked via audit trail only
@@ -400,7 +400,7 @@ export function setupRdpProxy(server: https.Server, basePath = ''): void {
         console.error('[rdp] parse error:', e);
         trace('client.initial-parse.error', { message: e instanceof Error ? e.message : String(e) });
         flushTrace('client.initial-parse.error');
-        if (ws.readyState === WebSocket.OPEN) { sendBinary(ws, encodeRDCleanPathError()); ws.close(4004, 'Bad PDU'); }
+        if (ws.readyState === WebSocket.OPEN) { sendBinary(ws, encodeRDCleanPathError()); ws.close(4004, '无效的 PDU'); }
         return;
       }
       trace('client.initial-parse.ok', { x224Length: x224cr.length });
@@ -529,7 +529,7 @@ export function setupRdpProxy(server: https.Server, basePath = ''): void {
                     if (redirectCount >= 4) {
                       trace('server.preactivation.redirect.limit', { generation, redirectCount });
                       flushTrace('redirect.limit');
-                      if (ws.readyState === WebSocket.OPEN) ws.close(4003, 'Too many redirects');
+                      if (ws.readyState === WebSocket.OPEN) ws.close(4003, '重定向次数过多');
                       cleanup();
                       return;
                     }
@@ -549,7 +549,7 @@ export function setupRdpProxy(server: https.Server, basePath = ''): void {
                         ipAddress: clientIp,
                       });
                       flushTrace('redirect.blocked');
-                      if (ws.readyState === WebSocket.OPEN) ws.close(4003, 'Redirect target not allowed');
+                      if (ws.readyState === WebSocket.OPEN) ws.close(4003, '不允许的重定向目标');
                       cleanup();
                       return;
                     }
@@ -586,7 +586,7 @@ export function setupRdpProxy(server: https.Server, basePath = ''): void {
                 if (generation !== activeGeneration || closed) return;
                 trace('backend.tls.close', { generation });
                 flushTrace('backend.tls.close');
-                if (ws.readyState === WebSocket.OPEN) ws.close(1000, 'TCP closed');
+                if (ws.readyState === WebSocket.OPEN) ws.close(1000, 'TCP 连接已关闭');
               });
 
               if (redirect && bufferedClientFrames.length > 0) {
@@ -604,7 +604,7 @@ export function setupRdpProxy(server: https.Server, basePath = ''): void {
               flushTrace('backend.tls.error', { message: e.message });
               if (ws.readyState === WebSocket.OPEN) {
                 sendBinary(ws, encodeRDCleanPathError());
-                ws.close(4003, 'TLS error');
+                ws.close(4003, 'TLS 错误');
               }
               cleanup();
             });
@@ -616,7 +616,7 @@ export function setupRdpProxy(server: https.Server, basePath = ''): void {
             flushTrace('backend.x224.error', { message: e instanceof Error ? e.message : String(e) });
             if (ws.readyState === WebSocket.OPEN) {
               sendBinary(ws, encodeRDCleanPathError());
-              ws.close(4003, 'X.224 error');
+              ws.close(4003, 'X.224 错误');
             }
             cleanup();
           });
@@ -626,7 +626,7 @@ export function setupRdpProxy(server: https.Server, basePath = ''): void {
           console.error('[rdp] TCP error:', err.message);
           trace('backend.tcp.error', { generation, message: err.message });
           flushTrace('backend.tcp.error', { message: err.message });
-          if (ws.readyState === WebSocket.OPEN) ws.close(4003, 'TCP error');
+          if (ws.readyState === WebSocket.OPEN) ws.close(4003, 'TCP 错误');
           cleanup();
         });
       };

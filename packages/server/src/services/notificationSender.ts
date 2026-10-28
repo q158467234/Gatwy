@@ -9,8 +9,8 @@ import { getSetting } from './settings.js';
  */
 export function validateOutboundUrl(raw: string): URL {
   let parsed: URL;
-  try { parsed = new URL(raw); } catch { throw new Error(`Invalid URL: ${raw}`); }
-  if (parsed.protocol !== 'https:') throw new Error('Outbound notification URLs must use HTTPS');
+  try { parsed = new URL(raw); } catch { throw new Error(`无效的 URL：${raw}`); }
+  if (parsed.protocol !== 'https:') throw new Error('通知的外发地址必须使用 HTTPS');
   const host = parsed.hostname.toLowerCase();
   // Block loopback, private ranges, link-local, metadata service IPs
   const blocked = [
@@ -25,7 +25,7 @@ export function validateOutboundUrl(raw: string): URL {
     /^fc[0-9a-f]{2}:/i,
   ];
   if (blocked.some((re) => re.test(host))) {
-    throw new Error(`Outbound URL hostname is not allowed: ${host}`);
+    throw new Error(`不允许向该主机发送通知：${host}`);
   }
   return parsed;
 }
@@ -202,21 +202,21 @@ async function sendSmtp(action: NotificationAction, cfg: ChannelConfig, ctx: Dis
 
   const defaultSubject = cfg.smtp_default_subject ?? '{{severity}} [{{app_name}}] {{rule}} — {{event}}';
   const defaultBody = cfg.smtp_default_body ??
-    '{{severity}} [{{app_name}}] Security Alert\n' +
+    '{{severity}} [{{app_name}}] 安全告警\n' +
     '━━━━━━━━━━━━━━━━━━━━━\n' +
-    'Rule:      {{rule}}\n' +
-    'Event:     {{event}}\n' +
-    'User:      {{user}}\n' +
-    'IP:        {{ip}}\n' +
-    'Target:    {{target}}\n' +
-    'Time:      {{timestamp}}\n' +
+    '规则：{{rule}}\n' +
+    '事件：{{event}}\n' +
+    '用户：{{user}}\n' +
+    'IP：  {{ip}}\n' +
+    '目标：{{target}}\n' +
+    '时间：{{timestamp}}\n' +
     '━━━━━━━━━━━━━━━━━━━━━\n' +
-    'This is an automated alert from {{app_name}}.';
+    '此邮件由 {{app_name}} 自动发送。';
   const subject = renderTemplate(action.subject ?? defaultSubject, ctx);
   const text = renderTemplate(action.body ?? defaultBody, ctx);
 
   const recipients = resolveRecipients(action);
-  if (recipients.length === 0) throw new Error('No recipients resolved — add a To address, user, or role');
+  if (recipients.length === 0) throw new Error('没有可发送的收件人，请添加收件地址、用户或角色');
 
   await transporter.sendMail({
     from: cfg.smtp_from,
@@ -228,18 +228,18 @@ async function sendSmtp(action: NotificationAction, cfg: ChannelConfig, ctx: Dis
 
 async function sendTelegram(action: NotificationAction, cfg: ChannelConfig, ctx: DispatchContext): Promise<void> {
   const token = cfg.telegram_bot_token;
-  if (!token) throw new Error('Telegram bot token not configured');
+  if (!token) throw new Error('未配置 Telegram Bot Token');
   const chatId = action.chat_id ?? cfg.telegram_chat_id;
-  if (!chatId) throw new Error('Telegram chat_id not configured');
+  if (!chatId) throw new Error('未配置 Telegram Chat ID');
 
   const defaultTemplate = cfg.telegram_default_template ??
     '{{severity}} *[{{app_name}}]* {{rule}}\n' +
     '`{{event}}`\n\n' +
-    '👤 User: `{{user}}`\n' +
-    '🌐 IP: `{{ip}}`\n' +
-    '🎯 Target: `{{target}}`\n' +
-    '🕐 Time: `{{timestamp}}`\n\n' +
-    '_Automated alert from {{app_name}}_';
+    '👤 用户：`{{user}}`\n' +
+    '🌐 IP：`{{ip}}`\n' +
+    '🎯 目标：`{{target}}`\n' +
+    '🕐 时间：`{{timestamp}}`\n\n' +
+    '_来自 {{app_name}} 的自动告警_';
   const text = renderTemplate(action.template ?? defaultTemplate, ctx);
 
   const resp = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -249,20 +249,20 @@ async function sendTelegram(action: NotificationAction, cfg: ChannelConfig, ctx:
   });
   if (!resp.ok) {
     const body = await resp.text();
-    throw new Error(`Telegram API error ${resp.status}: ${body}`);
+    throw new Error(`Telegram API 返回错误 ${resp.status}：${body}`);
   }
 }
 
 async function sendSlack(action: NotificationAction, cfg: ChannelConfig, ctx: DispatchContext): Promise<void> {
   // URL always comes from stored config (not action) so it is never user-tainted at dispatch time.
-  if (!cfg.slack_webhook_url) throw new Error('Slack webhook URL not configured');
+  if (!cfg.slack_webhook_url) throw new Error('未配置 Slack Webhook URL');
   const url = validateOutboundUrl(cfg.slack_webhook_url);
 
   const defaultTemplate = cfg.slack_default_template ??
     '{{severity}} *[{{app_name}}]* {{rule}}\n' +
-    '*Event:* `{{event}}` | *User:* `{{user}}` | *IP:* `{{ip}}`\n' +
-    '*Target:* `{{target}}` | *Time:* `{{timestamp}}`\n' +
-    '_Automated alert from {{app_name}}_';
+    '*事件：* `{{event}}` | *用户：* `{{user}}` | *IP：* `{{ip}}`\n' +
+    '*目标：* `{{target}}` | *时间：* `{{timestamp}}`\n' +
+    '_来自 {{app_name}} 的自动告警_';
   const text = renderTemplate(action.template ?? defaultTemplate, ctx);
 
   const resp = await fetch(url, {
@@ -270,12 +270,12 @@ async function sendSlack(action: NotificationAction, cfg: ChannelConfig, ctx: Di
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
   });
-  if (!resp.ok) throw new Error(`Slack responded ${resp.status}`);
+  if (!resp.ok) throw new Error(`Slack 返回 ${resp.status}`);
 }
 
 async function sendWebhook(action: NotificationAction, cfg: ChannelConfig, ctx: DispatchContext): Promise<void> {
   // URL always comes from stored config (not action) so it is never user-tainted at dispatch time.
-  if (!cfg.webhook_url) throw new Error('Webhook URL not configured');
+  if (!cfg.webhook_url) throw new Error('未配置 Webhook URL');
   const url = validateOutboundUrl(cfg.webhook_url);
 
   const method = cfg.webhook_method ?? 'POST';
@@ -300,7 +300,7 @@ async function sendWebhook(action: NotificationAction, cfg: ChannelConfig, ctx: 
     headers: { 'Content-Type': 'application/json', ...extraHeaders },
     body: typeof payload === 'string' ? payload : JSON.stringify(payload),
   });
-  if (!resp.ok) throw new Error(`Webhook responded ${resp.status}`);
+  if (!resp.ok) throw new Error(`Webhook 返回 ${resp.status}`);
 }
 
 export async function dispatch(action: NotificationAction, ctx: DispatchContext): Promise<void> {
@@ -320,7 +320,7 @@ export async function dispatch(action: NotificationAction, ctx: DispatchContext)
       case 'telegram': await sendTelegram(action, cfg, ctx); break;
       case 'slack':    await sendSlack(action, cfg, ctx);    break;
       case 'webhook':  await sendWebhook(action, cfg, ctx);  break;
-      default: throw new Error(`Unknown channel: ${action.channel}`);
+      default: throw new Error(`未知的通知渠道：${action.channel}`);
     }
     logResult(ctx.ruleId, ctx.ruleName, action.channel, 'sent', payload);
   } catch (err) {

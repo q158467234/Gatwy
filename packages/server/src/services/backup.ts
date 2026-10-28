@@ -90,11 +90,11 @@ export function restoreBackup(rawData: Buffer, password: string): RestoreResult 
   const data = Buffer.isBuffer(rawData) ? rawData : Buffer.from(rawData);
   let offset = 0;
   const magic = data.subarray(offset, offset + BACKUP_MAGIC.length);
-  if (!magic.equals(BACKUP_MAGIC)) throw new Error('Invalid backup file — not an Gatwy backup');
+  if (!magic.equals(BACKUP_MAGIC)) throw new Error('备份文件无效：不是 Gatwy 备份');
   offset += BACKUP_MAGIC.length;
 
   const version = data[offset++];
-  if (version !== BACKUP_VERSION) throw new Error(`Unsupported backup version: ${version}`);
+  if (version !== BACKUP_VERSION) throw new Error(`不支持的备份版本：${version}`);
 
   const kdfSalt = data.subarray(offset, offset + 32); offset += 32;
   const iv = data.subarray(offset, offset + 16); offset += 16;
@@ -112,7 +112,7 @@ export function restoreBackup(rawData: Buffer, password: string): RestoreResult 
   hmac.update(encBody);
   const expectedMac = hmac.digest();
   if (!crypto.timingSafeEqual(mac, expectedMac)) {
-    throw new Error('Invalid backup password or corrupted backup file');
+    throw new Error('备份密码错误或备份文件已损坏');
   }
 
   const decipher = crypto.createDecipheriv('aes-256-ctr', encKey, iv);
@@ -124,7 +124,7 @@ export function restoreBackup(rawData: Buffer, password: string): RestoreResult 
   // H3: cap manifest JSON size to prevent memory exhaustion from crafted backups
   const MAX_MANIFEST_BYTES = 10 * 1024 * 1024; // 10 MB
   if (manifestLen > MAX_MANIFEST_BYTES) {
-    throw new Error('Backup manifest exceeds maximum allowed size');
+    throw new Error('备份清单超出允许的最大大小');
   }
 
   const manifest = JSON.parse(plaintext.subarray(pos, pos + manifestLen).toString('utf8')) as {
@@ -140,7 +140,7 @@ export function restoreBackup(rawData: Buffer, password: string): RestoreResult 
   const MAX_RECORDINGS = 1000;
   const MAX_TOTAL_RECORDING_BYTES = 50 * 1024 * 1024 * 1024; // 50 GB
   if (manifest.recordings.length > MAX_RECORDINGS) {
-    throw new Error(`Backup contains ${manifest.recordings.length} recordings (max ${MAX_RECORDINGS})`);
+    throw new Error(`备份包含 ${manifest.recordings.length} 个录像（上限 ${MAX_RECORDINGS} 个）`);
   }
   let totalRecordingBytes = 0;
   for (const rec of manifest.recordings) {
@@ -148,7 +148,7 @@ export function restoreBackup(rawData: Buffer, password: string): RestoreResult 
     totalRecordingBytes += rec.size;
   }
   if (totalRecordingBytes > MAX_TOTAL_RECORDING_BYTES) {
-    throw new Error('Backup recording data exceeds maximum allowed size');
+    throw new Error('备份中的录像数据超出允许的最大大小');
   }
 
   const dbBytes = plaintext.subarray(pos, pos + manifest.dbSize); pos += manifest.dbSize;

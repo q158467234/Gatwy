@@ -48,7 +48,7 @@ router.post('/', requirePermission('roles.manage'), (req: Request, res: Response
   const { name, description, permissions } = req.body as {
     name?: string; description?: string; permissions?: string[];
   };
-  if (!name?.trim()) { res.status(400).json({ error: 'Name is required' }); return; }
+  if (!name?.trim()) { res.status(400).json({ error: '名称为必填项' }); return; }
 
   // Validate permissions
   const validPerms = (permissions ?? []).filter(p => (ALL_PERMISSIONS as readonly string[]).includes(p));
@@ -73,7 +73,7 @@ router.post('/', requirePermission('roles.manage'), (req: Request, res: Response
 router.put('/:id', requirePermission('roles.manage'), (req: Request, res: Response) => {
   const { id } = req.params;
   const existing = queryOne<RoleRow>('SELECT * FROM roles WHERE id = ?', [id]);
-  if (!existing) { res.status(404).json({ error: 'Role not found' }); return; }
+  if (!existing) { res.status(404).json({ error: '角色不存在' }); return; }
 
   const { name, description, permissions } = req.body as {
     name?: string; description?: string; permissions?: string[];
@@ -121,12 +121,12 @@ router.put('/:id', requirePermission('roles.manage'), (req: Request, res: Respon
 router.post('/:id/reset', requirePermission('roles.manage'), (req: Request, res: Response) => {
   const { id } = req.params;
   const existing = queryOne<RoleRow>('SELECT * FROM roles WHERE id = ?', [id]);
-  if (!existing) { res.status(404).json({ error: 'Role not found' }); return; }
-  if (!existing.is_builtin) { res.status(400).json({ error: 'Only built-in roles can be reset' }); return; }
+  if (!existing) { res.status(404).json({ error: '角色不存在' }); return; }
+  if (!existing.is_builtin) { res.status(400).json({ error: '只有内置角色可以重置' }); return; }
 
   const roleId = id as string;
   const defaults = DEFAULT_BUILTIN_PERMISSIONS[roleId];
-  if (!defaults) { res.status(400).json({ error: 'No defaults defined for this role' }); return; }
+  if (!defaults) { res.status(400).json({ error: '该角色没有定义默认值' }); return; }
 
   const beforePerms = JSON.parse(existing.permissions_json || '[]') as string[];
   execute(
@@ -156,13 +156,13 @@ router.post('/:id/reset', requirePermission('roles.manage'), (req: Request, res:
 router.delete('/:id', requirePermission('roles.manage'), (req: Request, res: Response) => {
   const { id } = req.params;
   const existing = queryOne<RoleRow>('SELECT * FROM roles WHERE id = ?', [id]);
-  if (!existing) { res.status(404).json({ error: 'Role not found' }); return; }
-  if (existing.is_builtin) { res.status(400).json({ error: 'Cannot delete built-in role' }); return; }
+  if (!existing) { res.status(404).json({ error: '角色不存在' }); return; }
+  if (existing.is_builtin) { res.status(400).json({ error: '不能删除内置角色' }); return; }
 
   // Check if any users have this role
   const userCount = queryOne<{ cnt: number }>('SELECT COUNT(*) as cnt FROM users WHERE role = ?', [id]);
   if (userCount && userCount.cnt > 0) {
-    res.status(400).json({ error: `Cannot delete role — ${userCount.cnt} user(s) still assigned to it` });
+    res.status(400).json({ error: `无法删除角色：仍有 ${userCount.cnt} 个用户使用该角色` });
     return;
   }
 

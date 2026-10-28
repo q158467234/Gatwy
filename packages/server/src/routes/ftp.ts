@@ -84,7 +84,7 @@ async function makeFtpClient(conn: ConnRow): Promise<ftp.Client> {
 router.post('/:connectionId/list', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { path: dirPath = '/' } = req.body as { path?: string };
   let client: ftp.Client | null = null;
@@ -115,7 +115,7 @@ router.post('/:connectionId/list', async (req: Request, res: Response) => {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'FTP error';
     console.error('[ftp] list error:', msg);
-    res.status(500).json({ error: 'Operation failed' });
+    res.status(500).json({ error: '操作失败' });
   } finally {
     client?.close();
   }
@@ -125,10 +125,10 @@ router.post('/:connectionId/list', async (req: Request, res: Response) => {
 router.get('/:connectionId/download', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const filePath = req.query.path as string;
-  if (!filePath) { res.status(400).json({ error: 'path required' }); return; }
+  if (!filePath) { res.status(400).json({ error: '缺少路径' }); return; }
 
   const rawName = filePath.split('/').pop() || 'download';
   const safeFileName = encodeURIComponent(rawName).replace(/['()]/g, encodeURIComponent);
@@ -147,7 +147,7 @@ router.get('/:connectionId/download', async (req: Request, res: Response) => {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'FTP error';
     console.error('[ftp] download error:', msg);
-    if (!res.headersSent) res.status(500).json({ error: 'Operation failed' });
+    if (!res.headersSent) res.status(500).json({ error: '操作失败' });
   } finally {
     client?.close();
   }
@@ -159,12 +159,12 @@ router.get('/:connectionId/download', async (req: Request, res: Response) => {
 router.post('/:connectionId/upload', connectionAccessGuard('ftp'), express.raw({ limit: '100mb', type: '*/*' }), async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const filePath = req.query.path as string;
-  if (!filePath) { res.status(400).json({ error: 'path required' }); return; }
+  if (!filePath) { res.status(400).json({ error: '缺少路径' }); return; }
 
-  if (!Buffer.isBuffer(req.body)) { res.status(400).json({ error: 'Invalid upload body' }); return; }
+  if (!Buffer.isBuffer(req.body)) { res.status(400).json({ error: '无效的上传内容' }); return; }
 
   let client: ftp.Client | null = null;
 
@@ -176,7 +176,7 @@ router.post('/:connectionId/upload', connectionAccessGuard('ftp'), express.raw({
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'FTP error';
     console.error('[ftp] upload error:', msg);
-    res.status(500).json({ error: 'Operation failed' });
+    res.status(500).json({ error: '操作失败' });
   } finally {
     client?.close();
   }
@@ -186,10 +186,10 @@ router.post('/:connectionId/upload', connectionAccessGuard('ftp'), express.raw({
 router.post('/:connectionId/mkdir', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { path: dirPath } = req.body as { path?: string };
-  if (!dirPath) { res.status(400).json({ error: 'path required' }); return; }
+  if (!dirPath) { res.status(400).json({ error: '缺少路径' }); return; }
 
   let client: ftp.Client | null = null;
 
@@ -203,7 +203,7 @@ router.post('/:connectionId/mkdir', async (req: Request, res: Response) => {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'FTP error';
     console.error('[ftp] mkdir error:', msg);
-    res.status(500).json({ error: 'Operation failed' });
+    res.status(500).json({ error: '操作失败' });
   } finally {
     client?.close();
   }
@@ -213,10 +213,10 @@ router.post('/:connectionId/mkdir', async (req: Request, res: Response) => {
 router.delete('/:connectionId/file', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const filePath = req.query.path as string;
-  if (!filePath) { res.status(400).json({ error: 'path required' }); return; }
+  if (!filePath) { res.status(400).json({ error: '缺少路径' }); return; }
 
   let client: ftp.Client | null = null;
 
@@ -233,7 +233,7 @@ router.delete('/:connectionId/file', async (req: Request, res: Response) => {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'FTP error';
     console.error('[ftp] delete error:', msg);
-    res.status(500).json({ error: 'Operation failed' });
+    res.status(500).json({ error: '操作失败' });
   } finally {
     client?.close();
   }
@@ -243,10 +243,10 @@ router.delete('/:connectionId/file', async (req: Request, res: Response) => {
 router.post('/:connectionId/rename', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { oldPath, newPath } = req.body as { oldPath?: string; newPath?: string };
-  if (!oldPath || !newPath) { res.status(400).json({ error: 'oldPath and newPath required' }); return; }
+  if (!oldPath || !newPath) { res.status(400).json({ error: '缺少 oldPath 或 newPath' }); return; }
 
   let client: ftp.Client | null = null;
   try {
@@ -255,7 +255,7 @@ router.post('/:connectionId/rename', async (req: Request, res: Response) => {
     logFileSessionEvent({ req, userId, connectionId: req.params.connectionId as string, protocol: 'ftp', action: 'rename', path: `${oldPath} → ${newPath}` });
     res.json({ success: true });
   } catch (e: unknown) {
-    res.status(500).json({ error: e instanceof Error ? e.message : 'FTP error' });
+    res.status(500).json({ error: e instanceof Error ? e.message : 'FTP 操作失败' });
   } finally { client?.close(); }
 });
 
@@ -263,10 +263,10 @@ router.post('/:connectionId/rename', async (req: Request, res: Response) => {
 router.post('/:connectionId/stat', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { path: filePath } = req.body as { path?: string };
-  if (!filePath) { res.status(400).json({ error: 'path required' }); return; }
+  if (!filePath) { res.status(400).json({ error: '缺少路径' }); return; }
 
   let client: ftp.Client | null = null;
   try {
@@ -283,7 +283,7 @@ router.post('/:connectionId/stat', async (req: Request, res: Response) => {
     try {
       res.json({ size: null, mtime: null, isDirectory: true });
     } catch {
-      res.status(500).json({ error: e instanceof Error ? e.message : 'FTP error' });
+      res.status(500).json({ error: e instanceof Error ? e.message : 'FTP 操作失败' });
     }
   } finally { client?.close(); }
 });
@@ -292,10 +292,10 @@ router.post('/:connectionId/stat', async (req: Request, res: Response) => {
 router.post('/:connectionId/copy', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const conn = getConn(req.params.connectionId as string, userId, req.user!.role);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
 
   const { srcPath, destPath } = req.body as { srcPath?: string; destPath?: string };
-  if (!srcPath || !destPath) { res.status(400).json({ error: 'srcPath and destPath required' }); return; }
+  if (!srcPath || !destPath) { res.status(400).json({ error: '缺少 srcPath 或 destPath' }); return; }
 
   let client: ftp.Client | null = null;
   try {
@@ -312,7 +312,7 @@ router.post('/:connectionId/copy', async (req: Request, res: Response) => {
     logFileSessionEvent({ req, userId, connectionId: req.params.connectionId as string, protocol: 'ftp', action: 'copy', path: `${srcPath} → ${destPath}` });
     res.json({ success: true });
   } catch (e: unknown) {
-    res.status(500).json({ error: e instanceof Error ? e.message : 'FTP error' });
+    res.status(500).json({ error: e instanceof Error ? e.message : 'FTP 操作失败' });
   } finally { client?.close(); }
 });
 

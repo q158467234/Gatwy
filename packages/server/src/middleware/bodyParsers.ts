@@ -25,7 +25,7 @@ function boundedJson(limit: number): RequestHandler {
       req.off('data', onData);
       if (res.headersSent) return;
       res.setHeader('Connection', 'close');
-      res.status(413).json({ error: 'Request body too large' });
+      res.status(413).json({ error: '请求体过大' });
     };
     // Only JSON bodies are touched: a 'data' listener would start the stream flowing and
     // steal the body from a downstream raw parser.

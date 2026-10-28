@@ -60,7 +60,7 @@ describe('migration upgrade path', () => {
     const resourceSharesAfter = after.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='resource_shares'");
     assert.equal(resourceSharesAfter.length, 1, 'resource_shares table must exist after upgrading from v21');
     const maxAfter = after.exec('SELECT MAX(version) as v FROM schema_version')[0]!.values[0]![0];
-    assert.equal(maxAfter, 28);
+    assert.equal(maxAfter, 29);
   });
 
   it('migrates real connection_shares and group_shares rows into resource_shares from a v22 database', () => {
@@ -114,7 +114,7 @@ describe('migration upgrade path', () => {
     assert.equal(oldTables.length, 0, 'connection_shares and group_shares must not survive past v23');
 
     const maxAfter = after.exec('SELECT MAX(version) as v FROM schema_version')[0]!.values[0]![0];
-    assert.equal(maxAfter, 28);
+    assert.equal(maxAfter, 29);
   });
 
   it('applies a lower-numbered migration that is missing even when a higher one is already applied', () => {
@@ -127,7 +127,7 @@ describe('migration upgrade path', () => {
     db.run('DELETE FROM schema_version WHERE version = 22');
 
     const maxBefore = db.exec('SELECT MAX(version) as v FROM schema_version')[0]!.values[0]![0];
-    assert.equal(maxBefore, 28, 'precondition: a higher version is already applied');
+    assert.equal(maxBefore, 29, 'precondition: a higher version is already applied');
     assert.equal(db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='group_shares'").length, 0);
 
     restoreDbFromBytes(Buffer.from(db.export()));
@@ -349,7 +349,7 @@ describe('migration upgrade path', () => {
       rewindToV24(adminBefore);
 
       const maxAfter = getDb().exec('SELECT MAX(version) as v FROM schema_version')[0]!.values[0]![0];
-      assert.equal(maxAfter, 28);
+      assert.equal(maxAfter, 29);
 
       const admin = readPerms('admin');
       assert.equal(admin.filter((p) => p === PERM).length, 1, 'admin must have the permission exactly once');
@@ -410,7 +410,7 @@ describe('migration upgrade path', () => {
       rewindToV26(adminBefore);
 
       const maxAfter = getDb().exec('SELECT MAX(version) as v FROM schema_version')[0]!.values[0]![0];
-      assert.equal(maxAfter, 28);
+      assert.equal(maxAfter, 29);
 
       const admin = readPerms('admin');
       assert.equal(admin.filter((p) => p === PERM).length, 1, 'admin must have the permission exactly once');
@@ -465,5 +465,17 @@ describe('migration upgrade path', () => {
       'r-v28-bad': '[not json',
     });
     assert.equal(migrated.exec(`SELECT id FROM notification_log WHERE id = 'l-v28'`).length, 1, 'log history is kept');
+  });
+
+  it('v29 gives the SSO button its Chinese default, keeping a label an admin set', () => {
+    const run = (stored: string) => {
+      const db = getDb();
+      db.run(`INSERT OR REPLACE INTO settings (key, value) VALUES ('auth.oidc_button_label', ?)`, [stored]);
+      db.run('DELETE FROM schema_version WHERE version = 29');
+      restoreDbFromBytes(Buffer.from(db.export()));
+      return getDb().exec(`SELECT value FROM settings WHERE key = 'auth.oidc_button_label'`)[0]!.values[0]![0];
+    };
+    assert.equal(run('Sign in with SSO'), '使用 SSO 登录');
+    assert.equal(run('Company login'), 'Company login');
   });
 });

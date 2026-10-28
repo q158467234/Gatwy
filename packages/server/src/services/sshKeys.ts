@@ -7,12 +7,12 @@ const { utils } = ssh2;
 /** Turn ssh2 key-parsing errors into messages a user can act on. */
 export function friendlyKeyError(message: string): string {
   if (/no passphrase given/i.test(message)) {
-    return 'This private key is encrypted — a passphrase is required';
+    return '此私钥已加密，需要提供密码';
   }
   if (/bad passphrase/i.test(message)) {
-    return 'Incorrect passphrase for this private key';
+    return '私钥密码错误';
   }
-  return `Invalid private key: ${message}`;
+  return `无效的私钥：${message}`;
 }
 
 /**
@@ -72,23 +72,23 @@ function ed25519ToOpenSsh(key: crypto.KeyObject): string {
 /** Decode a PKCS#8 key and re-encode it unencrypted in a format ssh2 reads. */
 function convertPkcs8(privateKey: string, passphrase?: string): { key: string } | { error: string } {
   const encrypted = PKCS8_RE.exec(privateKey)?.[1] !== undefined;
-  if (encrypted && !passphrase) return { error: 'This private key is encrypted — a passphrase is required' };
+  if (encrypted && !passphrase) return { error: '此私钥已加密，需要提供密码' };
 
   let key: crypto.KeyObject;
   try {
     key = crypto.createPrivateKey({ key: privateKey, format: 'pem', ...(encrypted ? { passphrase } : {}) });
   } catch (err) {
     if (encrypted && /bad decrypt/i.test((err as Error).message)) {
-      return { error: 'Incorrect passphrase for this private key' };
+      return { error: '私钥密码错误' };
     }
-    return { error: 'Invalid private key: the PKCS#8 key could not be decoded' };
+    return { error: '无效的私钥：无法解码 PKCS#8 密钥' };
   }
 
   switch (key.asymmetricKeyType) {
     case 'rsa': return { key: key.export({ type: 'pkcs1', format: 'pem' }) as string };
     case 'ec': return { key: key.export({ type: 'sec1', format: 'pem' }) as string };
     case 'ed25519': return { key: ed25519ToOpenSsh(key) };
-    default: return { error: `Unsupported key type: ${key.asymmetricKeyType ?? 'unknown'}` };
+    default: return { error: `不支持的密钥类型：${key.asymmetricKeyType ?? '未知'}` };
   }
 }
 

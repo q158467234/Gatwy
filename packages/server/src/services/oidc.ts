@@ -61,10 +61,10 @@ function getOidcConfig(): OidcConfig | null {
 export async function buildOidcAuthUrl(): Promise<{ url: string; state: string } | { error: string }> {
   const cfg = getOidcConfig();
   if (!cfg) {
-    if (!getSetting('auth.oidc_provider_url')) return { error: 'OIDC provider URL is not configured' };
-    if (!getSetting('auth.oidc_client_id'))   return { error: 'OIDC client ID is not configured' };
-    if (!getSetting('auth.oidc_redirect_uri')) return { error: 'OIDC redirect URI is not configured' };
-    return { error: 'OIDC configuration is incomplete' };
+    if (!getSetting('auth.oidc_provider_url')) return { error: '未配置 OIDC 提供方 URL' };
+    if (!getSetting('auth.oidc_client_id'))   return { error: '未配置 OIDC 客户端 ID' };
+    if (!getSetting('auth.oidc_redirect_uri')) return { error: '未配置 OIDC 重定向 URI' };
+    return { error: 'OIDC 配置不完整' };
   }
 
   const discoveryUrl = cfg.providerUrl.replace(/\/$/, '') + '/.well-known/openid-configuration';
@@ -77,7 +77,7 @@ export async function buildOidcAuthUrl(): Promise<{ url: string; state: string }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[OIDC] Discovery error:', msg);
-    return { error: `OIDC discovery failed: ${msg}. Verify the Provider URL points to the base of your IdP (e.g. https://accounts.google.com, not the discovery URL itself).` };
+    return { error: `OIDC 发现失败：${msg}。请确认提供方 URL 指向身份提供方的根地址（例如 https://accounts.google.com，而不是 discovery URL 本身）。` };
   }
 
   const state = randomBytes(16).toString('hex');

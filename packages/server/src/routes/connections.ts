@@ -37,8 +37,8 @@ function prepareInlineKey(privateKey: unknown): { key: string | null } | { error
   const prepared = prepareKey(privateKey);
   if ('error' in prepared) {
     return {
-      error: /passphrase/i.test(prepared.error)
-        ? 'This private key is encrypted. Connections can\'t store a key passphrase — save the key with its passphrase in Settings → Credentials and select it here.'
+      error: /passphrase|密码/i.test(prepared.error)
+        ? '该私钥已加密。连接无法保存私钥密码，请在“设置 → 凭据”中保存该密钥及其密码，然后在此处选择。'
         : prepared.error,
     };
   }
@@ -316,7 +316,7 @@ function isDangerousHost(host: string): boolean {
 router.post('/health-check', async (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const { checks } = req.body as { checks: { id: string; host: string; port: number }[] };
-  if (!Array.isArray(checks)) { res.status(400).json({ error: 'checks array required' }); return; }
+  if (!Array.isArray(checks)) { res.status(400).json({ error: '缺少 checks 数组' }); return; }
 
   // Resolve and validate each check against stored connections
   const access = connectionAccessWhere('connections', req.user!.userId, req.user!.role);
@@ -360,7 +360,7 @@ router.post('/health-check', async (req: Request, res: Response) => {
 // GET /export — export all connections and groups as JSON (no passwords)
 router.get('/export', (req: Request, res: Response) => {
   if (!userCan(req, 'connections.import_export')) {
-    res.status(403).json({ error: 'Insufficient permissions' });
+    res.status(403).json({ error: '权限不足' });
     return;
   }
   const userId = req.user!.userId;
@@ -407,7 +407,7 @@ router.get('/export', (req: Request, res: Response) => {
 // POST /import — import connections from JSON
 router.post('/import', (req: Request, res: Response, next: NextFunction) => {
   if (!userCan(req, 'connections.import_export')) {
-    res.status(403).json({ error: 'Insufficient permissions' });
+    res.status(403).json({ error: '权限不足' });
     return;
   }
   next();
@@ -423,7 +423,7 @@ router.post('/import', (req: Request, res: Response, next: NextFunction) => {
   };
 
   if ((connections ?? []).some(c => blockedSharedCreate(req, c.shared))) {
-    res.status(403).json({ error: 'Sharing permission required' });
+    res.status(403).json({ error: '需要共享权限' });
     return;
   }
 
@@ -486,19 +486,19 @@ router.post('/', (req: Request, res: Response) => {
   const role = req.user!.role;
 
   if (!userCan(req, 'connections.create')) {
-    res.status(403).json({ error: 'Insufficient permissions' });
+    res.status(403).json({ error: '权限不足' });
     return;
   }
 
   const { name, protocol, host, port, username, password, groupId, privateKey, extraConfig, shared, tunnels, tags, skipCertValidation, credentialId } = req.body;
 
   if (!name || !protocol || !host || !port) {
-    res.status(400).json({ error: 'Name, protocol, host, and port are required' });
+    res.status(400).json({ error: '名称、协议、主机和端口为必填项' });
     return;
   }
 
   if (!createProtocols().includes(protocol)) {
-    res.status(400).json({ error: 'Invalid protocol' });
+    res.status(400).json({ error: '无效的协议' });
     return;
   }
 
@@ -511,10 +511,10 @@ router.post('/', (req: Request, res: Response) => {
       ownerId = userId;
     } else if (canWriteSharedGroup(groupId, userId, role)) {
       const owner = queryOne<{ user_id: string }>('SELECT user_id FROM connection_groups WHERE id = ?', [groupId]);
-      if (!owner) { res.status(400).json({ error: 'Invalid folder' }); return; }
+      if (!owner) { res.status(400).json({ error: '文件夹无效' }); return; }
       ownerId = owner.user_id;
     } else {
-      res.status(400).json({ error: 'Invalid folder' });
+      res.status(400).json({ error: '文件夹无效' });
       return;
     }
   }
@@ -533,7 +533,7 @@ router.post('/', (req: Request, res: Response) => {
   const credentialConnectionShared = actingAsEditor ? true : effectiveShared;
 
   if (blockedSharedCreate(req, effectiveShared)) {
-    res.status(403).json({ error: 'Sharing permission required' });
+    res.status(403).json({ error: '需要共享权限' });
     return;
   }
 
@@ -543,10 +543,10 @@ router.post('/', (req: Request, res: Response) => {
     const sx = cfg.pointerScaleX;
     const sy = cfg.pointerScaleY;
     if (sx !== undefined && (typeof sx !== 'number' || !Number.isFinite(sx) || sx < 0.25 || sx > 2)) {
-      res.status(400).json({ error: 'Invalid VNC pointer scale' }); return;
+      res.status(400).json({ error: '无效的 VNC 指针缩放比例' }); return;
     }
     if (sy !== undefined && (typeof sy !== 'number' || !Number.isFinite(sy) || sy < 0.25 || sy > 2)) {
-      res.status(400).json({ error: 'Invalid VNC pointer scale' }); return;
+      res.status(400).json({ error: '无效的 VNC 指针缩放比例' }); return;
     }
   }
 
@@ -612,7 +612,7 @@ router.put('/reorder', (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const role = req.user!.role;
   const { items } = req.body as { items?: { id: string; sortOrder: number }[] };
-  if (!Array.isArray(items)) { res.status(400).json({ error: 'items array is required' }); return; }
+  if (!Array.isArray(items)) { res.status(400).json({ error: '缺少 items 数组' }); return; }
   const canEditAny = userCan(req, 'connections.edit_any');
   const canEditOwn = userCan(req, 'connections.edit_own');
   for (const item of items) {
@@ -657,11 +657,11 @@ router.put('/:id', (req: Request, res: Response) => {
     [id],
   );
   if (!existing) {
-    res.status(404).json({ error: 'Connection not found' });
+    res.status(404).json({ error: '连接不存在' });
     return;
   }
   if (existing.protocol === 'moonlight' && !isMoonlightWebAvailable()) {
-    res.status(404).json({ error: 'Connection not found' });
+    res.status(404).json({ error: '连接不存在' });
     return;
   }
 
@@ -673,11 +673,11 @@ router.put('/:id', (req: Request, res: Response) => {
   // active editor share.
   const editorAccess = !isOwner && !canEditAny && canEditOwn && !!existing.group_id && canWriteSharedGroup(existing.group_id, userId, role);
   if (isOwner && !canEditOwn && !canEditAny) {
-    res.status(403).json({ error: 'Not authorized' });
+    res.status(403).json({ error: '无权访问' });
     return;
   }
   if (!isOwner && !canEditAny && !editorAccess) {
-    res.status(403).json({ error: 'Not authorized' });
+    res.status(403).json({ error: '无权访问' });
     return;
   }
 
@@ -697,12 +697,12 @@ router.put('/:id', (req: Request, res: Response) => {
   const shared = editorAccess ? undefined : req.body.shared;
 
   if (blockedSharedUpdate(req, shared, existing.shared)) {
-    res.status(403).json({ error: 'Sharing permission required' });
+    res.status(403).json({ error: '需要共享权限' });
     return;
   }
 
   if (protocol !== undefined && !createProtocols().includes(protocol)) {
-    res.status(400).json({ error: 'Invalid protocol' });
+    res.status(400).json({ error: '无效的协议' });
     return;
   }
 
@@ -719,7 +719,7 @@ router.put('/:id', (req: Request, res: Response) => {
     const hasInlineSecret = !!existing.encrypted_password || !!existing.private_key;
     if (hasPrivateCredential || hasInlineSecret) {
       res.status(400).json({
-        error: 'Editors cannot change the host, port, or protocol of a connection that has stored credentials. Clear the saved credentials first, or ask the owner to make this change.',
+        error: '编辑者无法修改已保存凭据的连接的主机、端口或协议。请先清除已保存的凭据，或请所有者进行此修改。',
       });
       return;
     }
@@ -728,7 +728,7 @@ router.put('/:id', (req: Request, res: Response) => {
   // A connection can only be filed under a folder its owner owns — otherwise it could be
   // planted into a folder shared to the owner, surfacing it to everyone that folder is shared with.
   if (groupId && !groupOwnedBy(groupId, existing.user_id)) {
-    res.status(400).json({ error: 'Invalid folder' });
+    res.status(400).json({ error: '文件夹无效' });
     return;
   }
   // An editor's reparenting is scoped to sub-folders of the SAME shared folder they were
@@ -742,7 +742,7 @@ router.put('/:id', (req: Request, res: Response) => {
     const targetGroupId = groupId || null;
     const stillInBranch = targetGroupId !== null && sameSharedBranch(existing.group_id!, targetGroupId, userId, role);
     if (!stillInBranch) {
-      res.status(400).json({ error: 'Invalid folder' });
+      res.status(400).json({ error: '文件夹无效' });
       return;
     }
   }
@@ -780,10 +780,10 @@ router.put('/:id', (req: Request, res: Response) => {
     const sx = cfg.pointerScaleX;
     const sy = cfg.pointerScaleY;
     if (sx !== undefined && (typeof sx !== 'number' || !Number.isFinite(sx) || sx < 0.25 || sx > 2)) {
-      res.status(400).json({ error: 'Invalid VNC pointer scale' }); return;
+      res.status(400).json({ error: '无效的 VNC 指针缩放比例' }); return;
     }
     if (sy !== undefined && (typeof sy !== 'number' || !Number.isFinite(sy) || sy < 0.25 || sy > 2)) {
-      res.status(400).json({ error: 'Invalid VNC pointer scale' }); return;
+      res.status(400).json({ error: '无效的 VNC 指针缩放比例' }); return;
     }
   }
 
@@ -834,7 +834,7 @@ router.put('/:id', (req: Request, res: Response) => {
   if (skipCertValidation !== undefined) { updates.push('skip_cert_validation = ?'); params.push(skipCertValidation ? 1 : 0); }
 
   if (updates.length === 0) {
-    res.status(400).json({ error: 'No fields to update' });
+    res.status(400).json({ error: '没有需要更新的字段' });
     return;
   }
 
@@ -874,7 +874,7 @@ router.delete('/:id', (req: Request, res: Response) => {
     'SELECT user_id, name, group_id FROM connections WHERE id = ?', [id],
   );
   if (!conn) {
-    res.status(404).json({ error: 'Connection not found' });
+    res.status(404).json({ error: '连接不存在' });
     return;
   }
   const isOwner = conn.user_id === userId;
@@ -884,11 +884,11 @@ router.delete('/:id', (req: Request, res: Response) => {
   // connections.delete_own permission.
   const editorAccess = !isOwner && !canDeleteAny && canDeleteOwn && !!conn.group_id && canWriteSharedGroup(conn.group_id, userId, role);
   if (isOwner && !canDeleteOwn && !canDeleteAny) {
-    res.status(403).json({ error: 'Not authorized' });
+    res.status(403).json({ error: '无权访问' });
     return;
   }
   if (!isOwner && !canDeleteAny && !editorAccess) {
-    res.status(403).json({ error: 'Not authorized' });
+    res.status(403).json({ error: '无权访问' });
     return;
   }
 
@@ -898,7 +898,7 @@ router.delete('/:id', (req: Request, res: Response) => {
   // always delete, condivisions included, same as before resource_shares existed.
   if (editorAccess && isSharedConnection(id)) {
     res.status(409).json({
-      error: `This connection ("${conn.name}") is shared with someone else. Ask the owner to remove that share first, or to delete it themselves.`,
+      error: `该连接（“${conn.name}”）已共享给其他人。请先让所有者取消该共享，或由所有者自行删除。`,
     });
     return;
   }
@@ -930,11 +930,11 @@ router.get('/:id', (req: Request, res: Response) => {
   );
 
   if (!conn) {
-    res.status(404).json({ error: 'Connection not found' });
+    res.status(404).json({ error: '连接不存在' });
     return;
   }
   if (conn.protocol === 'moonlight' && !isMoonlightWebAvailable()) {
-    res.status(404).json({ error: 'Connection not found' });
+    res.status(404).json({ error: '连接不存在' });
     return;
   }
 
@@ -985,7 +985,7 @@ router.post('/:id/trust-host-key', (req: Request, res: Response) => {
   const { fingerprint } = req.body as { fingerprint?: unknown };
 
   if (typeof fingerprint !== 'string' || !/^[0-9a-f]{64}$/.test(fingerprint)) {
-    res.status(400).json({ error: 'Invalid fingerprint' });
+    res.status(400).json({ error: '无效的指纹' });
     return;
   }
 
@@ -995,11 +995,11 @@ router.post('/:id/trust-host-key', (req: Request, res: Response) => {
     [id, ...access.params],
   );
   if (!conn || (conn.protocol !== 'ssh' && conn.protocol !== 'sftp')) {
-    res.status(404).json({ error: 'Connection not found' });
+    res.status(404).json({ error: '连接不存在' });
     return;
   }
   if (conn.user_id !== userId && !userCan(req, 'connections.edit_any')) {
-    res.status(403).json({ error: 'Only the connection owner can trust a new host key' });
+    res.status(403).json({ error: '只有连接所有者才能信任新的主机密钥' });
     return;
   }
 
@@ -1029,11 +1029,11 @@ router.get('/:id/session', (req: Request, res: Response) => {
   );
 
   if (!row) {
-    res.status(404).json({ error: 'Connection not found' });
+    res.status(404).json({ error: '连接不存在' });
     return;
   }
   if (row.protocol === 'moonlight' && !isMoonlightWebAvailable()) {
-    res.status(404).json({ error: 'Connection not found' });
+    res.status(404).json({ error: '连接不存在' });
     return;
   }
   const conn = applyCredential(row, userId);
@@ -1070,7 +1070,7 @@ router.put('/groups/reorder', (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const role = req.user!.role;
   const { items } = req.body as { items?: { id: string; sortOrder: number }[] };
-  if (!Array.isArray(items)) { res.status(400).json({ error: 'items array is required' }); return; }
+  if (!Array.isArray(items)) { res.status(400).json({ error: '缺少 items 数组' }); return; }
   const canEditAny = userCan(req, 'connections.edit_any');
   const canEditOwn = userCan(req, 'connections.edit_own');
   for (const item of items) {
@@ -1096,7 +1096,7 @@ router.post('/groups', (req: Request, res: Response) => {
   const { name, parentId } = req.body;
 
   if (!name) {
-    res.status(400).json({ error: 'Name is required' });
+    res.status(400).json({ error: '名称为必填项' });
     return;
   }
 
@@ -1110,10 +1110,10 @@ router.post('/groups', (req: Request, res: Response) => {
       ownerId = userId;
     } else if (canWriteSharedGroup(parentId, userId, role)) {
       const parentOwner = queryOne<{ user_id: string }>('SELECT user_id FROM connection_groups WHERE id = ?', [parentId]);
-      if (!parentOwner) { res.status(400).json({ error: 'Invalid parent folder' }); return; }
+      if (!parentOwner) { res.status(400).json({ error: '无效的父文件夹' }); return; }
       ownerId = parentOwner.user_id;
     } else {
-      res.status(400).json({ error: 'Invalid parent folder' });
+      res.status(400).json({ error: '无效的父文件夹' });
       return;
     }
   }
@@ -1145,7 +1145,7 @@ router.put('/groups/:id', (req: Request, res: Response) => {
   const group = queryOne<{ user_id: string; name: string }>(
     'SELECT user_id, name FROM connection_groups WHERE id = ?', [id],
   );
-  if (!group) { res.status(404).json({ error: 'Group not found' }); return; }
+  if (!group) { res.status(404).json({ error: '文件夹不存在' }); return; }
   const isOwner = group.user_id === userId;
   const canEditAny = userCan(req, 'connections.edit_any');
   const canEditOwn = userCan(req, 'connections.edit_own');
@@ -1154,13 +1154,13 @@ router.put('/groups/:id', (req: Request, res: Response) => {
   // sub-folder) itself — renaming it is not a content change. Same base RBAC floor as
   // PUT /:id — an editor share never substitutes for connections.edit_own.
   const editorAccess = !isOwner && !canEditAny && canEditOwn && canWriteSharedGroup(id, userId, role) && !isSharedGroup(id);
-  if (!isOwner && !canEditAny && !editorAccess) { res.status(403).json({ error: 'Not authorized' }); return; }
+  if (!isOwner && !canEditAny && !editorAccess) { res.status(403).json({ error: '无权访问' }); return; }
 
   // A folder can never be reparented under itself or one of its own descendants — that
   // would detach the whole subtree into an unreachable cycle. Applies to everyone, not
   // just editors: this predates folder collaboration, but collaborators can now trigger it too.
   if (parentId && (parentId === id || allDescendantGroupIdsUnscoped(id).includes(parentId))) {
-    res.status(400).json({ error: 'Cannot move a folder into itself or one of its own sub-folders' });
+    res.status(400).json({ error: '不能将文件夹移动到其自身或其子文件夹中' });
     return;
   }
 
@@ -1168,7 +1168,7 @@ router.put('/groups/:id', (req: Request, res: Response) => {
   // otherwise an `edit_any` admin reparenting someone else's group under their own folder
   // (or the owner/an editor reparenting under a folder shared to them) grafts it into that share.
   if (parentId && !groupOwnedBy(parentId, group.user_id)) {
-    res.status(400).json({ error: 'Invalid parent folder' });
+    res.status(400).json({ error: '无效的父文件夹' });
     return;
   }
   // An editor's reparenting is scoped to sub-folders of the SAME shared folder they were
@@ -1182,7 +1182,7 @@ router.put('/groups/:id', (req: Request, res: Response) => {
     const targetParentId = parentId || null;
     const stillInBranch = targetParentId !== null && sameSharedBranch(id, targetParentId, userId, role);
     if (!stillInBranch) {
-      res.status(400).json({ error: 'Invalid parent folder' });
+      res.status(400).json({ error: '无效的父文件夹' });
       return;
     }
   }
@@ -1191,7 +1191,7 @@ router.put('/groups/:id', (req: Request, res: Response) => {
   const params: unknown[] = [];
   if (name !== undefined) { updates.push('name = ?'); params.push(name.trim()); }
   if (parentId !== undefined) { updates.push('parent_id = ?'); params.push(parentId || null); }
-  if (updates.length === 0) { res.status(400).json({ error: 'Nothing to update' }); return; }
+  if (updates.length === 0) { res.status(400).json({ error: '没有需要更新的内容' }); return; }
 
   params.push(id);
   execute(`UPDATE connection_groups SET ${updates.join(', ')} WHERE id = ?`, params);
@@ -1215,7 +1215,7 @@ router.delete('/groups/:id', (req: Request, res: Response) => {
   const group = queryOne<{ user_id: string; name: string }>(
     'SELECT user_id, name FROM connection_groups WHERE id = ?', [id],
   );
-  if (!group) { res.status(404).json({ error: 'Group not found' }); return; }
+  if (!group) { res.status(404).json({ error: '文件夹不存在' }); return; }
   const isOwner = group.user_id === userId;
   const canDeleteAny = userCan(req, 'connections.delete_any');
   const canDeleteOwn = userCan(req, 'connections.delete_own');
@@ -1226,7 +1226,7 @@ router.delete('/groups/:id', (req: Request, res: Response) => {
   // Same isSharedGroup exclusion as PUT /groups/:id: deleting the shared folder
   // itself (or an independently-shared sub-folder) is not a content change.
   const editorAccess = !isOwner && !canDeleteAny && canDeleteOwn && canWriteSharedGroup(id, userId, role) && !isSharedGroup(id);
-  if (!isOwner && !canDeleteAny && !editorAccess) { res.status(403).json({ error: 'Not authorized' }); return; }
+  if (!isOwner && !canDeleteAny && !editorAccess) { res.status(403).json({ error: '无权访问' }); return; }
 
   const ownerId = group.user_id;
 
@@ -1262,8 +1262,8 @@ router.delete('/groups/:id', (req: Request, res: Response) => {
     if (blockedConnectionNames.length > 0) {
       const list = blockedConnectionNames.map((n) => `"${n}"`).join(', ');
       const error = blockedConnectionNames.length === 1
-        ? `This folder contains a connection that is shared with someone else (${list}). Ask the owner to remove that share first, or to delete it themselves.`
-        : `This folder contains connections that are shared with someone else (${list}). Ask the owner to remove those shares first, or to delete them themselves.`;
+        ? `该文件夹包含已共享给其他人的连接（${list}）。请先让所有者取消该共享，或由所有者自行删除。`
+        : `该文件夹包含已共享给其他人的连接（${list}）。请先让所有者取消这些共享，或由所有者自行删除。`;
       res.status(409).json({ error });
       return;
     }
@@ -1280,8 +1280,8 @@ router.delete('/groups/:id', (req: Request, res: Response) => {
       ).map((r) => r.name);
       const list = names.map((n) => `"${n}"`).join(', ');
       const error = names.length === 1
-        ? `This folder contains a sub-folder that is shared with someone else (${list}). Ask the owner to remove that share first, or to delete it themselves.`
-        : `This folder contains sub-folders that are shared with someone else (${list}). Ask the owner to remove those shares first, or to delete them themselves.`;
+        ? `该文件夹包含已共享给其他人的子文件夹（${list}）。请先让所有者取消该共享，或由所有者自行删除。`
+        : `该文件夹包含已共享给其他人的子文件夹（${list}）。请先让所有者取消这些共享，或由所有者自行删除。`;
       res.status(409).json({ error });
       return;
     }
@@ -1331,9 +1331,9 @@ router.get('/groups/:id/shares', (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const id = req.params.id as string;
   const group = queryOne<{ user_id: string }>('SELECT user_id FROM connection_groups WHERE id = ?', [id]);
-  if (!group) { res.status(404).json({ error: 'Folder not found' }); return; }
+  if (!group) { res.status(404).json({ error: '文件夹不存在' }); return; }
   if (group.user_id !== userId && !userCan(req, 'connections.edit_any')) {
-    res.status(403).json({ error: 'Not authorized' }); return;
+    res.status(403).json({ error: '无权访问' }); return;
   }
   const shares = queryAll<{ id: string; share_type: string; target_id: string; capability: string; created_at: string }>(
     `SELECT id, share_type, target_id, capability, created_at FROM resource_shares WHERE resource_type = 'group' AND resource_id = ? ORDER BY share_type, target_id`,
@@ -1354,16 +1354,16 @@ router.put('/groups/:id/shares', (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const id = req.params.id as string;
   const group = queryOne<{ user_id: string; name: string }>('SELECT user_id, name FROM connection_groups WHERE id = ?', [id]);
-  if (!group) { res.status(404).json({ error: 'Folder not found' }); return; }
+  if (!group) { res.status(404).json({ error: '文件夹不存在' }); return; }
   if (group.user_id !== userId && !userCan(req, 'connections.edit_any')) {
-    res.status(403).json({ error: 'Not authorized' }); return;
+    res.status(403).json({ error: '无权访问' }); return;
   }
   if (!userCan(req, 'connections.share')) {
-    res.status(403).json({ error: 'Sharing permission required' }); return;
+    res.status(403).json({ error: '需要共享权限' }); return;
   }
 
   const { shares } = req.body as { shares: { shareType: string; targetId: string; capability?: string }[] };
-  if (!Array.isArray(shares)) { res.status(400).json({ error: 'shares array required' }); return; }
+  if (!Array.isArray(shares)) { res.status(400).json({ error: '缺少 shares 数组' }); return; }
 
   const before = queryAll<{ share_type: string; target_id: string; capability: string }>(
     `SELECT share_type, target_id, capability FROM resource_shares WHERE resource_type = 'group' AND resource_id = ? ORDER BY share_type, target_id`,
@@ -1442,9 +1442,9 @@ router.get('/:id/shares', (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const id = req.params.id as string;
   const conn = queryOne<{ user_id: string }>('SELECT user_id FROM connections WHERE id = ?', [id]);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
   if (conn.user_id !== userId && !userCan(req, 'connections.edit_any')) {
-    res.status(403).json({ error: 'Not authorized' }); return;
+    res.status(403).json({ error: '无权访问' }); return;
   }
   const shares = queryAll<{ id: string; share_type: string; target_id: string; created_at: string }>(
     `SELECT id, share_type, target_id, created_at FROM resource_shares WHERE resource_type = 'connection' AND resource_id = ? ORDER BY share_type, target_id`,
@@ -1458,16 +1458,16 @@ router.put('/:id/shares', (req: Request, res: Response) => {
   const userId = req.user!.userId;
   const id = req.params.id as string;
   const conn = queryOne<{ user_id: string; name: string }>('SELECT user_id, name FROM connections WHERE id = ?', [id]);
-  if (!conn) { res.status(404).json({ error: 'Connection not found' }); return; }
+  if (!conn) { res.status(404).json({ error: '连接不存在' }); return; }
   if (conn.user_id !== userId && !userCan(req, 'connections.edit_any')) {
-    res.status(403).json({ error: 'Not authorized' }); return;
+    res.status(403).json({ error: '无权访问' }); return;
   }
   if (!userCan(req, 'connections.share')) {
-    res.status(403).json({ error: 'Sharing permission required' }); return;
+    res.status(403).json({ error: '需要共享权限' }); return;
   }
 
   const { shares } = req.body as { shares: { shareType: string; targetId: string }[] };
-  if (!Array.isArray(shares)) { res.status(400).json({ error: 'shares array required' }); return; }
+  if (!Array.isArray(shares)) { res.status(400).json({ error: '缺少 shares 数组' }); return; }
 
   const linked = queryOne<{ user_id: string; credential_id: string | null }>(
     'SELECT user_id, credential_id FROM connections WHERE id = ?', [id],

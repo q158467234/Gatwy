@@ -173,7 +173,7 @@ export function ProfileSettings() {
         setPasskeyEnabled(true);
       } else {
         const data = await res.json() as { error?: string };
-        if (data.error === 'Passkeys are not enabled') {
+        if (data.error === '未启用通行密钥') {
           setPasskeyEnabled(false);
         }
       }

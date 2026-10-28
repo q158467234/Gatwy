@@ -47,7 +47,7 @@ export function ipRulesMiddleware(req: Request, res: Response, next: NextFunctio
       ipAddress: clientIp,
       details: { reason: verdict, path: req.path, method: req.method },
     });
-    res.status(403).json({ error: 'Access denied' });
+    res.status(403).json({ error: '拒绝访问' });
     return;
   }
   next();

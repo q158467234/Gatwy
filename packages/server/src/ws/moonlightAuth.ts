@@ -36,29 +36,29 @@ export function authorizeMoonlightAccess(req: IncomingMessage): MoonlightAuthRes
   try {
     const token = readToken(req);
     if (!token) {
-      return { ok: false, status: 401, error: 'Authentication required' };
+      return { ok: false, status: 401, error: '需要登录' };
     }
 
     const payload = verifyToken(token);
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const status = checkAndTouchSession(tokenHash, false);
     if (status === 'revoked') {
-      return { ok: false, status: 401, error: 'Session has been revoked' };
+      return { ok: false, status: 401, error: '会话已被撤销' };
     }
     if (status === 'idle_expired') {
-      return { ok: false, status: 401, error: 'Session expired due to inactivity' };
+      return { ok: false, status: 401, error: '会话因长时间无操作已过期' };
     }
 
     if (!userHasPermission(payload.userId, 'protocols.moonlight')) {
-      return { ok: false, status: 403, error: 'Moonlight protocol not permitted' };
+      return { ok: false, status: 403, error: '无权使用 Moonlight 协议' };
     }
 
     if (!isMoonlightWebAvailable()) {
-      return { ok: false, status: 503, error: 'Moonlight runtime not available in this installation' };
+      return { ok: false, status: 503, error: '当前安装未提供 Moonlight 运行环境' };
     }
 
     return { ok: true, userId: payload.userId };
   } catch {
-    return { ok: false, status: 401, error: 'Invalid or expired token' };
+    return { ok: false, status: 401, error: '令牌无效或已过期' };
   }
 }

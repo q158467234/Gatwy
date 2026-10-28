@@ -25,14 +25,14 @@ const RDP_BOOLEAN_KEYS = [RDP_METRICS_KEY, RDP_GPU_COMPOSITING_KEY];
 /** Returns an error message for an invalid RDP setting in a settings update, or null. */
 export function validateRdpSettings(updates: Record<string, unknown>): string | null {
   if (RDP_GRAPHICS_MODE_KEY in updates && !RDP_GRAPHICS_MODES.includes(updates[RDP_GRAPHICS_MODE_KEY] as RdpGraphicsMode)) {
-    return `${RDP_GRAPHICS_MODE_KEY} must be one of: ${RDP_GRAPHICS_MODES.join(', ')}`;
+    return `${RDP_GRAPHICS_MODE_KEY} 必须是以下值之一：${RDP_GRAPHICS_MODES.join(', ')}`;
   }
   if (RDP_RESOLUTION_KEY in updates && !RDP_RESOLUTIONS.includes(updates[RDP_RESOLUTION_KEY] as string)) {
-    return `${RDP_RESOLUTION_KEY} must be one of: ${RDP_RESOLUTIONS.join(', ')}`;
+    return `${RDP_RESOLUTION_KEY} 必须是以下值之一：${RDP_RESOLUTIONS.join(', ')}`;
   }
   for (const key of RDP_BOOLEAN_KEYS) {
     if (key in updates && !['true', 'false'].includes(updates[key] as string)) {
-      return `${key} must be "true" or "false"`;
+      return `${key} 必须是 "true" 或 "false"`;
     }
   }
   return null;

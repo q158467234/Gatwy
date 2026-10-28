@@ -206,7 +206,7 @@ export function setupMoonlightProxy(server: Server, app: import('express').Expre
     // Fail-closed allowlist; the normalized path is what gets forwarded, never the raw URL.
     const decision = classifyMoonlightRequest(req.method, req.originalUrl, false, mountPrefix);
     if (decision.kind !== 'http') {
-      res.status(decision.kind === 'deny' ? decision.status : 403).json({ error: 'Forbidden' });
+      res.status(decision.kind === 'deny' ? decision.status : 403).json({ error: '无权访问' });
       return;
     }
 
@@ -214,7 +214,7 @@ export function setupMoonlightProxy(server: Server, app: import('express').Expre
       await ensureMoonlightWeb();
     } catch (err) {
       res.status(503).json({
-        error: err instanceof Error ? err.message : 'Moonlight unavailable',
+        error: err instanceof Error ? err.message : 'Moonlight 不可用',
         available: false,
       });
       return;
@@ -272,7 +272,7 @@ export function setupMoonlightProxy(server: Server, app: import('express').Expre
 
     proxyReq.on('error', (err) => {
       if (!res.headersSent) {
-        res.status(502).json({ error: `Moonlight proxy error: ${err.message}` });
+        res.status(502).json({ error: `Moonlight 代理错误：${err.message}` });
       } else {
         res.end();
       }

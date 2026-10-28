@@ -1250,6 +1250,11 @@ function runMigrations() {
         }
       },
     },
+    {
+      // The UI is in Chinese now: the SSO button's default label follows, unless an admin set one.
+      version: 29,
+      sql: `UPDATE settings SET value = '使用 SSO 登录' WHERE key = 'auth.oidc_button_label' AND value = 'Sign in with SSO'`,
+    },
   ];
 
   // Several migrations (v5, v13, v14, v18, v24) rebuild a table via CREATE-new/

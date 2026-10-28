@@ -118,7 +118,7 @@ async function main() {
     const expectedOrigin = `https://${host}`;
     const source = origin ?? (referer ? new URL(referer).origin : undefined);
     if (source && source !== expectedOrigin) {
-      res.status(403).json({ error: 'CSRF check failed' });
+      res.status(403).json({ error: 'CSRF 校验失败' });
       return;
     }
     next();
@@ -150,12 +150,12 @@ async function main() {
   app.use((err: Error & { status?: number }, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     // body-parser errors (413 too large, 400 malformed JSON) carry a 4xx status; keep it
     if (err.status && err.status >= 400 && err.status < 500) {
-      if (!res.headersSent) res.status(err.status).json({ error: err.status === 413 ? 'Request body too large' : 'Bad request' });
+      if (!res.headersSent) res.status(err.status).json({ error: err.status === 413 ? '请求体过大' : '请求无效' });
       return;
     }
     console.error('[Gatwy] Unhandled error:', err.message);
     if (!res.headersSent) {
-      res.status(500).json({ error: 'Internal server error' });
+      res.status(500).json({ error: '服务器内部错误' });
     }
   });
 

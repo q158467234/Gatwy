@@ -50,7 +50,7 @@ describe('moonlightUnavailablePayload', () => {
     assert.equal(moonlightUnavailablePayload(true), null);
     assert.deepEqual(moonlightUnavailablePayload(false), MOONLIGHT_UNAVAILABLE_BODY);
     assert.equal(MOONLIGHT_UNAVAILABLE_BODY.available, false);
-    assert.match(MOONLIGHT_UNAVAILABLE_BODY.error, /not available/i);
+    assert.match(MOONLIGHT_UNAVAILABLE_BODY.error, /未提供 Moonlight 运行环境/);
   });
 });
 

@@ -3,6 +3,12 @@ import { useAuth } from '../hooks/useAuth';
 import { startAuthentication } from '@simplewebauthn/browser';
 import { BASE_PATH, homePath } from '../lib/basePath';
 
+/** Messages for the codes the SSO callback redirects with (`?sso_error=`); other values are shown as sent. */
+const SSO_ERRORS: Record<string, string> = {
+  missing_params: 'SSO 回调缺少必要参数，请重新登录',
+  auth_failed: 'SSO 登录失败',
+};
+
 interface ProvidersConfig {
   local: boolean;
   ldap: boolean;
@@ -42,7 +48,7 @@ export function LoginPage() {
         // If only LDAP is enabled (not local), default to ldap method
         if (!cfg.local && cfg.ldap) setLoginMethod('ldap');
       })
-      .catch(() => setProviders({ local: true, ldap: false, oidc: false, oidcButtonLabel: 'Sign in with SSO' }));
+      .catch(() => setProviders({ local: true, ldap: false, oidc: false, oidcButtonLabel: '使用 SSO 登录' }));
 
     const params = new URLSearchParams(window.location.search);
     if (params.has('sso')) {
@@ -50,7 +56,8 @@ export function LoginPage() {
       window.location.reload();
     }
     if (params.has('sso_error')) {
-      setSsoError(params.get('sso_error') || 'SSO authentication failed');
+      const code = params.get('sso_error');
+      setSsoError((code && SSO_ERRORS[code]) || code || 'SSO 登录失败');
       window.history.replaceState({}, '', homePath(BASE_PATH));
     }
   }, []);
