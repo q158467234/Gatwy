@@ -37,10 +37,10 @@ function autoInitials(displayName: string): string {
 function relativeTime(dateStr: string): string {
   const date = new Date(dateStr.replace(' ', 'T') + 'Z');
   const diff = Date.now() - date.getTime();
-  if (diff < 60_000) return 'Just now';
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  return `${Math.floor(diff / 86_400_000)}d ago`;
+  if (diff < 60_000) return '刚刚';
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}分钟前`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}小时前`;
+  return `${Math.floor(diff / 86_400_000)}天前`;
 }
 
 interface MfaSetupData {
@@ -213,13 +213,13 @@ export function ProfileSettings() {
         body: JSON.stringify({ displayName, email: email || null, avatarText: avatarText || null }),
       });
       if (res.ok) {
-        showToast('Profile updated successfully.', 'success');
+        showToast('个人资料已更新。', 'success');
       } else {
         const d = await res.json();
-        showToast(d.error || 'Failed to update profile.', 'error');
+        showToast(d.error || '更新个人资料失败。', 'error');
       }
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setSaving(false);
     }
@@ -228,11 +228,11 @@ export function ProfileSettings() {
   async function handlePasswordSave(e: FormEvent) {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      showToast('Passwords do not match.', 'error');
+      showToast('两次输入的密码不一致。', 'error');
       return;
     }
     if (newPassword.length < 8) {
-      showToast('New password must be at least 8 characters.', 'error');
+      showToast('新密码至少需要 8 个字符。', 'error');
       return;
     }
     setSavingPw(true);
@@ -244,7 +244,7 @@ export function ProfileSettings() {
         body: JSON.stringify({ currentPassword, newPassword }),
       });
       if (res.ok) {
-        showToast('Password changed successfully.', 'success');
+        showToast('密码已修改。', 'success');
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
@@ -252,10 +252,10 @@ export function ProfileSettings() {
         setTimeout(() => { setShowPwForm(false); }, 1500);
       } else {
         const d = await res.json();
-        showToast(d.error || 'Failed to change password.', 'error');
+        showToast(d.error || '修改密码失败。', 'error');
       }
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setSavingPw(false);
     }
@@ -286,10 +286,10 @@ export function ProfileSettings() {
         setMfaVerifyCode('');
       } else {
         const d = await res.json() as { error?: string };
-        showToast(d.error || 'Failed to start MFA setup.', 'error');
+        showToast(d.error || '启动两步验证设置失败。', 'error');
       }
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setMfaLoading(false);
     }
@@ -310,13 +310,13 @@ export function ProfileSettings() {
         setMfaMethod('totp');
         setMfaSetupData(null);
         setMfaVerifyCode('');
-        showToast('Two-factor authentication enabled.', 'success');
+        showToast('两步验证已启用。', 'success');
       } else {
         const d = await res.json() as { error?: string };
-        showToast(d.error || 'Invalid code.', 'error');
+        showToast(d.error || '验证码无效。', 'error');
       }
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setMfaLoading(false);
     }
@@ -337,13 +337,13 @@ export function ProfileSettings() {
         setMfaMethod(null);
         setShowMfaDisable(false);
         setMfaDisableCode('');
-        showToast('Two-factor authentication disabled.', 'success');
+        showToast('两步验证已禁用。', 'success');
       } else {
         const d = await res.json() as { error?: string };
-        showToast(d.error || 'Invalid code.', 'error');
+        showToast(d.error || '验证码无效。', 'error');
       }
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setMfaLoading(false);
     }
@@ -364,7 +364,7 @@ export function ProfileSettings() {
   async function handlePasskeyRegister(e: FormEvent) {
     e.preventDefault();
     if (!newPasskeyName.trim()) {
-      showToast('Please enter a name for your passkey.', 'error');
+      showToast('请输入通行密钥名称。', 'error');
       return;
     }
     setPasskeyLoading(true);
@@ -377,7 +377,7 @@ export function ProfileSettings() {
       });
       if (!optionsRes.ok) {
         const data = await optionsRes.json() as { error?: string };
-        throw new Error(data.error || 'Failed to get registration options');
+        throw new Error(data.error || '获取注册选项失败');
       }
       const { options, challengeId } = await optionsRes.json() as { options: unknown; challengeId: string };
 
@@ -397,10 +397,10 @@ export function ProfileSettings() {
       });
       if (!verifyRes.ok) {
         const data = await verifyRes.json() as { error?: string };
-        throw new Error(data.error || 'Failed to register passkey');
+        throw new Error(data.error || '注册通行密钥失败');
       }
 
-      showToast('Passkey registered successfully!', 'success');
+      showToast('通行密钥注册成功！', 'success');
       setShowPasskeyRegister(false);
       setNewPasskeyName('');
       await loadPasskeys();
@@ -408,12 +408,12 @@ export function ProfileSettings() {
     } catch (err: unknown) {
       if (err instanceof Error) {
         if (err.name === 'NotAllowedError') {
-          showToast('Passkey registration was cancelled.', 'error');
+          showToast('通行密钥注册已取消。', 'error');
         } else {
           showToast(err.message, 'error');
         }
       } else {
-        showToast('Failed to register passkey.', 'error');
+        showToast('注册通行密钥失败。', 'error');
       }
     } finally {
       setPasskeyLoading(false);
@@ -433,13 +433,13 @@ export function ProfileSettings() {
       });
       if (!res.ok) {
         const data = await res.json() as { error?: string };
-        throw new Error(data.error || 'Failed to rename passkey');
+        throw new Error(data.error || '重命名通行密钥失败');
       }
       setEditingPasskeyId(null);
       setEditingPasskeyName('');
       await loadPasskeys();
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Failed to rename passkey', 'error');
+      showToast(err instanceof Error ? err.message : '重命名通行密钥失败', 'error');
     } finally {
       setPasskeyLoading(false);
     }
@@ -455,14 +455,14 @@ export function ProfileSettings() {
       });
       if (!res.ok) {
         const data = await res.json() as { error?: string };
-        throw new Error(data.error || 'Failed to remove passkey');
+        throw new Error(data.error || '移除通行密钥失败');
       }
-      showToast('Passkey removed.', 'success');
+      showToast('通行密钥已移除。', 'success');
       setPendingPasskeyRemoval(null);
       await loadPasskeys();
       await loadMfaStatus();
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Failed to remove passkey', 'error');
+      showToast(err instanceof Error ? err.message : '移除通行密钥失败', 'error');
     } finally {
       setPasskeyLoading(false);
     }
@@ -472,7 +472,7 @@ export function ProfileSettings() {
     <div className="max-w-lg space-y-8">
       {/* Profile form */}
       <section>
-        <h2 className="text-base font-semibold text-text-primary mb-4">Profile</h2>
+        <h2 className="text-base font-semibold text-text-primary mb-4">个人资料</h2>
         <form onSubmit={handleProfileSave} className="space-y-4">
           {/* Avatar */}
           <div className="flex items-center gap-4">
@@ -481,7 +481,7 @@ export function ProfileSettings() {
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium text-text-secondary mb-1">
-                Avatar initials <span className="font-normal text-text-secondary">(1-3 characters)</span>
+                头像文字 <span className="font-normal text-text-secondary">（1-3 个字符）</span>
               </label>
               <input
                 type="text"
@@ -491,12 +491,12 @@ export function ProfileSettings() {
                 placeholder={autoInitials(displayName || username)}
                 className="w-32 px-3 py-2 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm"
               />
-              <p className="text-xs text-text-secondary mt-1">Leave empty to auto-generate from display name.</p>
+              <p className="text-xs text-text-secondary mt-1">留空则根据显示名称自动生成。</p>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Username</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1">用户名</label>
             <input
               type="text"
               value={username}
@@ -506,7 +506,7 @@ export function ProfileSettings() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Display Name</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1">显示名称</label>
             <input
               type="text"
               value={displayName}
@@ -516,7 +516,7 @@ export function ProfileSettings() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Email</label>
+            <label className="block text-sm font-medium text-text-secondary mb-1">邮箱</label>
             <input
               type="email"
               value={email}
@@ -531,7 +531,7 @@ export function ProfileSettings() {
             disabled={saving}
             className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium"
           >
-            {saving ? 'Saving...' : 'Save Profile'}
+            {saving ? '保存中…' : '保存个人资料'}
           </button>
         </form>
       </section>
@@ -542,9 +542,9 @@ export function ProfileSettings() {
       <section>
         <div className="flex items-center justify-between mb-2">
           <div>
-            <h2 className="text-base font-semibold text-text-primary">Change Password</h2>
+            <h2 className="text-base font-semibold text-text-primary">修改密码</h2>
             {!showPwForm && (
-              <p className="text-sm text-text-secondary mt-0.5">Update your account password.</p>
+              <p className="text-sm text-text-secondary mt-0.5">更新你的账户密码。</p>
             )}
           </div>
           {!showPwForm && (
@@ -553,7 +553,7 @@ export function ProfileSettings() {
               onClick={() => { setShowPwForm(true); }}
               className="px-4 py-2 bg-surface-hover border border-border rounded text-sm text-text-primary hover:bg-surface font-medium"
             >
-              Change Password
+              修改密码
             </button>
           )}
         </div>
@@ -561,7 +561,7 @@ export function ProfileSettings() {
         {showPwForm && (
           <form onSubmit={handlePasswordSave} className="space-y-4 mt-4">
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Current Password</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">当前密码</label>
               <input
                 type="password"
                 value={currentPassword}
@@ -571,7 +571,7 @@ export function ProfileSettings() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">New Password</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">新密码</label>
               <input
                 type="password"
                 value={newPassword}
@@ -580,7 +580,7 @@ export function ProfileSettings() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Confirm New Password</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">确认新密码</label>
               <input
                 type="password"
                 value={confirmPassword}
@@ -595,14 +595,14 @@ export function ProfileSettings() {
                 disabled={savingPw}
                 className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium"
               >
-                {savingPw ? 'Saving...' : 'Save Password'}
+                {savingPw ? '保存中…' : '保存密码'}
               </button>
               <button
                 type="button"
                 onClick={() => { setShowPwForm(false); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); }}
                 className="px-4 py-2 border border-border rounded text-text-secondary hover:bg-surface-hover text-sm"
               >
-                Cancel
+                取消
               </button>
             </div>
           </form>
@@ -614,13 +614,13 @@ export function ProfileSettings() {
       {/* Active Sessions */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-text-primary">Active Sessions</h2>
+          <h2 className="text-base font-semibold text-text-primary">活动会话</h2>
           {sessions.filter((s) => !s.isCurrent).length > 0 && (
             <button
               onClick={handleRevokeAll}
               className="text-xs px-3 py-1.5 rounded border border-red-500/40 text-red-400 hover:bg-red-500/10 transition-colors"
             >
-              Sign out all other sessions
+              退出其他所有会话
             </button>
           )}
         </div>
@@ -642,18 +642,18 @@ export function ProfileSettings() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-text-primary">
-                    {session.browser} on {session.os}
+                    {session.os} 上的 {session.browser}
                   </span>
                   {session.isCurrent && (
                     <span className="text-xs px-1.5 py-0.5 rounded-full bg-accent/20 text-accent font-medium">
-                      Current
+                      当前
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-3 mt-0.5">
                   <span className="text-xs text-text-secondary font-mono">{session.ipAddress}</span>
                   <span className="text-xs text-text-secondary">·</span>
-                  <span className="text-xs text-text-secondary">Last active {relativeTime(session.lastUsedAt)} · {formatDate(session.lastUsedAt, timezone)}</span>
+                  <span className="text-xs text-text-secondary">最近活动：{relativeTime(session.lastUsedAt)} · {formatDate(session.lastUsedAt, timezone)}</span>
                 </div>
               </div>
 
@@ -663,14 +663,14 @@ export function ProfileSettings() {
                   onClick={() => handleRevoke(session.id)}
                   className="shrink-0 text-xs px-2.5 py-1 rounded border border-border text-text-secondary hover:text-red-400 hover:border-red-400/40 transition-colors"
                 >
-                  Sign out
+                  退出登录
                 </button>
               )}
             </div>
           ))}
 
           {sessions.length === 0 && (
-            <p className="text-sm text-text-secondary italic">No active sessions found.</p>
+            <p className="text-sm text-text-secondary italic">暂无活动会话。</p>
           )}
         </div>
       </section>
@@ -679,20 +679,20 @@ export function ProfileSettings() {
 
       {/* Two-Factor Authentication */}
       <section>
-        <h2 className="text-base font-semibold text-text-primary mb-4">Two-Factor Authentication</h2>
+        <h2 className="text-base font-semibold text-text-primary mb-4">两步验证</h2>
 
         {mfaEnabled ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 rounded-full text-xs bg-green-500/15 text-green-400 font-medium">
                 {mfaMethod === 'passkey'
-                  ? 'Passkey-based two-factor authentication is enabled'
-                  : 'Two-factor authentication is enabled'}
+                  ? '已启用基于通行密钥的两步验证'
+                  : '已启用两步验证'}
               </span>
             </div>
             {mfaMethod === 'passkey' ? (
               <p className="text-sm text-text-secondary">
-                This account uses passkeys for MFA. Manage or remove passkeys in the section below.
+                此账户使用通行密钥进行两步验证。可在下方管理或移除通行密钥。
               </p>
             ) : (
               <>
@@ -701,16 +701,16 @@ export function ProfileSettings() {
                     onClick={() => { setShowMfaDisable(true); }}
                     className="px-4 py-2 border border-red-500/40 text-red-400 rounded hover:bg-red-500/10 text-sm font-medium"
                   >
-                    Disable Two-Factor Authentication
+                    禁用两步验证
                   </button>
                 ) : (
                   <form onSubmit={handleMfaDisable} className="space-y-3">
-                    <p className="text-sm text-text-secondary">Enter your account password to disable MFA:</p>
+                    <p className="text-sm text-text-secondary">输入账户密码以禁用两步验证：</p>
                     <input
                       type="password"
                       value={mfaDisableCode}
                       onChange={(e) => setMfaDisableCode(e.target.value)}
-                      placeholder="Your password"
+                      placeholder="你的密码"
                       autoFocus
                       className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm"
                     />
@@ -720,14 +720,14 @@ export function ProfileSettings() {
                         disabled={mfaLoading || mfaDisableCode.length < 1}
                         className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 text-sm font-medium"
                       >
-                        {mfaLoading ? 'Disabling...' : 'Confirm Disable'}
+                        {mfaLoading ? '禁用中…' : '确认禁用'}
                       </button>
                       <button
                         type="button"
                         onClick={() => { setShowMfaDisable(false); setMfaDisableCode(''); }}
                         className="px-4 py-2 border border-border rounded text-text-secondary hover:bg-surface-hover text-sm"
                       >
-                        Cancel
+                        取消
                       </button>
                     </div>
                   </form>
@@ -738,7 +738,7 @@ export function ProfileSettings() {
         ) : (
           <div className="space-y-4">
             <p className="text-sm text-text-secondary">
-              Add an extra layer of security using a time-based one-time password (TOTP) app like Google Authenticator or Authy.
+              使用 Google Authenticator 或 Authy 等基于时间的一次性密码（TOTP）应用，为账户增加一层安全保护。
             </p>
             {!mfaSetupData ? (
               <button
@@ -746,23 +746,23 @@ export function ProfileSettings() {
                 disabled={mfaLoading}
                 className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium"
               >
-                {mfaLoading ? 'Loading...' : 'Enable Two-Factor Authentication'}
+                {mfaLoading ? '加载中…' : '启用两步验证'}
               </button>
             ) : (
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm font-medium text-text-primary mb-2">1. Scan this QR code with your authenticator app:</p>
-                  <img src={mfaSetupData.qrDataUrl} alt="MFA QR Code" className="rounded border border-border" style={{ width: 200, height: 200 }} />
+                  <p className="text-sm font-medium text-text-primary mb-2">1. 使用身份验证器应用扫描此二维码：</p>
+                  <img src={mfaSetupData.qrDataUrl} alt="两步验证二维码" className="rounded border border-border" style={{ width: 200, height: 200 }} />
                 </div>
                 <div>
-                  <p className="text-sm text-text-secondary mb-1">Or enter this key manually:</p>
+                  <p className="text-sm text-text-secondary mb-1">或手动输入此密钥：</p>
                   <code className="text-xs bg-surface border border-border rounded px-2 py-1 font-mono text-text-primary break-all">
                     {mfaSetupData.secret}
                   </code>
                 </div>
                 <form onSubmit={handleMfaVerify} className="space-y-3">
                   <div>
-                    <p className="text-sm font-medium text-text-primary mb-2">2. Enter the 6-digit code to verify:</p>
+                    <p className="text-sm font-medium text-text-primary mb-2">2. 输入 6 位验证码进行验证：</p>
                     <input
                       type="text"
                       inputMode="numeric"
@@ -780,14 +780,14 @@ export function ProfileSettings() {
                       disabled={mfaLoading || mfaVerifyCode.length < 6}
                       className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium"
                     >
-                      {mfaLoading ? 'Verifying...' : 'Verify & Enable'}
+                      {mfaLoading ? '验证中…' : '验证并启用'}
                     </button>
                     <button
                       type="button"
                       onClick={() => { setMfaSetupData(null); setMfaVerifyCode(''); }}
                       className="px-4 py-2 border border-border rounded text-text-secondary hover:bg-surface-hover text-sm"
                     >
-                      Cancel
+                      取消
                     </button>
                   </div>
                 </form>
@@ -803,16 +803,16 @@ export function ProfileSettings() {
 
           {/* Passkeys */}
           <section>
-            <h2 className="text-base font-semibold text-text-primary mb-4">Passkeys</h2>
+            <h2 className="text-base font-semibold text-text-primary mb-4">通行密钥</h2>
             <p className="text-sm text-text-secondary mb-4">
-              Use passkeys (like Face ID, Touch ID, or Windows Hello) for passwordless two-factor authentication.
-              {passkeyMaxCount > 0 && ` You can register up to ${passkeyMaxCount} passkeys.`}
+              使用通行密钥（如 Face ID、Touch ID 或 Windows Hello）进行免密码的两步验证。
+              {passkeyMaxCount > 0 && `最多可注册 ${passkeyMaxCount} 个通行密钥。`}
             </p>
 
             {pendingPasskeyRemoval && (
               <div className="mb-4 p-3 rounded-lg border border-red-500/40 bg-red-500/5">
                 <p className="text-sm text-text-primary mb-3">
-                  Are you sure you want to remove <span className="font-medium">{pendingPasskeyRemoval.name}</span>? This cannot be undone.
+                  确定要移除 <span className="font-medium">{pendingPasskeyRemoval.name}</span> 吗？此操作无法撤销。
                 </p>
                 <div className="flex items-center gap-2">
                   <button
@@ -820,14 +820,14 @@ export function ProfileSettings() {
                     disabled={passkeyLoading}
                     className="px-3 py-1.5 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 text-xs font-medium"
                   >
-                    {passkeyLoading ? 'Removing...' : 'Yes, remove passkey'}
+                    {passkeyLoading ? '移除中…' : '确认移除'}
                   </button>
                   <button
                     onClick={() => setPendingPasskeyRemoval(null)}
                     disabled={passkeyLoading}
                     className="px-3 py-1.5 border border-border rounded text-xs text-text-secondary hover:bg-surface-hover disabled:opacity-50"
                   >
-                    Cancel
+                    取消
                   </button>
                 </div>
               </div>
@@ -868,13 +868,13 @@ export function ProfileSettings() {
                           disabled={passkeyLoading}
                           className="px-2 py-1 bg-accent text-white rounded text-xs hover:bg-accent-hover disabled:opacity-50"
                         >
-                          Save
+                          保存
                         </button>
                         <button
                           onClick={() => { setEditingPasskeyId(null); setEditingPasskeyName(''); }}
                           className="px-2 py-1 border border-border rounded text-xs text-text-secondary hover:bg-surface-hover"
                         >
-                          Cancel
+                          取消
                         </button>
                       </div>
                     ) : (
@@ -883,19 +883,19 @@ export function ProfileSettings() {
                           <span className="text-sm font-medium text-text-primary">{pk.name}</span>
                           {pk.disabled && (
                             <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400 font-medium">
-                              Disabled
+                              已禁用
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-3 mt-0.5">
                           <span className="text-xs text-text-secondary">
-                            Created {relativeTime(pk.createdAt)}
+                            创建于 {relativeTime(pk.createdAt)}
                           </span>
                           {pk.lastUsedAt && (
                             <>
                               <span className="text-xs text-text-secondary">·</span>
                               <span className="text-xs text-text-secondary">
-                                Last used {relativeTime(pk.lastUsedAt)}
+                                最近使用：{relativeTime(pk.lastUsedAt)}
                               </span>
                             </>
                           )}
@@ -916,7 +916,7 @@ export function ProfileSettings() {
                       <button
                         onClick={() => { setEditingPasskeyId(pk.id); setEditingPasskeyName(pk.name); }}
                         className="p-1.5 text-text-secondary hover:text-text-primary hover:bg-surface-hover rounded"
-                        title="Rename"
+                        title="重命名"
                       >
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -927,7 +927,7 @@ export function ProfileSettings() {
                         onClick={() => setPendingPasskeyRemoval({ id: pk.id, name: pk.name })}
                         disabled={passkeyLoading}
                         className="p-1.5 text-text-secondary hover:text-red-400 hover:bg-red-500/10 rounded"
-                        title="Remove"
+                        title="移除"
                       >
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -939,23 +939,23 @@ export function ProfileSettings() {
               ))}
 
               {passkeys.length === 0 && !showPasskeyRegister && (
-                <p className="text-sm text-text-secondary italic py-2">No passkeys registered yet.</p>
+                <p className="text-sm text-text-secondary italic py-2">尚未注册通行密钥。</p>
               )}
             </div>
 
             {/* Register new passkey */}
             {showPasskeyRegister ? (
               <form onSubmit={handlePasskeyRegister} className="space-y-3 p-4 border border-border rounded-lg bg-surface">
-                <p className="text-sm font-medium text-text-primary">Register a new passkey</p>
+                <p className="text-sm font-medium text-text-primary">注册新的通行密钥</p>
                 <div>
                   <label className="block text-sm text-text-secondary mb-1">
-                    Passkey name <span className="text-text-secondary">(e.g., "MacBook Pro", "iPhone")</span>
+                    通行密钥名称 <span className="text-text-secondary">（例如“MacBook Pro”、“iPhone”）</span>
                   </label>
                   <input
                     type="text"
                     value={newPasskeyName}
                     onChange={(e) => setNewPasskeyName(e.target.value)}
-                    placeholder="My Device"
+                    placeholder="我的设备"
                     maxLength={50}
                     autoFocus
                     className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-accent"
@@ -973,10 +973,10 @@ export function ProfileSettings() {
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                         </svg>
-                        Registering...
+                        注册中…
                       </>
                     ) : (
-                      'Register Passkey'
+                      '注册通行密钥'
                     )}
                   </button>
                   <button
@@ -984,7 +984,7 @@ export function ProfileSettings() {
                     onClick={() => { setShowPasskeyRegister(false); setNewPasskeyName(''); }}
                     className="px-4 py-2 border border-border rounded text-text-secondary hover:bg-surface-hover text-sm"
                   >
-                    Cancel
+                    取消
                   </button>
                 </div>
               </form>
@@ -998,13 +998,13 @@ export function ProfileSettings() {
                     <line x1="12" y1="5" x2="12" y2="19" />
                     <line x1="5" y1="12" x2="19" y2="12" />
                   </svg>
-                  Add Passkey
+                  添加通行密钥
                 </button>
               )
             )}
             {!passkeyCanAdd && passkeys.length > 0 && (
               <p className="text-xs text-text-secondary mt-2">
-                Maximum passkeys ({passkeyMaxCount}) reached. Remove a passkey to add a new one.
+                已达到通行密钥数量上限（{passkeyMaxCount}）。请先移除一个再添加。
               </p>
             )}
           </section>

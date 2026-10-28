@@ -166,43 +166,43 @@ function CredentialIcon() {
 }
 
 const MY_SETTINGS_NAV: NavItem[] = [
-  { id: 'profile', label: 'Profile', icon: <UserIcon /> },
-  { id: 'general', label: 'General', icon: <SlidersIcon /> },
-  { id: 'ssh-prefs', label: 'SSH Terminal', icon: <TerminalIcon /> },
-  { id: 'credentials', label: 'Credentials', icon: <CredentialIcon /> },
+  { id: 'profile', label: '个人资料', icon: <UserIcon /> },
+  { id: 'general', label: '常规', icon: <SlidersIcon /> },
+  { id: 'ssh-prefs', label: 'SSH 终端', icon: <TerminalIcon /> },
+  { id: 'credentials', label: '凭据', icon: <CredentialIcon /> },
 ];
 
 const ADMIN_NAV: NavItem[] = [
-  { id: 'global', label: 'General', icon: <SlidersIcon />, permission: 'settings.manage' },
-  { id: 'active-sessions', label: 'Active Sessions', icon: <UsersIcon />, permission: 'sessions.view_active' },
-  { id: 'security', label: 'Security', icon: <ShieldIcon />, permission: 'settings.security' },
-  { id: 'authentication', label: 'Authentication', icon: <KeyIcon />, permission: 'settings.auth_providers' },
-  { id: 'sessions', label: 'Recordings', icon: <HistoryIcon />, permission: ['sessions.view_any', 'sessions.view_own'] },
-  { id: 'audit', label: 'Audit', icon: <ListIcon />, permission: ['audit.view_any', 'audit.view_own'] },
-  { id: 'users', label: 'Users', icon: <UsersIcon />, permission: 'users.manage' },
-  { id: 'roles', label: 'Roles', icon: <RolesIcon />, permission: 'roles.manage' },
-  { id: 'notifications', label: 'Notifications', icon: <BellIcon />, permission: 'settings.notifications' },
-  { id: 'backup', label: 'Backup & Restore', icon: <ArchiveIcon />, permission: 'settings.backup' },
+  { id: 'global', label: '常规', icon: <SlidersIcon />, permission: 'settings.manage' },
+  { id: 'active-sessions', label: '活动会话', icon: <UsersIcon />, permission: 'sessions.view_active' },
+  { id: 'security', label: '安全', icon: <ShieldIcon />, permission: 'settings.security' },
+  { id: 'authentication', label: '身份验证', icon: <KeyIcon />, permission: 'settings.auth_providers' },
+  { id: 'sessions', label: '录像', icon: <HistoryIcon />, permission: ['sessions.view_any', 'sessions.view_own'] },
+  { id: 'audit', label: '审计', icon: <ListIcon />, permission: ['audit.view_any', 'audit.view_own'] },
+  { id: 'users', label: '用户', icon: <UsersIcon />, permission: 'users.manage' },
+  { id: 'roles', label: '角色', icon: <RolesIcon />, permission: 'roles.manage' },
+  { id: 'notifications', label: '通知', icon: <BellIcon />, permission: 'settings.notifications' },
+  { id: 'backup', label: '备份与恢复', icon: <ArchiveIcon />, permission: 'settings.backup' },
 ];
 
 // Combine for validation
 const ALL_NAV: NavItem[] = [...MY_SETTINGS_NAV, ...ADMIN_NAV];
 
 const NAV_LABEL_MAP: Record<Section, string> = {
-  'notifications': 'Notifications',
-  'profile': 'Profile',
-  'general': 'General',
-  'ssh-prefs': 'SSH Terminal',
-  'credentials': 'Credentials',
-  'security': 'Security',
-  'users': 'Users',
-  'audit': 'Audit Trail',
-  'global': 'General',
-  'sessions': 'Session Recordings',
-  'authentication': 'Authentication',
-  'backup': 'Backup & Restore',
-  'roles': 'Roles',
-  'active-sessions': 'Active Sessions',
+  'notifications': '通知',
+  'profile': '个人资料',
+  'general': '常规',
+  'ssh-prefs': 'SSH 终端',
+  'credentials': '凭据',
+  'security': '安全',
+  'users': '用户',
+  'audit': '审计日志',
+  'global': '常规',
+  'sessions': '会话录像',
+  'authentication': '身份验证',
+  'backup': '备份与恢复',
+  'roles': '角色',
+  'active-sessions': '活动会话',
 };
 
 export function SettingsPanel({ isOpen, onClose, initialSection }: SettingsPanelProps) {
@@ -270,12 +270,12 @@ export function SettingsPanel({ isOpen, onClose, initialSection }: SettingsPanel
         {/* Left nav */}
         <div className="w-52 bg-surface-alt border-r border-border flex flex-col shrink-0">
           <div className="h-12 flex items-center px-4 border-b border-border">
-            <span className="text-sm font-semibold text-text-primary">Settings</span>
+            <span className="text-sm font-semibold text-text-primary">设置</span>
           </div>
           <nav className="flex-1 py-2 overflow-y-auto">
             {/* My Settings section */}
             <div className="px-4 pt-2 pb-1">
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-text-secondary/60">My Settings</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-text-secondary/60">我的设置</span>
             </div>
             {MY_SETTINGS_NAV.map((item) => (
               <NavButton key={item.id} item={item} />
@@ -285,7 +285,7 @@ export function SettingsPanel({ isOpen, onClose, initialSection }: SettingsPanel
             {hasAnyAdminPerm && (
               <>
                 <div className="px-4 pt-4 pb-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-text-secondary/60">Administration</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-text-secondary/60">管理</span>
                 </div>
                 {visibleAdminNav.map((item) => (
                   <NavButton key={item.id} item={item} />
@@ -306,7 +306,7 @@ export function SettingsPanel({ isOpen, onClose, initialSection }: SettingsPanel
               <button
                 onClick={() => setExpanded((e) => !e)}
                 className="p-1.5 rounded hover:bg-surface-hover text-text-secondary"
-                title={expanded ? 'Restore size' : 'Expand to full width'}
+                title={expanded ? '恢复大小' : '展开至全宽'}
               >
                 {expanded ? (
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -321,7 +321,7 @@ export function SettingsPanel({ isOpen, onClose, initialSection }: SettingsPanel
               <button
                 onClick={onClose}
                 className="p-1.5 rounded hover:bg-surface-hover text-text-secondary"
-                title="Close settings"
+                title="关闭设置"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18" />

@@ -67,7 +67,7 @@ export function CredentialsSettings() {
       name: credName,
       connections: data.connections ?? [],
       otherCount: data.otherCount ?? 0,
-      message: data.error ?? 'Credential is in use',
+      message: data.error ?? '凭据正在使用中',
     });
   }
 
@@ -78,35 +78,35 @@ export function CredentialsSettings() {
       const res = await fetch(`/api/v1/credentials/${deleteTarget.id}`, { method: 'DELETE', credentials: 'include' });
       const data = await res.json().catch(() => ({}));
       if (res.status === 409) { readInUse(data, deleteTarget.name); setDeleteTarget(null); return; }
-      if (!res.ok) throw new Error(data.error || `Server error (${res.status})`);
-      showToast('Credential deleted');
+      if (!res.ok) throw new Error(data.error || `服务器错误（${res.status}）`);
+      showToast('凭据已删除');
       setDeleteTarget(null);
       load();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Delete failed', 'error');
+      showToast(err instanceof Error ? err.message : '删除失败', 'error');
     } finally {
       setDeleting(false);
     }
   }
 
-  if (loading) return <p className="text-text-secondary text-sm">Loading…</p>;
+  if (loading) return <p className="text-text-secondary text-sm">加载中…</p>;
   if (error) return <p className="text-red-500 text-sm">{error}</p>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-base font-semibold text-text-primary">Credential Library</h2>
+          <h2 className="text-base font-semibold text-text-primary">凭据库</h2>
           <p className="text-xs text-text-secondary mt-0.5">
-            Save usernames with passwords or SSH keys once, then pick them when creating connections.
-            Updating a credential updates every connection that uses it.
+            保存一次用户名及密码或 SSH 密钥，创建连接时即可直接选用。
+            更新凭据会同步更新所有使用它的连接。
           </p>
         </div>
         <button
           onClick={openCreate}
           className="px-3 py-1.5 bg-accent text-white rounded hover:bg-accent-hover text-sm font-medium shrink-0"
         >
-          + New Credential
+          + 新建凭据
         </button>
       </div>
 
@@ -114,12 +114,12 @@ export function CredentialsSettings() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left">
-              <th className="pb-2 pr-4 text-text-secondary font-medium">Name</th>
-              <th className="pb-2 pr-4 text-text-secondary font-medium">Type</th>
-              <th className="pb-2 pr-4 text-text-secondary font-medium">Username</th>
-              <th className="pb-2 pr-4 text-text-secondary font-medium">Visibility</th>
-              <th className="pb-2 pr-4 text-text-secondary font-medium">Used by</th>
-              <th className="pb-2 text-text-secondary font-medium">Actions</th>
+              <th className="pb-2 pr-4 text-text-secondary font-medium">名称</th>
+              <th className="pb-2 pr-4 text-text-secondary font-medium">类型</th>
+              <th className="pb-2 pr-4 text-text-secondary font-medium">用户名</th>
+              <th className="pb-2 pr-4 text-text-secondary font-medium">可见性</th>
+              <th className="pb-2 pr-4 text-text-secondary font-medium">使用情况</th>
+              <th className="pb-2 text-text-secondary font-medium">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -129,21 +129,21 @@ export function CredentialsSettings() {
                 <td className="py-3 pr-4">
                   <span className="inline-flex items-center gap-1.5 text-text-secondary text-xs">
                     {c.type === 'key' ? <KeyGlyph /> : <LockGlyph />}
-                    {c.type === 'key' ? `SSH key${c.hasPassphrase ? ' + passphrase' : ''}` : 'Password'}
+                    {c.type === 'key' ? `SSH 密钥${c.hasPassphrase ? ' + 私钥口令' : ''}` : '密码'}
                   </span>
                 </td>
                 <td className="py-3 pr-4 text-text-secondary font-mono text-xs">{c.username || '—'}</td>
                 <td className="py-3 pr-4">
                   {c.shared ? (
                     <span className="px-2 py-0.5 rounded text-xs bg-accent/15 text-accent font-medium">
-                      Shared{!c.isOwner && c.ownerUsername ? ` · ${c.ownerUsername}` : ''}
+                      已共享{!c.isOwner && c.ownerUsername ? ` · ${c.ownerUsername}` : ''}
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded text-xs bg-surface-hover text-text-secondary">Private</span>
+                    <span className="px-2 py-0.5 rounded text-xs bg-surface-hover text-text-secondary">私有</span>
                   )}
                 </td>
                 <td className="py-3 pr-4 text-text-secondary text-xs">
-                  {c.usageCount === 0 ? '—' : `${c.usageCount} connection${c.usageCount !== 1 ? 's' : ''}`}
+                  {c.usageCount === 0 ? '—' : `${c.usageCount} 个连接`}
                 </td>
                 <td className="py-3">
                   {c.canEdit ? (
@@ -152,13 +152,13 @@ export function CredentialsSettings() {
                         onClick={() => openEdit(c)}
                         className="px-2 py-1 text-xs border border-border rounded text-text-secondary hover:bg-surface-hover"
                       >
-                        Edit
+                        编辑
                       </button>
                       <button
                         onClick={() => setDeleteTarget(c)}
                         className="px-2 py-1 text-xs border border-red-500/30 rounded text-red-400 hover:bg-red-500/10"
                       >
-                        Delete
+                        删除
                       </button>
                     </div>
                   ) : (
@@ -170,7 +170,7 @@ export function CredentialsSettings() {
           </tbody>
         </table>
         {creds.length === 0 && (
-          <p className="text-text-secondary text-sm py-6 text-center">No saved credentials yet.</p>
+          <p className="text-text-secondary text-sm py-6 text-center">暂无已保存的凭据。</p>
         )}
       </div>
 
@@ -191,19 +191,19 @@ export function CredentialsSettings() {
           onClick={(e) => { if (e.target === e.currentTarget) setDeleteTarget(null); }}>
           <div className="bg-surface-alt border border-border rounded-lg shadow-xl w-full max-w-md p-6 space-y-4">
             <div>
-              <h3 className="text-base font-semibold text-text-primary">Delete credential?</h3>
+              <h3 className="text-base font-semibold text-text-primary">删除凭据？</h3>
               <p className="text-sm text-text-secondary mt-1">
-                Delete <strong className="text-text-primary">{deleteTarget.name}</strong>? This cannot be undone.
+                确定删除<strong className="text-text-primary">{deleteTarget.name}</strong>？此操作无法撤销。
               </p>
             </div>
             <div className="flex gap-2 pt-1">
               <button onClick={confirmDelete} disabled={deleting}
                 className="flex-1 py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 font-medium text-sm">
-                {deleting ? 'Deleting…' : 'Yes, delete'}
+                {deleting ? '删除中…' : '是，删除'}
               </button>
               <button onClick={() => setDeleteTarget(null)}
                 className="px-4 py-2 border border-border rounded text-text-secondary hover:bg-surface-hover text-sm">
-                Cancel
+                取消
               </button>
             </div>
           </div>
@@ -216,22 +216,22 @@ export function CredentialsSettings() {
           onClick={(e) => { if (e.target === e.currentTarget) setInUse(null); }}>
           <div className="bg-surface-alt border border-border rounded-lg shadow-xl w-full max-w-md p-6 space-y-4">
             <div>
-              <h3 className="text-base font-semibold text-text-primary">“{inUse.name}” is in use</h3>
+              <h3 className="text-base font-semibold text-text-primary">“{inUse.name}”正在使用中</h3>
               <p className="text-sm text-text-secondary mt-1">
-                {inUse.message}. Switch these connections to another credential first:
+                {inUse.message}。请先将以下连接切换为其他凭据：
               </p>
             </div>
             <ul className="text-sm text-text-primary space-y-1 max-h-48 overflow-y-auto">
               {inUse.connections.map((c) => <li key={c.id}>• {c.name}</li>)}
               {inUse.otherCount > 0 && (
                 <li className="text-text-secondary">
-                  • {inUse.otherCount} connection{inUse.otherCount !== 1 ? 's' : ''} owned by other users
+                  • 其他用户拥有的 {inUse.otherCount} 个连接
                 </li>
               )}
             </ul>
             <button onClick={() => setInUse(null)}
               className="w-full py-2 px-4 border border-border rounded text-text-secondary hover:bg-surface-hover text-sm">
-              OK
+              确定
             </button>
           </div>
         </div>

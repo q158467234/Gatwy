@@ -18,13 +18,13 @@ interface SessionRow {
 }
 
 function formatDuration(start: string, end: string | null): string {
-  if (!end) return 'Active';
+  if (!end) return '进行中';
   const ms = new Date(end).getTime() - new Date(start).getTime();
   const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s}s`;
+  if (s < 60) return `${s}秒`;
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ${s % 60}s`;
-  return `${Math.floor(m / 60)}h ${m % 60}m`;
+  if (m < 60) return `${m}分${s % 60}秒`;
+  return `${Math.floor(m / 60)}小时${m % 60}分`;
 }
 
 function formatTime(secs: number): string {
@@ -84,14 +84,14 @@ function VideoPlayer({
         const res = await fetch(`/api/v1/sessions/${sessionId}/recording`, {
           credentials: 'include',
         });
-        if (!res.ok) throw new Error('Recording not found');
+        if (!res.ok) throw new Error('未找到录像');
         const blob = await res.blob();
         const typedBlob = blob.type === 'video/webm' ? blob : new Blob([blob], { type: 'video/webm' });
         url = URL.createObjectURL(typedBlob);
         setBlobUrl(url);
         setLoading(false);
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load');
+        setError(e instanceof Error ? e.message : '加载失败');
         setLoading(false);
       }
     }
@@ -195,7 +195,7 @@ function VideoPlayer({
     const v = videoRef.current;
     const code = v?.error?.code ?? 0;
     console.error('[VideoPlayer] media error code', code, v?.error?.message);
-    if (code === 4) setError('Format not supported');
+    if (code === 4) setError('不支持的格式');
   }
 
   function onTimeUpdate() {
@@ -227,27 +227,27 @@ function VideoPlayer({
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-[#0a0a0a]">
       <div className="flex items-center gap-3 px-4 py-2 bg-[#141414] border-b border-[#2e2e2e] shrink-0">
-        <span className="text-sm font-semibold text-[#efefef]">RDP Recording</span>
+        <span className="text-sm font-semibold text-[#efefef]">RDP 录像</span>
         <div className="flex-1" />
         <button
           onClick={() => void handleDownload()}
           disabled={downloading || !!error}
           className="p-1.5 rounded hover:bg-[#272727] text-[#888] hover:text-[#efefef] disabled:opacity-40 flex items-center gap-1.5 text-xs"
-          title="Download .webm"
+          title="下载 .webm"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          Download
+          下载
         </button>
-        <button onClick={onClose} className="p-1.5 rounded hover:bg-[#272727] text-[#888] hover:text-[#efefef]" title="Close (Esc)">
+        <button onClick={onClose} className="p-1.5 rounded hover:bg-[#272727] text-[#888] hover:text-[#efefef]" title="关闭（Esc）">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       </div>
       <div className="flex-1 flex items-center justify-center overflow-hidden bg-black relative">
-        {loading && <p className="text-[#888] text-sm absolute">Loading recording...</p>}
+        {loading && <p className="text-[#888] text-sm absolute">加载录像中…</p>}
         {error && <p className="text-red-400 text-sm absolute top-4">{error}</p>}
         {blobUrl && (
           <video
@@ -274,11 +274,11 @@ function VideoPlayer({
             {playing ? (
               <span className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
-                PLAYING {speed !== 1 ? `(${speed}×)` : ''}
+                播放中 {speed !== 1 ? `(${speed}×)` : ''}
               </span>
             ) : currentTime >= totalTime && totalTime > 0 ? (
-              <span className="text-green-500/70">FINISHED</span>
-            ) : 'PAUSED'}
+              <span className="text-green-500/70">已结束</span>
+            ) : '已暂停'}
           </span>
           <span className="text-[#888]">{totalTime > 0 ? formatTime(totalTime) : '--:--'}</span>
         </div>
@@ -303,7 +303,7 @@ function VideoPlayer({
               const pct = (e.clientX - rect.left) / rect.width;
               onSeek(pct * totalTime);
             }}
-            title="Activity — Blue: clicks, Green: keyboard, Gray: mouse movement"
+            title="活动 — 蓝色：点击，绿色：键盘，灰色：鼠标移动"
           >
             {/* Playhead */}
             <div className="absolute top-0 bottom-0 w-px bg-blue-400/80 z-10 pointer-events-none" style={{ left: `${progress}%` }} />
@@ -329,9 +329,9 @@ function VideoPlayer({
             })()}
             {/* Legend overlay on hover */}
             <div className="absolute top-0.5 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 text-[9px] text-[#888] pointer-events-none">
-              <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />clicks</span>
-              <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />keys</span>
-              <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" />mouse</span>
+              <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500 inline-block" />点击</span>
+              <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />按键</span>
+              <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" />鼠标</span>
             </div>
           </div>
         )}
@@ -342,8 +342,8 @@ function VideoPlayer({
             className="px-3 py-1.5 text-xs border border-[#2e2e2e] rounded text-[#efefef] hover:bg-[#1c1c1c] disabled:opacity-40 flex items-center gap-1.5"
           >
             {playing
-              ? (<><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>Pause</>)
-              : (<><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>{currentTime > 0 ? 'Resume' : 'Play'}</>)
+              ? (<><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>暂停</>)
+              : (<><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>{currentTime > 0 ? '继续' : '播放'}</>)
             }
           </button>
           <button
@@ -351,10 +351,10 @@ function VideoPlayer({
             disabled={loading || !!error}
             className="px-3 py-1.5 text-xs border border-[#2e2e2e] rounded text-[#888] hover:text-[#efefef] hover:bg-[#1c1c1c] disabled:opacity-40"
           >
-            ↺ Replay
+            ↺ 重播
           </button>
           <div className="w-px h-4 bg-[#2e2e2e] mx-1" />
-          <span className="text-xs text-[#555]">Speed:</span>
+          <span className="text-xs text-[#555]">速度：</span>
           {[0.25, 0.5, 1, 2, 4, 8].map((s) => (
             <button
               key={s}
@@ -480,7 +480,7 @@ function RecordingPlayer({
         const res = await fetch(`/api/v1/sessions/${sessionId}/recording`, {
           credentials: 'include',
         });
-        if (!res.ok) throw new Error('Recording not found or unavailable');
+        if (!res.ok) throw new Error('录像不存在或不可用');
         const text = await res.text();
         const { header, events } = parseCast(text);
         eventsRef.current = events;
@@ -495,7 +495,7 @@ function RecordingPlayer({
           .then(data => { if (data?.commands?.length) setCommands(data.commands); })
           .catch(() => {});
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load');
+        setError(e instanceof Error ? e.message : '加载失败');
         setLoading(false);
       }
     }
@@ -517,32 +517,32 @@ function RecordingPlayer({
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-[#0a0a0a]">
       <div className="flex items-center gap-3 px-4 py-2 bg-[#141414] border-b border-[#2e2e2e] shrink-0">
-        <span className="text-sm font-semibold text-[#efefef] truncate">{title || 'Session Recording'}</span>
+        <span className="text-sm font-semibold text-[#efefef] truncate">{title || '会话录像'}</span>
         <div className="flex-1" />
         <button
           onClick={() => void handleDownload()}
           disabled={downloading || loading || !!error}
           className="p-1.5 rounded hover:bg-[#272727] text-[#888] hover:text-[#efefef] disabled:opacity-40 flex items-center gap-1.5 text-xs"
-          title="Download .cast"
+          title="下载 .cast"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          Download
+          下载
         </button>
         {commands.length > 0 && (
           <button
             onClick={() => setShowCommands(v => !v)}
             className={`p-1.5 rounded flex items-center gap-1.5 text-xs transition-colors ${showCommands ? 'bg-blue-500/20 text-blue-400' : 'hover:bg-[#272727] text-[#888] hover:text-[#efefef]'}`}
-            title="Toggle command log"
+            title="显示/隐藏命令日志"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />
             </svg>
-            Commands ({commands.length})
+            命令（{commands.length}）
           </button>
         )}
-        <button onClick={onClose} className="p-1.5 rounded hover:bg-[#272727] text-[#888] hover:text-[#efefef]" title="Close (Esc)">
+        <button onClick={onClose} className="p-1.5 rounded hover:bg-[#272727] text-[#888] hover:text-[#efefef]" title="关闭（Esc）">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -550,7 +550,7 @@ function RecordingPlayer({
       </div>
       <div className="flex-1 overflow-hidden flex">
         <div className={`flex-1 overflow-hidden p-3 ${showCommands ? '' : ''}`}>
-          {loading && <div className="flex items-center justify-center h-full text-[#888] text-sm">Loading recording...</div>}
+          {loading && <div className="flex items-center justify-center h-full text-[#888] text-sm">加载录像中…</div>}
           {error && <div className="flex items-center justify-center h-full text-red-400 text-sm">{error}</div>}
           <div ref={containerRef} className="w-full h-full" style={{ display: loading || error ? 'none' : 'block' }} />
         </div>
@@ -560,7 +560,7 @@ function RecordingPlayer({
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />
               </svg>
-              Command Log
+              命令日志
             </div>
             <div className="flex-1 overflow-y-auto">
               {commands.map((cmd, idx) => {
@@ -579,7 +579,7 @@ function RecordingPlayer({
                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                           </svg>
-                          password entered
+                          已输入密码
                         </span>
                       ) : (
                         <span className="text-xs font-mono text-green-400 truncate">{cmd.command}</span>
@@ -604,11 +604,11 @@ function RecordingPlayer({
             {playing ? (
               <span className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
-                PLAYING {speed !== 1 ? `(${speed}×)` : ''}
+                播放中 {speed !== 1 ? `(${speed}×)` : ''}
               </span>
             ) : currentTime >= totalTime && totalTime > 0 ? (
-              <span className="text-green-500/70">FINISHED</span>
-            ) : 'PAUSED'}
+              <span className="text-green-500/70">已结束</span>
+            ) : '已暂停'}
           </span>
           <span className="text-[#888]">{formatTime(totalTime)}</span>
         </div>
@@ -630,14 +630,14 @@ function RecordingPlayer({
           <button onClick={() => playing ? (cancelPlayback(), setPlaying(false)) : seekTo(currentTime, true)}
             disabled={loading || !!error}
             className="px-3 py-1.5 text-xs border border-[#2e2e2e] rounded text-[#efefef] hover:bg-[#1c1c1c] disabled:opacity-40 flex items-center gap-1.5">
-            {playing ? (<><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>Pause</>) : (<><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>{currentTime > 0 ? 'Resume' : 'Play'}</>)}
+            {playing ? (<><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>暂停</>) : (<><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>{currentTime > 0 ? '继续' : '播放'}</>)}
           </button>
           <button onClick={() => seekTo(0, true)} disabled={loading || !!error}
             className="px-3 py-1.5 text-xs border border-[#2e2e2e] rounded text-[#888] hover:text-[#efefef] hover:bg-[#1c1c1c] disabled:opacity-40">
-            ↺ Replay
+            ↺ 重播
           </button>
           <div className="w-px h-4 bg-[#2e2e2e] mx-1" />
-          <span className="text-xs text-[#555]">Speed:</span>
+          <span className="text-xs text-[#555]">速度：</span>
           {[0.25, 0.5, 1, 2, 4, 8].map((s) => (
             <button key={s} onClick={() => { setSpeed(s); speedRef.current = s; if (playingRef.current) seekTo(currentTime, true); }}
               className={`px-2 py-0.5 text-xs rounded transition-colors ${speed === s ? 'bg-blue-500 text-white' : 'border border-[#2e2e2e] text-[#888] hover:border-[#444] hover:text-[#efefef]'}`}>
@@ -671,11 +671,11 @@ interface FileEvent {
 }
 
 const FILE_ACTION_LABELS: Record<string, string> = {
-  browse: 'Browse',
-  download: 'Download',
-  upload: 'Upload',
-  mkdir: 'New Folder',
-  delete: 'Delete',
+  browse: '浏览',
+  download: '下载',
+  upload: '上传',
+  mkdir: '新建文件夹',
+  delete: '删除',
 };
 
 function FileActionIcon({ action }: { action: string }) {
@@ -731,14 +731,14 @@ function FileSessionTimeline({ sessionId, onClose }: { sessionId: string; onClos
     fetch(`/api/v1/file-sessions/${sessionId}/events`, { credentials: 'include' })
       .then((r) => r.json())
       .then((d: { events: FileEvent[] }) => { setEvents(d.events); setLoading(false); })
-      .catch(() => { setError('Failed to load events'); setLoading(false); });
+      .catch(() => { setError('加载事件失败'); setLoading(false); });
   }, [sessionId]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-surface rounded-xl border border-border w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl mx-4">
         <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
-          <h3 className="text-base font-semibold text-text-primary">Session Timeline</h3>
+          <h3 className="text-base font-semibold text-text-primary">会话时间线</h3>
           <button onClick={onClose}
             className="text-text-secondary hover:text-text-primary p-1 rounded hover:bg-surface-hover">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -747,10 +747,10 @@ function FileSessionTimeline({ sessionId, onClose }: { sessionId: string; onClos
           </button>
         </div>
         <div className="overflow-y-auto flex-1 p-4">
-          {loading && <p className="text-text-secondary text-sm">Loading events...</p>}
+          {loading && <p className="text-text-secondary text-sm">加载事件中…</p>}
           {error && <p className="text-red-400 text-sm">{error}</p>}
           {!loading && !error && events.length === 0 && (
-            <p className="text-text-secondary text-sm">No events recorded for this session.</p>
+            <p className="text-text-secondary text-sm">此会话没有记录任何事件。</p>
           )}
           {!loading && events.length > 0 && (
             <div className="space-y-0.5">
@@ -761,7 +761,7 @@ function FileSessionTimeline({ sessionId, onClose }: { sessionId: string; onClos
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-medium text-text-primary">{FILE_ACTION_LABELS[e.action] ?? e.action}</span>
                       {e.detail?.count !== undefined && (
-                        <span className="text-xs text-text-secondary">{String(e.detail.count)} items</span>
+                        <span className="text-xs text-text-secondary">{String(e.detail.count)} 项</span>
                       )}
                       {e.detail?.size !== undefined && (
                         <span className="text-xs text-text-secondary">{formatBytes(e.detail.size as number)}</span>
@@ -824,7 +824,7 @@ function FileActivity() {
 
   const inputCls = 'px-2.5 py-1.5 bg-surface border border-border rounded text-text-primary text-xs focus:outline-none focus:ring-1 focus:ring-accent';
 
-  if (loading) return <p className="text-text-secondary text-sm">Loading file activity...</p>;
+  if (loading) return <p className="text-text-secondary text-sm">加载文件活动中…</p>;
 
   return (
     <div className="space-y-4">
@@ -834,25 +834,25 @@ function FileActivity() {
             <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
           </svg>
           <input
-            type="text" placeholder="Search connection…"
+            type="text" placeholder="搜索连接…"
             value={search} onChange={(e) => setSearch(e.target.value)}
             className={`${inputCls} flex-1`}
           />
         </div>
         <select value={protocolFilter} onChange={(e) => setProtocolFilter(e.target.value)} className={inputCls}>
-          <option value="all">All protocols</option>
+          <option value="all">全部协议</option>
           <option value="sftp">SFTP</option>
           <option value="smb">SMB</option>
           <option value="ftp">FTP</option>
         </select>
         <button onClick={load}
           className="text-xs text-text-secondary hover:text-text-primary px-2 py-1 rounded hover:bg-surface-hover">
-          ↻ Refresh
+          ↻ 刷新
         </button>
       </div>
 
       {sessions.length === 0 && (
-        <p className="text-text-secondary text-sm">No file browser sessions recorded yet. File activity is captured automatically when using SFTP, SMB, or FTP connections.</p>
+        <p className="text-text-secondary text-sm">暂无文件浏览会话记录。使用 SFTP、SMB 或 FTP 连接时会自动记录文件活动。</p>
       )}
 
       {filtered.length > 0 && (
@@ -860,14 +860,14 @@ function FileActivity() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-text-secondary">
-                <th className="pb-2 pr-4 font-medium">Connection</th>
-                <th className="pb-2 pr-4 font-medium">User</th>
-                <th className="pb-2 pr-4 font-medium">Protocol</th>
-                <th className="pb-2 pr-4 font-medium">Started</th>
-                <th className="pb-2 pr-4 font-medium">Duration</th>
-                <th className="pb-2 pr-4 font-medium">Events</th>
-                <th className="pb-2 pr-4 font-medium">Timeline</th>
-                <th className="pb-2 font-medium">Download</th>
+                <th className="pb-2 pr-4 font-medium">连接</th>
+                <th className="pb-2 pr-4 font-medium">用户</th>
+                <th className="pb-2 pr-4 font-medium">协议</th>
+                <th className="pb-2 pr-4 font-medium">开始时间</th>
+                <th className="pb-2 pr-4 font-medium">时长</th>
+                <th className="pb-2 pr-4 font-medium">事件</th>
+                <th className="pb-2 pr-4 font-medium">时间线</th>
+                <th className="pb-2 font-medium">下载</th>
               </tr>
             </thead>
             <tbody>
@@ -889,7 +889,7 @@ function FileActivity() {
                       <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
                       </svg>
-                      View Timeline
+                      查看时间线
                     </button>
                   </td>
                   <td className="py-2">
@@ -958,7 +958,7 @@ function FilterBar({
         </svg>
         <input
           type="text"
-          placeholder="Search connection…"
+          placeholder="搜索连接…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className={`${inputCls} flex-1`}
@@ -967,14 +967,14 @@ function FilterBar({
 
       {/* Protocol */}
       <select value={protocol} onChange={(e) => setProtocol(e.target.value)} className={inputCls}>
-        <option value="all">All protocols</option>
+        <option value="all">全部协议</option>
         {PROTOCOLS.map((p) => <option key={p} value={p}>{p.toUpperCase()}</option>)}
       </select>
 
       {/* User (only shown if there are multiple users) */}
       {userOptions.length > 1 && (
         <select value={userFilter} onChange={(e) => setUserFilter(e.target.value)} className={inputCls}>
-          <option value="all">All users</option>
+          <option value="all">全部用户</option>
           {userOptions.map((u) => <option key={u} value={u}>{u}</option>)}
         </select>
       )}
@@ -982,10 +982,10 @@ function FilterBar({
       {/* Date range */}
       <div className="flex items-center gap-1">
         <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-          className={inputCls} title="From date" />
+          className={inputCls} title="开始日期" />
         <span className="text-text-secondary text-xs">–</span>
         <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-          className={inputCls} title="To date" />
+          className={inputCls} title="结束日期" />
       </div>
 
       {/* Reset */}
@@ -995,7 +995,7 @@ function FilterBar({
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
-          Clear filters
+          清除筛选
         </button>
       )}
     </div>
@@ -1099,32 +1099,32 @@ export function SessionsHistory() {
             onClick={() => setActiveTab('settings')}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === 'settings' ? 'border-accent text-accent' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
           >
-            Settings
+            设置
           </button>
         )}
         <button
           onClick={() => setActiveTab('recordings')}
           className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === 'recordings' ? 'border-accent text-accent' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
         >
-          Terminal Recordings
+          终端录像
         </button>
         <button
           onClick={() => setActiveTab('file-activity')}
           className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${activeTab === 'file-activity' ? 'border-accent text-accent' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
         >
-          File Activity
+          文件活动
         </button>
       </div>
 
       {activeTab === 'recordings' && (loading ? (
-        <p className="text-text-secondary text-sm">Loading recordings...</p>
+        <p className="text-text-secondary text-sm">加载录像中…</p>
       ) : (
         <>
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-text-primary">Session Recordings</h2>
+            <h2 className="text-base font-semibold text-text-primary">会话录像</h2>
             <button onClick={() => void loadSessions()}
               className="text-xs text-text-secondary hover:text-text-primary px-2 py-1 rounded hover:bg-surface-hover">
-              ↻ Refresh
+              ↻ 刷新
             </button>
           </div>
 
@@ -1140,15 +1140,15 @@ export function SessionsHistory() {
 
           {(filtered.length !== sessions.length || sessions.length > 0) && (
             <p className="text-xs text-text-secondary">
-              Showing <span className="font-medium text-text-primary">{filtered.length}</span> of {sessions.length} recordings
+              显示 <span className="font-medium text-text-primary">{filtered.length}</span> / {sessions.length} 条录像
             </p>
           )}
 
           {filtered.length === 0 && sessions.length > 0 && (
-            <p className="text-text-secondary text-sm py-4 text-center">No recordings match the current filters.</p>
+            <p className="text-text-secondary text-sm py-4 text-center">没有符合当前筛选条件的录像。</p>
           )}
           {sessions.length === 0 && (
-            <p className="text-text-secondary text-sm">No recordings yet. Enable session recording in Settings › Recordings › Settings.</p>
+            <p className="text-text-secondary text-sm">暂无录像。请在 设置 › 录像 › 设置 中启用会话录像。</p>
           )}
 
           {filtered.length > 0 && (
@@ -1156,14 +1156,14 @@ export function SessionsHistory() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left text-text-secondary">
-                    <th className="pb-2 pr-4 font-medium">Connection</th>
-                    <th className="pb-2 pr-4 font-medium">User</th>
-                    <th className="pb-2 pr-4 font-medium">Protocol</th>
-                    <th className="pb-2 pr-4 font-medium">Started</th>
-                    <th className="pb-2 pr-4 font-medium">Duration</th>
-                    <th className="pb-2 pr-4 font-medium">File Size</th>
-                    <th className="pb-2 pr-4 font-medium">Play</th>
-                    <th className="pb-2 font-medium">Download</th>
+                    <th className="pb-2 pr-4 font-medium">连接</th>
+                    <th className="pb-2 pr-4 font-medium">用户</th>
+                    <th className="pb-2 pr-4 font-medium">协议</th>
+                    <th className="pb-2 pr-4 font-medium">开始时间</th>
+                    <th className="pb-2 pr-4 font-medium">时长</th>
+                    <th className="pb-2 pr-4 font-medium">文件大小</th>
+                    <th className="pb-2 pr-4 font-medium">播放</th>
+                    <th className="pb-2 font-medium">下载</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1183,7 +1183,7 @@ export function SessionsHistory() {
                         <button onClick={() => { setPlayingId(s.id); setPlayingProtocol(s.protocol); }}
                           className="px-2 py-1 text-xs bg-accent/10 text-accent rounded hover:bg-accent/20 border border-accent/20 flex items-center gap-1">
                           <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3" /></svg>
-                          Play
+                          播放
                         </button>
                       </td>
                       <td className="py-2">
@@ -1191,14 +1191,14 @@ export function SessionsHistory() {
                           onClick={() => void downloadRecording(s)}
                           disabled={downloadingId === s.id}
                           className="px-2 py-1 text-xs border border-border text-text-secondary rounded hover:bg-surface-hover hover:text-text-primary disabled:opacity-50 flex items-center gap-1"
-                          title={`Download as .${s.protocol === 'rdp' ? 'webm' : 'cast'}`}
+                          title={`下载为 .${s.protocol === 'rdp' ? 'webm' : 'cast'}`}
                         >
                           {downloadingId === s.id ? (
                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
                           ) : (
                             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
                           )}
-                          {downloadingId === s.id ? '…' : 'Download'}
+                          {downloadingId === s.id ? '…' : '下载'}
                         </button>
                       </td>
                     </tr>

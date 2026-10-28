@@ -122,7 +122,7 @@ export function SecuritySettings() {
       onSuccess();
     } else {
       const d = await res.json();
-      onError(d.error || 'Failed to save.');
+      onError(d.error || '保存失败。');
     }
   }
 
@@ -135,11 +135,11 @@ export function SecuritySettings() {
           'security.idle_timeout_minutes': idleTimeout,
           'security.max_session_minutes': maxSessionMinutes,
         },
-        () => showToast('Saved.', 'success'),
+        () => showToast('已保存。', 'success'),
         (msg) => showToast(msg, 'error'),
       );
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setSavingSession(false);
     }
@@ -154,11 +154,11 @@ export function SecuritySettings() {
           'security.max_failed_logins': maxFailed,
           'security.lockout_minutes': lockoutMinutes,
         },
-        () => showToast('Saved.', 'success'),
+        () => showToast('已保存。', 'success'),
         (msg) => showToast(msg, 'error'),
       );
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setSavingLockout(false);
     }
@@ -205,12 +205,12 @@ export function SecuritySettings() {
     if (res.ok) {
       await refresh();
       invalidateSettings();
-      showToast('IP rules saved.', 'success');
+      showToast('IP 规则已保存。', 'success');
       return;
     }
 
     const d = await res.json();
-    showToast(d.error || 'Failed to save.', 'error');
+    showToast(d.error || '保存失败。', 'error');
   }
 
   async function handleIpSave(e: FormEvent) {
@@ -219,13 +219,13 @@ export function SecuritySettings() {
     setIpBlockWarning(null);
     try {
       if (wouldCurrentIpBeBlocked()) {
-        setIpBlockWarning(`Your current IP (${currentIp}) will be blocked by these rules.`);
+        setIpBlockWarning(`你当前的 IP（${currentIp}）将被这些规则阻止。`);
         return;
       }
 
       await persistIpRules();
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setSavingIp(false);
     }
@@ -237,11 +237,11 @@ export function SecuritySettings() {
     try {
       await saveSetting(
         { 'security.max_connections_per_user': maxConnPerUser },
-        () => showToast('Saved.', 'success'),
+        () => showToast('已保存。', 'success'),
         (msg) => showToast(msg, 'error'),
       );
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setSavingConn(false);
     }
@@ -256,11 +256,11 @@ export function SecuritySettings() {
           'security.trusted_proxies': trustedProxies,
           'security.proxy_detection_enabled': String(proxyDetectionEnabled),
         },
-        () => showToast('Saved.', 'success'),
+        () => showToast('已保存。', 'success'),
         (msg) => showToast(msg, 'error'),
       );
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setSavingProxy(false);
     }
@@ -275,11 +275,11 @@ export function SecuritySettings() {
           'security.passkey_enabled': String(passkeyEnabled),
           'security.passkey_inactive_days': passkeyInactiveDays,
         },
-        () => showToast('Saved.', 'success'),
+        () => showToast('已保存。', 'success'),
         (msg) => showToast(msg, 'error'),
       );
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setSavingPasskey(false);
     }
@@ -289,14 +289,14 @@ export function SecuritySettings() {
     <div className="max-w-lg space-y-8">
       {/* Session Timeouts */}
       <section>
-        <h2 className="text-base font-semibold text-text-primary mb-1">Session Timeouts</h2>
-        <p className="text-sm text-text-secondary mb-4">Control how long sessions remain active. Set to 0 to disable.</p>
+        <h2 className="text-base font-semibold text-text-primary mb-1">会话超时</h2>
+        <p className="text-sm text-text-secondary mb-4">控制会话保持活动的时长。设为 0 表示禁用。</p>
         <form onSubmit={handleSessionSave} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">
-              Idle timeout (minutes) <span className="font-normal">— 0 = disabled</span>
+              空闲超时（分钟） <span className="font-normal">— 0 = 禁用</span>
             </label>
-            <p className="text-xs text-text-secondary mb-1">Automatically revokes a session after this many minutes of inactivity. Any API request resets the clock.</p>
+            <p className="text-xs text-text-secondary mb-1">会话在无活动达到此分钟数后自动失效。任何 API 请求都会重新计时。</p>
             <input
               type="number"
               min="0"
@@ -307,9 +307,9 @@ export function SecuritySettings() {
           </div>
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">
-              Max session time (minutes) <span className="font-normal">— 0 = no limit</span>
+              最长会话时间（分钟） <span className="font-normal">— 0 = 不限制</span>
             </label>
-            <p className="text-xs text-text-secondary mb-1">Hard limit on session lifetime regardless of activity. The JWT token expires after this many minutes and the user must log in again.</p>
+            <p className="text-xs text-text-secondary mb-1">无论是否活动，会话时长的硬性上限。JWT 令牌将在此分钟数后过期，用户需重新登录。</p>
             <input
               type="number"
               min="0"
@@ -323,7 +323,7 @@ export function SecuritySettings() {
             disabled={savingSession}
             className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium"
           >
-            {savingSession ? 'Saving...' : 'Save'}
+            {savingSession ? '保存中…' : '保存'}
           </button>
         </form>
       </section>
@@ -332,8 +332,8 @@ export function SecuritySettings() {
 
       {/* Passkeys */}
       <section>
-        <h2 className="text-base font-semibold text-text-primary mb-1">Passkeys (WebAuthn)</h2>
-        <p className="text-sm text-text-secondary mb-4">Configure passwordless two-factor authentication using passkeys.</p>
+        <h2 className="text-base font-semibold text-text-primary mb-1">通行密钥（WebAuthn）</h2>
+        <p className="text-sm text-text-secondary mb-4">配置使用通行密钥的免密码两步验证。</p>
         <form onSubmit={handlePasskeySave} className="space-y-4">
           <div className="flex items-center gap-3">
             <button
@@ -350,17 +350,17 @@ export function SecuritySettings() {
               />
             </button>
             <div>
-              <span className="text-sm text-text-secondary">Enable passkeys</span>
-              <p className="text-xs text-text-secondary">Allow users to register passkeys for two-factor authentication.</p>
+              <span className="text-sm text-text-secondary">启用通行密钥</span>
+              <p className="text-xs text-text-secondary">允许用户注册通行密钥用于两步验证。</p>
             </div>
           </div>
           {passkeyEnabled && (
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-1">
-                Auto-disable inactive passkeys after (days) <span className="font-normal">— 0 = never</span>
+                自动禁用闲置通行密钥（天） <span className="font-normal">— 0 = 从不</span>
               </label>
               <p className="text-xs text-text-secondary mb-1">
-                Passkeys that haven't been used within this period will be automatically disabled for security.
+                出于安全考虑，在此期间内未使用的通行密钥将被自动禁用。
               </p>
               <input
                 type="number"
@@ -376,7 +376,7 @@ export function SecuritySettings() {
             disabled={savingPasskey}
             className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium"
           >
-            {savingPasskey ? 'Saving...' : 'Save'}
+            {savingPasskey ? '保存中…' : '保存'}
           </button>
         </form>
       </section>
@@ -385,12 +385,12 @@ export function SecuritySettings() {
 
       {/* Login & Lockout */}
       <section>
-        <h2 className="text-base font-semibold text-text-primary mb-1">Login &amp; Lockout</h2>
-        <p className="text-sm text-text-secondary mb-4">Configure brute-force protection and account lockout thresholds.</p>
+        <h2 className="text-base font-semibold text-text-primary mb-1">登录与锁定</h2>
+        <p className="text-sm text-text-secondary mb-4">配置暴力破解防护和账户锁定阈值。</p>
         <form onSubmit={handleLockoutSave} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">
-              Max failed logins before lockout
+              锁定前允许的最大登录失败次数
             </label>
             <input
               type="number"
@@ -402,7 +402,7 @@ export function SecuritySettings() {
           </div>
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">
-              Lockout duration (minutes)
+              锁定时长（分钟）
             </label>
             <input
               type="number"
@@ -417,7 +417,7 @@ export function SecuritySettings() {
             disabled={savingLockout}
             className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium"
           >
-            {savingLockout ? 'Saving...' : 'Save'}
+            {savingLockout ? '保存中…' : '保存'}
           </button>
         </form>
       </section>
@@ -426,10 +426,10 @@ export function SecuritySettings() {
 
       {/* IP Rules */}
       <section>
-        <h2 className="text-base font-semibold text-text-primary mb-1">IP Rules</h2>
-        <p className="text-sm text-text-secondary mb-4">Restrict access by IP address or CIDR range.</p>
+        <h2 className="text-base font-semibold text-text-primary mb-1">IP 规则</h2>
+        <p className="text-sm text-text-secondary mb-4">按 IP 地址或 CIDR 范围限制访问。</p>
         {currentIp && (
-          <p className="text-xs text-text-secondary mb-2">Current client IP: <span className="font-mono text-text-primary">{currentIp}</span></p>
+          <p className="text-xs text-text-secondary mb-2">当前客户端 IP：<span className="font-mono text-text-primary">{currentIp}</span></p>
         )}
         <form onSubmit={handleIpSave} className="space-y-4">
           <div className="flex items-center gap-3">
@@ -446,7 +446,7 @@ export function SecuritySettings() {
                 }`}
               />
             </button>
-            <span className="text-sm text-text-secondary">Enable IP rules</span>
+            <span className="text-sm text-text-secondary">启用 IP 规则</span>
 
             {ipRulesEnabled && (
               <select
@@ -454,8 +454,8 @@ export function SecuritySettings() {
                 onChange={(e) => setIpRulesMode(e.target.value as 'allowlist' | 'denylist')}
                 className="ml-4 px-2 py-1 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm"
               >
-                <option value="allowlist">Allowlist (permit listed IPs only)</option>
-                <option value="denylist">Denylist (block listed IPs)</option>
+                <option value="allowlist">允许列表（仅允许列出的 IP）</option>
+                <option value="denylist">拒绝列表（阻止列出的 IP）</option>
               </select>
             )}
           </div>
@@ -466,7 +466,7 @@ export function SecuritySettings() {
               {ipRules.map((rule) => (
                 <div key={rule.id} className="flex items-center gap-3 px-3 py-2 border-b border-border last:border-b-0 bg-surface text-sm">
                   <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${rule.type === 'allow' ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
-                    {rule.type}
+                    {rule.type === 'allow' ? '允许' : '拒绝'}
                   </span>
                   <span className="font-mono text-text-primary flex-1">{rule.cidr}</span>
                   {rule.description && <span className="text-text-secondary truncate max-w-[150px]">{rule.description}</span>}
@@ -487,14 +487,14 @@ export function SecuritySettings() {
           {/* Add rule */}
           <div className="flex gap-2 items-end flex-wrap">
             <div>
-              <label className="block text-xs text-text-secondary mb-1">Type</label>
+              <label className="block text-xs text-text-secondary mb-1">类型</label>
               <select
                 value={newRuleType}
                 onChange={(e) => setNewRuleType(e.target.value as 'allow' | 'deny')}
                 className="px-2 py-2 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm"
               >
-                <option value="allow">Allow</option>
-                <option value="deny">Deny</option>
+                <option value="allow">允许</option>
+                <option value="deny">拒绝</option>
               </select>
             </div>
             <div className="flex-1 min-w-[140px]">
@@ -508,12 +508,12 @@ export function SecuritySettings() {
               />
             </div>
             <div className="flex-1 min-w-[120px]">
-              <label className="block text-xs text-text-secondary mb-1">Description (optional)</label>
+              <label className="block text-xs text-text-secondary mb-1">描述（可选）</label>
               <input
                 type="text"
                 value={newRuleDesc}
                 onChange={(e) => setNewRuleDesc(e.target.value)}
-                placeholder="Office network"
+                placeholder="办公网络"
                 className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm"
               />
             </div>
@@ -522,14 +522,14 @@ export function SecuritySettings() {
               onClick={addIpRule}
               className="px-3 py-2 bg-surface-hover border border-border rounded text-sm text-text-primary hover:bg-surface"
             >
-              + Add
+              + 添加
             </button>
           </div>
 
           {ipBlockWarning && (
             <div className="rounded border border-yellow-500/40 bg-yellow-500/10 p-3 text-sm text-yellow-300 space-y-2">
               <p>{ipBlockWarning}</p>
-              <p>Saving these rules may immediately block your current session and prevent future logins from this IP.</p>
+              <p>保存这些规则可能会立即阻断你当前的会话，并阻止此后从该 IP 登录。</p>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -539,7 +539,7 @@ export function SecuritySettings() {
                       await persistIpRules();
                       setIpBlockWarning(null);
                     } catch {
-                      showToast('Network error.', 'error');
+                      showToast('网络错误。', 'error');
                     } finally {
                       setSavingIp(false);
                     }
@@ -547,7 +547,7 @@ export function SecuritySettings() {
                   className="px-3 py-1.5 rounded bg-yellow-500 text-black text-xs font-semibold hover:bg-yellow-400 disabled:opacity-60"
                   disabled={savingIp}
                 >
-                  {savingIp ? 'Saving...' : 'Save anyway'}
+                  {savingIp ? '保存中…' : '仍然保存'}
                 </button>
                 <button
                   type="button"
@@ -555,7 +555,7 @@ export function SecuritySettings() {
                   className="px-3 py-1.5 rounded border border-yellow-500/50 text-yellow-200 text-xs hover:bg-yellow-500/10"
                   disabled={savingIp}
                 >
-                  Cancel
+                  取消
                 </button>
               </div>
             </div>
@@ -565,7 +565,7 @@ export function SecuritySettings() {
             disabled={savingIp}
             className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium"
           >
-            {savingIp ? 'Saving...' : 'Save IP Rules'}
+            {savingIp ? '保存中…' : '保存 IP 规则'}
           </button>
         </form>
       </section>
@@ -574,19 +574,19 @@ export function SecuritySettings() {
 
       {/* Connection Limits */}
       <section>
-        <h2 className="text-base font-semibold text-text-primary mb-1">Connection Limits</h2>
-        <p className="text-sm text-text-secondary mb-4">Maximum number of concurrent sessions allowed per user.</p>
+        <h2 className="text-base font-semibold text-text-primary mb-1">连接限制</h2>
+        <p className="text-sm text-text-secondary mb-4">每个用户允许的最大并发会话数。</p>
         <form onSubmit={handleConnSave} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">
-              Max concurrent connections per user
+              每用户最大并发连接数
             </label>
             <select
               value={maxConnPerUser}
               onChange={(e) => setMaxConnPerUser(e.target.value)}
               className="w-40 px-3 py-2 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm"
             >
-              <option value="10">10 (default)</option>
+              <option value="10">10（默认）</option>
               <option value="25">25</option>
               <option value="50">50</option>
               <option value="100">100</option>
@@ -599,7 +599,7 @@ export function SecuritySettings() {
                 <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
               </svg>
               <span>
-                Increasing beyond the default (10) may expose the server to resource exhaustion. Only raise this limit if you trust your users.
+                超过默认值（10）可能使服务器面临资源耗尽的风险。仅在信任你的用户时才提高此限制。
               </span>
             </div>
           )}
@@ -608,7 +608,7 @@ export function SecuritySettings() {
             disabled={savingConn}
             className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium"
           >
-            {savingConn ? 'Saving...' : 'Save'}
+            {savingConn ? '保存中…' : '保存'}
           </button>
         </form>
       </section>
@@ -617,8 +617,8 @@ export function SecuritySettings() {
 
       {/* Trusted Proxies */}
       <section>
-        <h2 className="text-base font-semibold text-text-primary mb-1">Trusted Proxies</h2>
-        <p className="text-sm text-text-secondary mb-4">Comma-separated list of trusted proxy IP addresses.</p>
+        <h2 className="text-base font-semibold text-text-primary mb-1">受信任的代理</h2>
+        <p className="text-sm text-text-secondary mb-4">受信任代理的 IP 地址列表，以逗号分隔。</p>
         <form onSubmit={handleProxySave} className="space-y-4">
           <div>
             <input
@@ -644,8 +644,8 @@ export function SecuritySettings() {
               />
             </button>
             <div>
-              <span className="text-sm text-text-secondary">Proxy detection notifications</span>
-              <p className="text-xs text-text-secondary">When enabled, users are notified at login if their connection arrives via an untrusted proxy.</p>
+              <span className="text-sm text-text-secondary">代理检测通知</span>
+              <p className="text-xs text-text-secondary">启用后，若用户的连接经由不受信任的代理到达，将在登录时通知用户。</p>
             </div>
           </div>
           <button
@@ -653,7 +653,7 @@ export function SecuritySettings() {
             disabled={savingProxy}
             className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium"
           >
-            {savingProxy ? 'Saving...' : 'Save'}
+            {savingProxy ? '保存中…' : '保存'}
           </button>
         </form>
       </section>

@@ -45,13 +45,13 @@ export function GeneralSettings() {
       });
       if (res.ok) {
         invalidateGeneralPrefs();
-        showToast('Saved.', 'success');
+        showToast('已保存。', 'success');
       } else {
         const d = await res.json() as { error?: string };
-        showToast(d.error || 'Failed to save.', 'error');
+        showToast(d.error || '保存失败。', 'error');
       }
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setSaving(false);
     }
@@ -60,11 +60,11 @@ export function GeneralSettings() {
   return (
     <form onSubmit={handleSave} className="space-y-4 max-w-lg">
       <section>
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-3">Keyboard Shortcuts</h3>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-3">键盘快捷键</h3>
         <div className="flex items-center justify-between py-2">
           <div>
-            <div className="text-sm text-text-primary">Command palette (Ctrl/Cmd+K)</div>
-            <div className="text-xs text-text-secondary">Opens the quick-connect palette from anywhere in the app.</div>
+            <div className="text-sm text-text-primary">命令面板（Ctrl/Cmd+K）</div>
+            <div className="text-xs text-text-secondary">在应用内任意位置打开快速连接面板。</div>
           </div>
           <Toggle value={commandPaletteShortcut} onChange={setCommandPaletteShortcut} />
         </div>
@@ -75,7 +75,7 @@ export function GeneralSettings() {
         disabled={saving}
         className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm"
       >
-        {saving ? 'Saving...' : 'Save'}
+        {saving ? '保存中…' : '保存'}
       </button>
     </form>
   );

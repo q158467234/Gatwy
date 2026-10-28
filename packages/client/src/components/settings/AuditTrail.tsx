@@ -57,12 +57,12 @@ const CATEGORY_CLASSES: Record<string, string> = {
 function DiffView({ before, after }: { before: Record<string, unknown>; after: Record<string, unknown> }) {
   const allKeys = Array.from(new Set([...Object.keys(before), ...Object.keys(after)]));
   const changedKeys = allKeys.filter((k) => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
-  if (changedKeys.length === 0) return <span className="text-text-secondary text-xs">No changes detected.</span>;
+  if (changedKeys.length === 0) return <span className="text-text-secondary text-xs">未检测到变更。</span>;
 
   return (
     <div className="grid grid-cols-2 gap-2 text-xs font-mono mt-1">
       <div className="bg-red-500/10 rounded p-2">
-        <div className="text-red-400 font-sans font-medium mb-1 not-italic">Before</div>
+        <div className="text-red-400 font-sans font-medium mb-1 not-italic">变更前</div>
         {changedKeys.map((k) => (
           <div key={k} className="text-red-300">
             <span className="text-text-secondary">{k}: </span>{JSON.stringify(before[k])}
@@ -70,7 +70,7 @@ function DiffView({ before, after }: { before: Record<string, unknown>; after: R
         ))}
       </div>
       <div className="bg-green-500/10 rounded p-2">
-        <div className="text-green-400 font-sans font-medium mb-1 not-italic">After</div>
+        <div className="text-green-400 font-sans font-medium mb-1 not-italic">变更后</div>
         {changedKeys.map((k) => (
           <div key={k} className="text-green-300">
             <span className="text-text-secondary">{k}: </span>{JSON.stringify(after[k])}
@@ -93,10 +93,10 @@ interface ShareEntry { shareType: string; targetId: string; targetName?: string;
  * alone (shareType+targetId) stays the same, so it's neither added nor removed. */
 function ShareDiffView({ before, after }: { before: ShareEntry[]; after: ShareEntry[] }) {
   const key = (s: ShareEntry) => `${s.shareType}:${s.targetId}`;
-  const who = (s: ShareEntry) => `${s.shareType === 'role' ? 'Role' : 'User'}: ${s.targetName ?? s.targetId}`;
+  const who = (s: ShareEntry) => `${s.shareType === 'role' ? '角色' : '用户'}：${s.targetName ?? s.targetId}`;
   // Matches the wording FolderShareModal already uses for these two capabilities.
-  const capLabel = (c?: string) => (c === 'edit' ? 'Editor' : c === 'view' ? 'Viewer' : c);
-  const label = (s: ShareEntry) => (s.capability ? `${who(s)} (${capLabel(s.capability)})` : who(s));
+  const capLabel = (c?: string) => (c === 'edit' ? '编辑者' : c === 'view' ? '查看者' : c);
+  const label = (s: ShareEntry) => (s.capability ? `${who(s)}（${capLabel(s.capability)}）` : who(s));
   const beforeByKey = new Map(before.map((s) => [key(s), s]));
   const afterByKey = new Map(after.map((s) => [key(s), s]));
   const removed = before.filter((s) => !afterByKey.has(key(s)));
@@ -107,7 +107,7 @@ function ShareDiffView({ before, after }: { before: ShareEntry[]; after: ShareEn
   });
 
   if (removed.length === 0 && added.length === 0 && modified.length === 0) {
-    return <span className="text-text-secondary text-xs">No changes detected.</span>;
+    return <span className="text-text-secondary text-xs">未检测到变更。</span>;
   }
 
   // When the save was a pure capability change, removed/added are both empty and would
@@ -119,24 +119,24 @@ function ShareDiffView({ before, after }: { before: ShareEntry[]; after: ShareEn
       {showAddedRemoved && (
         <>
           <div className="bg-red-500/10 rounded p-2">
-            <div className="text-red-400 font-sans font-medium mb-1 not-italic">Removed</div>
+            <div className="text-red-400 font-sans font-medium mb-1 not-italic">已移除</div>
             {removed.length === 0
-              ? <span className="text-text-secondary italic">None</span>
+              ? <span className="text-text-secondary italic">无</span>
               : removed.map((s) => <div key={key(s)} className="text-red-300">{label(s)}</div>)}
           </div>
           <div className="bg-green-500/10 rounded p-2">
-            <div className="text-green-400 font-sans font-medium mb-1 not-italic">Added</div>
+            <div className="text-green-400 font-sans font-medium mb-1 not-italic">已添加</div>
             {added.length === 0
-              ? <span className="text-text-secondary italic">None</span>
+              ? <span className="text-text-secondary italic">无</span>
               : added.map((s) => <div key={key(s)} className="text-green-300">{label(s)}</div>)}
           </div>
         </>
       )}
       {modified.length > 0 && (
         <div className="bg-yellow-500/10 rounded p-2 col-span-2">
-          <div className="text-yellow-400 font-sans font-medium mb-1 not-italic">Modified</div>
+          <div className="text-yellow-400 font-sans font-medium mb-1 not-italic">已修改</div>
           {modified.map(({ entry, from }) => (
-            <div key={key(entry)} className="text-yellow-300">{who(entry)} ({capLabel(from)} &rarr; {capLabel(entry.capability)})</div>
+            <div key={key(entry)} className="text-yellow-300">{who(entry)}（{capLabel(from)} &rarr; {capLabel(entry.capability)}）</div>
           ))}
         </div>
       )}
@@ -183,10 +183,10 @@ function EventTypeMultiSelect({ eventTypes, selected, onChange }: {
   }
 
   const label = selected.length === 0
-    ? 'All event types'
+    ? '全部事件类型'
     : selected.length === 1
       ? selected[0]
-      : `${selected.length} event types`;
+      : `${selected.length} 种事件类型`;
 
   return (
     <div className="relative" ref={ref}>
@@ -208,7 +208,7 @@ function EventTypeMultiSelect({ eventTypes, selected, onChange }: {
               onClick={() => onChange([])}
               className="w-full px-3 py-1.5 text-left text-xs text-accent hover:bg-surface-hover"
             >
-              Clear all
+              全部清除
             </button>
           )}
           {eventTypes.map((et) => (
@@ -226,7 +226,7 @@ function EventTypeMultiSelect({ eventTypes, selected, onChange }: {
             </label>
           ))}
           {eventTypes.length === 0 && (
-            <span className="block px-3 py-2 text-xs text-text-secondary">No event types</span>
+            <span className="block px-3 py-2 text-xs text-text-secondary">暂无事件类型</span>
           )}
         </div>
       )}
@@ -365,15 +365,15 @@ export function AuditTrail() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-text-primary">Audit Trail</h2>
+        <h2 className="text-base font-semibold text-text-primary">审计日志</h2>
         <div className="flex gap-2">
           <button onClick={() => exportData('csv')}
             className="px-3 py-1.5 text-xs border border-border rounded text-text-secondary hover:bg-surface-hover">
-            Export CSV
+            导出 CSV
           </button>
           <button onClick={() => exportData('json')}
             className="px-3 py-1.5 text-xs border border-border rounded text-text-secondary hover:bg-surface-hover">
-            Export JSON
+            导出 JSON
           </button>
         </div>
       </div>
@@ -384,7 +384,7 @@ export function AuditTrail() {
           type="text"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          placeholder="Search..."
+          placeholder="搜索…"
           className="flex-1 min-w-[160px] px-3 py-1.5 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm"
         />
         {/* Event type multi-select */}
@@ -402,7 +402,7 @@ export function AuditTrail() {
             onChange={(e) => { setUserFilter(e.target.value); setPage(1); }}
             className="px-2 py-1.5 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm"
           >
-            <option value="">All users</option>
+            <option value="">全部用户</option>
             {auditUsers.map((u) => (
               <option key={u.id} value={u.id ?? ''}>{u.username ?? u.id}</option>
             ))}
@@ -412,26 +412,26 @@ export function AuditTrail() {
         <DateTimePicker
           value={fromDate}
           onChange={(v) => { setFromDate(v); setPage(1); }}
-          placeholder="From date"
+          placeholder="开始日期"
           className="px-2 py-1.5 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm w-[170px]"
         />
         <DateTimePicker
           value={toDate}
           onChange={(v) => { setToDate(v); setPage(1); }}
-          placeholder="To date"
+          placeholder="结束日期"
           align="right"
           className="px-2 py-1.5 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm w-[170px]"
         />
         <button onClick={resetFilters}
           className="px-3 py-1.5 text-xs border border-border rounded text-text-secondary hover:bg-surface-hover">
-          Reset
+          重置
         </button>
       </div>
 
       {/* Top pagination */}
       <div className="flex items-center justify-between text-sm">
         <span className="text-text-secondary text-xs">
-          {pagination.total} entries total
+          共 {pagination.total} 条记录
         </span>
         <div className="flex items-center gap-2">
           <button
@@ -439,17 +439,17 @@ export function AuditTrail() {
             disabled={pagination.page <= 1}
             className="px-3 py-1 border border-border rounded text-text-secondary hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed text-xs"
           >
-            Previous
+            上一页
           </button>
           <span className="text-text-secondary text-xs">
-            Page {pagination.page} of {pagination.totalPages}
+            第 {pagination.page} / {pagination.totalPages} 页
           </span>
           <button
             onClick={() => handlePageChange(pagination.page + 1)}
             disabled={pagination.page >= pagination.totalPages}
             className="px-3 py-1 border border-border rounded text-text-secondary hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed text-xs"
           >
-            Next
+            下一页
           </button>
         </div>
       </div>
@@ -459,22 +459,22 @@ export function AuditTrail() {
         <table className="w-full text-sm">
           <thead className="bg-surface-alt border-b border-border">
             <tr>
-              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Timestamp</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">User</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Event Type</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Target</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">IP Address</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">时间</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">用户</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">事件类型</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">目标</th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">IP 地址</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-text-secondary text-sm">Loading...</td>
+                <td colSpan={5} className="px-3 py-6 text-center text-text-secondary text-sm">加载中…</td>
               </tr>
             )}
             {!loading && entries.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-text-secondary text-sm">No entries found.</td>
+                <td colSpan={5} className="px-3 py-6 text-center text-text-secondary text-sm">暂无记录。</td>
               </tr>
             )}
             {!loading && entries.map((entry) => {
@@ -488,7 +488,7 @@ export function AuditTrail() {
                     className="border-b border-border cursor-pointer hover:bg-surface-hover transition-colors last:border-b-0"
                   >
                     <td className="px-3 py-2 text-text-secondary text-xs whitespace-nowrap">{formatDateTz(entry.timestamp, timezone)}</td>
-                    <td className="px-3 py-2 text-text-primary text-xs">{entry.displayName ?? entry.username ?? <span className="text-text-secondary italic">System</span>}</td>
+                    <td className="px-3 py-2 text-text-primary text-xs">{entry.displayName ?? entry.username ?? <span className="text-text-secondary italic">系统</span>}</td>
                     <td className="px-3 py-2">
                       <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${CATEGORY_CLASSES[cat] ?? CATEGORY_CLASSES.other}`}>
                         {entry.eventType}
@@ -514,7 +514,7 @@ export function AuditTrail() {
       {/* Pagination */}
       <div className="flex items-center justify-between text-sm">
         <span className="text-text-secondary text-xs">
-          {pagination.total} entries total
+          共 {pagination.total} 条记录
         </span>
         <div className="flex items-center gap-2">
           <button
@@ -522,17 +522,17 @@ export function AuditTrail() {
             disabled={pagination.page <= 1}
             className="px-3 py-1 border border-border rounded text-text-secondary hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed text-xs"
           >
-            Previous
+            上一页
           </button>
           <span className="text-text-secondary text-xs">
-            Page {pagination.page} of {pagination.totalPages}
+            第 {pagination.page} / {pagination.totalPages} 页
           </span>
           <button
             onClick={() => handlePageChange(pagination.page + 1)}
             disabled={pagination.page >= pagination.totalPages}
             className="px-3 py-1 border border-border rounded text-text-secondary hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed text-xs"
           >
-            Next
+            下一页
           </button>
         </div>
       </div>

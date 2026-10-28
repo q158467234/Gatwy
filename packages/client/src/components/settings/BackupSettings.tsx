@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { showToast } from '../../hooks/useToast';
 
+/** Display names for the server's auto-backup status and trigger values. */
+const BACKUP_STATUS_LABEL: Record<string, string> = { running: '进行中', success: '成功', failed: '失败' };
+const BACKUP_TRIGGER_LABEL: Record<string, string> = { scheduled: '定时', manual: '手动' };
+
 interface SizeInfo { dbSize: number; recordingsSize: number; recordingCount: number }
 interface SmbConnection { id: string; name: string; host: string; port: number }
 interface AutoConfig {
@@ -90,13 +94,13 @@ export function BackupSettings() {
           onClick={() => setTab('manual')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'manual' ? 'border-accent text-accent' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
         >
-          Manual Backup
+          手动备份
         </button>
         <button
           onClick={() => setTab('auto')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'auto' ? 'border-accent text-accent' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
         >
-          Auto Backup
+          自动备份
         </button>
       </div>
 
@@ -130,8 +134,8 @@ function ManualBackupTab() {
 
   async function handleExport(e: React.FormEvent) {
     e.preventDefault();
-    if (exportPassword.length < 8) { showToast('Password must be at least 8 characters.', 'error'); return; }
-    if (exportPassword !== exportConfirm) { showToast('Passwords do not match.', 'error'); return; }
+    if (exportPassword.length < 8) { showToast('密码至少需要 8 个字符。', 'error'); return; }
+    if (exportPassword !== exportConfirm) { showToast('两次输入的密码不一致。', 'error'); return; }
     setExportLoading(true);
     try {
       const res = await fetch('/api/v1/backup/export', {
@@ -141,7 +145,7 @@ function ManualBackupTab() {
       });
       if (!res.ok) {
         const d = await res.json() as { error: string };
-        showToast(d.error || 'Export failed.', 'error');
+        showToast(d.error || '导出失败。', 'error');
         return;
       }
       const blob = await res.blob();
@@ -153,11 +157,11 @@ function ManualBackupTab() {
       a.download = fname;
       a.click();
       URL.revokeObjectURL(url);
-      showToast(`Backup downloaded: ${fname}`, 'success');
+      showToast(`备份已下载：${fname}`, 'success');
       setExportPassword('');
       setExportConfirm('');
     } catch {
-      showToast('Network error during export.', 'error');
+      showToast('导出时发生网络错误。', 'error');
     } finally {
       setExportLoading(false);
     }
@@ -180,17 +184,17 @@ function ManualBackupTab() {
       try { d = await res.json() as typeof d; } catch { /* non-json */ }
 
       if (!res.ok) {
-        const msg = res.status === 422 ? 'Incorrect backup password.' : (d.error || `Import failed (HTTP ${res.status}).`);
+        const msg = res.status === 422 ? '备份密码错误。' : (d.error || `导入失败（HTTP ${res.status}）。`);
         showToast(msg, 'error');
         return;
       }
 
-      showToast(`${d.message ?? 'Restored.'} (${d.recordingsRestored ?? 0} recordings restored)`, 'success');
+      showToast(`${d.message ?? '已恢复。'}（已恢复 ${d.recordingsRestored ?? 0} 个录像）`, 'success');
       setImportFile(null);
       setImportPassword('');
       if (fileRef.current) fileRef.current.value = '';
     } catch {
-      showToast('Network error during import.', 'error');
+      showToast('导入时发生网络错误。', 'error');
     } finally {
       setImportLoading(false);
     }
@@ -199,38 +203,38 @@ function ManualBackupTab() {
   return (
     <div className="max-w-lg space-y-8">
       <section>
-        <h2 className="text-base font-semibold text-text-primary mb-1">Export Backup</h2>
+        <h2 className="text-base font-semibold text-text-primary mb-1">导出备份</h2>
         <p className="text-sm text-text-secondary mb-4">
-          Creates an encrypted backup of the database and encryption key.
-          Optionally includes session recordings.
+          创建包含数据库和加密密钥的加密备份，
+          可选择同时包含会话录像。
         </p>
         <div className="mb-4 rounded-lg border border-border bg-surface-hover px-4 py-3 text-sm space-y-1">
           {sizeLoading ? (
-            <p className="text-text-secondary">Calculating sizes...</p>
+            <p className="text-text-secondary">正在计算大小…</p>
           ) : sizeInfo ? (
             <>
-              <p className="text-text-secondary"><span className="font-medium text-text-primary">Database:</span> ~{fmtBytes(sizeInfo.dbSize)}</p>
+              <p className="text-text-secondary"><span className="font-medium text-text-primary">数据库：</span> ~{fmtBytes(sizeInfo.dbSize)}</p>
               <p className="text-text-secondary">
-                <span className="font-medium text-text-primary">Recordings:</span> ~{fmtBytes(sizeInfo.recordingsSize)}
-                {sizeInfo.recordingCount > 0 && <span className="text-text-secondary/70"> ({sizeInfo.recordingCount} files)</span>}
+                <span className="font-medium text-text-primary">录像：</span> ~{fmtBytes(sizeInfo.recordingsSize)}
+                {sizeInfo.recordingCount > 0 && <span className="text-text-secondary/70">（{sizeInfo.recordingCount} 个文件）</span>}
               </p>
-              <p className="font-medium text-text-primary pt-1 border-t border-border">Estimated total: ~{fmtBytes(sizeInfo.dbSize + (includeRecordings ? sizeInfo.recordingsSize : 0))}</p>
+              <p className="font-medium text-text-primary pt-1 border-t border-border">预计总计：~{fmtBytes(sizeInfo.dbSize + (includeRecordings ? sizeInfo.recordingsSize : 0))}</p>
             </>
           ) : (
-            <p className="text-text-secondary/70">Could not load size info.</p>
+            <p className="text-text-secondary/70">无法加载大小信息。</p>
           )}
         </div>
 
         <label className="flex items-center gap-3 mb-4 cursor-pointer select-none w-fit">
           <Toggle checked={includeRecordings} onChange={setIncludeRecordings} />
-          <span className="text-sm text-text-secondary">Include recordings in backup</span>
+          <span className="text-sm text-text-secondary">备份中包含录像</span>
         </label>
 
         <form onSubmit={handleExport} className="space-y-3">
-          <input type="password" value={exportPassword} onChange={(e) => setExportPassword(e.target.value)} placeholder="Backup password" className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm" />
-          <input type="password" value={exportConfirm} onChange={(e) => setExportConfirm(e.target.value)} placeholder="Confirm password" className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm" />
+          <input type="password" value={exportPassword} onChange={(e) => setExportPassword(e.target.value)} placeholder="备份密码" className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm" />
+          <input type="password" value={exportConfirm} onChange={(e) => setExportConfirm(e.target.value)} placeholder="确认密码" className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm" />
           <button type="submit" disabled={exportLoading} className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium">
-            {exportLoading ? 'Creating backup...' : 'Download Backup'}
+            {exportLoading ? '正在创建备份…' : '下载备份'}
           </button>
         </form>
       </section>
@@ -238,18 +242,18 @@ function ManualBackupTab() {
       <hr className="border-border" />
 
       <section>
-        <h2 className="text-base font-semibold text-text-primary mb-1">Import / Restore Backup</h2>
-        <p className="text-sm text-red-400 font-medium mb-4">This overwrites all current data.</p>
+        <h2 className="text-base font-semibold text-text-primary mb-1">导入 / 恢复备份</h2>
+        <p className="text-sm text-red-400 font-medium mb-4">此操作将覆盖当前所有数据。</p>
         <div className="space-y-3">
           <input ref={fileRef} type="file" accept=".geb" onChange={(e) => setImportFile(e.target.files?.[0] ?? null)} className="w-full text-sm text-text-secondary file:mr-3 file:py-1.5 file:px-3 file:rounded file:border file:border-border file:bg-surface-hover file:text-text-primary file:cursor-pointer hover:file:bg-surface" />
-          <input type="password" value={importPassword} onChange={(e) => setImportPassword(e.target.value)} placeholder="Backup password" className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm" />
+          <input type="password" value={importPassword} onChange={(e) => setImportPassword(e.target.value)} placeholder="备份密码" className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary text-sm" />
 
           {showConfirm && (
             <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-400 space-y-2">
-              <p className="font-medium">This will permanently overwrite all current data. Continue?</p>
+              <p className="font-medium">这将永久覆盖当前所有数据，是否继续？</p>
               <div className="flex gap-2">
-                <button onClick={doImport} className="px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700">Yes, restore</button>
-                <button onClick={() => setShowConfirm(false)} className="px-3 py-1.5 border border-border rounded text-text-secondary hover:bg-surface-hover text-sm">Cancel</button>
+                <button onClick={doImport} className="px-3 py-1.5 bg-red-600 text-white rounded text-sm hover:bg-red-700">确认恢复</button>
+                <button onClick={() => setShowConfirm(false)} className="px-3 py-1.5 border border-border rounded text-text-secondary hover:bg-surface-hover text-sm">取消</button>
               </div>
             </div>
           )}
@@ -257,14 +261,14 @@ function ManualBackupTab() {
           {!showConfirm && (
             <button
               onClick={() => {
-                if (!importFile) { showToast('Select a backup file first.', 'error'); return; }
-                if (!importPassword) { showToast('Enter the backup password.', 'error'); return; }
+                if (!importFile) { showToast('请先选择备份文件。', 'error'); return; }
+                if (!importPassword) { showToast('请输入备份密码。', 'error'); return; }
                 setShowConfirm(true);
               }}
               disabled={importLoading}
               className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 text-sm font-medium"
             >
-              {importLoading ? 'Restoring...' : 'Restore Backup'}
+              {importLoading ? '恢复中…' : '恢复备份'}
             </button>
           )}
         </div>
@@ -313,13 +317,13 @@ function AutoBackupTab() {
   const [adhocHasPassword, setAdhocHasPassword] = useState(false);
 
   const weekdays = [
-    { value: 0, label: 'Sunday' },
-    { value: 1, label: 'Monday' },
-    { value: 2, label: 'Tuesday' },
-    { value: 3, label: 'Wednesday' },
-    { value: 4, label: 'Thursday' },
-    { value: 5, label: 'Friday' },
-    { value: 6, label: 'Saturday' },
+    { value: 0, label: '星期日' },
+    { value: 1, label: '星期一' },
+    { value: 2, label: '星期二' },
+    { value: 3, label: '星期三' },
+    { value: 4, label: '星期四' },
+    { value: 5, label: '星期五' },
+    { value: 6, label: '星期六' },
   ];
 
   function isConfigAlreadySet(
@@ -426,23 +430,23 @@ function AutoBackupTab() {
     setSaving(true);
     try {
       if (!globalPassword && !hasPassword) {
-        showToast('Global backup password is required.', 'error');
+        showToast('必须设置全局备份密码。', 'error');
         return;
       }
       if (globalPassword && globalPassword.length < 8) {
-        showToast('Global backup password must be at least 8 characters.', 'error');
+        showToast('全局备份密码至少需要 8 个字符。', 'error');
         return;
       }
       if (globalPassword && globalPassword !== globalPasswordConfirm) {
-        showToast('Global password confirmation does not match.', 'error');
+        showToast('两次输入的全局密码不一致。', 'error');
         return;
       }
       if (config.destinationMode === 'saved' && !config.connectionId) {
-        showToast('Select an SMB destination connection.', 'error');
+        showToast('请选择一个 SMB 目标连接。', 'error');
         return;
       }
       if (config.destinationMode === 'adhoc' && (!adhoc.host || !adhoc.share)) {
-        showToast('Ad-hoc SMB host and share are required.', 'error');
+        showToast('临时 SMB 目标必须填写主机和共享名。', 'error');
         return;
       }
 
@@ -461,11 +465,11 @@ function AutoBackupTab() {
       });
       const d = await res.json() as { error?: string };
       if (!res.ok) {
-        showToast(d.error || 'Failed to save auto-backup config.', 'error');
+        showToast(d.error || '保存自动备份配置失败。', 'error');
         return;
       }
 
-      showToast('Auto-backup configuration saved.', 'success');
+      showToast('自动备份配置已保存。', 'success');
       setGlobalPassword('');
       setGlobalPasswordConfirm('');
       setAdhoc((p) => ({ ...p, password: '' }));
@@ -473,7 +477,7 @@ function AutoBackupTab() {
       setAdhocHasPassword(true);
       await load();
     } catch {
-      showToast('Network error while saving configuration.', 'error');
+      showToast('保存配置时发生网络错误。', 'error');
     } finally {
       setSaving(false);
     }
@@ -498,14 +502,14 @@ function AutoBackupTab() {
       });
       const d = await res.json() as { error?: string };
       if (!res.ok) {
-        showToast(d.error || 'Destination test failed.', 'error');
+        showToast(d.error || '目标测试失败。', 'error');
         return;
       }
-      showToast('Destination test passed.', 'success');
+      showToast('目标测试通过。', 'success');
       setAdhoc((p) => ({ ...p, password: '' }));
       setAdhocHasPassword(true);
     } catch {
-      showToast('Network error while testing destination.', 'error');
+      showToast('测试目标时发生网络错误。', 'error');
     } finally {
       setTesting(false);
     }
@@ -520,13 +524,13 @@ function AutoBackupTab() {
       });
       const d = await res.json() as { error?: string };
       if (!res.ok) {
-        showToast(d.error || 'Run now failed.', 'error');
+        showToast(d.error || '立即运行失败。', 'error');
         return;
       }
-      showToast('Auto-backup run completed.', 'success');
+      showToast('自动备份运行完成。', 'success');
       await load();
     } catch {
-      showToast('Network error while running backup.', 'error');
+      showToast('运行备份时发生网络错误。', 'error');
     } finally {
       setRunningNow(false);
     }
@@ -536,7 +540,7 @@ function AutoBackupTab() {
     <div className="space-y-6 max-w-4xl">
       {!hasSmbPermission && (
         <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-300">
-          SMB protocol permission is missing for your role. Auto-backup may fail until this permission is granted.
+          你的角色缺少 SMB 协议权限，在授予该权限前自动备份可能会失败。
         </div>
       )}
 
@@ -544,39 +548,39 @@ function AutoBackupTab() {
         <section className="space-y-4 border border-border rounded-2xl p-5 bg-gradient-to-br from-surface-alt to-surface shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-base font-semibold text-text-primary">Configuration</h2>
-              <p className="text-xs text-text-secondary mt-0.5">Single scheduled job. SMB destination only.</p>
+              <h2 className="text-base font-semibold text-text-primary">配置</h2>
+              <p className="text-xs text-text-secondary mt-0.5">单个定时任务，仅支持 SMB 目标。</p>
             </div>
             {!loading && (
               <button
                 onClick={() => setShowConfigDetails((v) => !v)}
                 className="px-3 py-1.5 border border-border rounded text-text-secondary hover:bg-surface-hover text-xs"
               >
-                {showConfigDetails ? 'Collapse' : 'Expand'}
+                {showConfigDetails ? '收起' : '展开'}
               </button>
             )}
           </div>
           {loading ? (
-            <p className="text-sm text-text-secondary">Loading auto-backup configuration...</p>
+            <p className="text-sm text-text-secondary">正在加载自动备份配置…</p>
           ) : (
             <>
               {!showConfigDetails && (
                 <div className="rounded-xl border border-border bg-surface-hover/60 p-3 space-y-2 text-sm">
                   <div className="flex justify-between gap-3">
-                    <span className="text-text-secondary">Enabled</span>
-                    <span className="text-text-primary">{config.enabled ? 'Yes' : 'No'}</span>
+                    <span className="text-text-secondary">已启用</span>
+                    <span className="text-text-primary">{config.enabled ? '是' : '否'}</span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span className="text-text-secondary">Destination mode</span>
-                    <span className="text-text-primary">{config.destinationMode === 'saved' ? 'Saved SMB connection' : 'Ad-hoc SMB destination'}</span>
+                    <span className="text-text-secondary">目标模式</span>
+                    <span className="text-text-primary">{config.destinationMode === 'saved' ? '已保存的 SMB 连接' : '临时 SMB 目标'}</span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span className="text-text-secondary">Schedule</span>
-                    <span className="text-text-primary">{config.scheduleType === 'weekly' ? `Weekly at ${config.scheduleTime}` : `Daily at ${config.scheduleTime}`}</span>
+                    <span className="text-text-secondary">计划</span>
+                    <span className="text-text-primary">{config.scheduleType === 'weekly' ? `每周 ${config.scheduleTime}` : `每天 ${config.scheduleTime}`}</span>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <span className="text-text-secondary">Retention</span>
-                    <span className="text-text-primary">{config.retentionCount} backups</span>
+                    <span className="text-text-secondary">保留期限</span>
+                    <span className="text-text-primary">{config.retentionCount} 个备份</span>
                   </div>
                 </div>
               )}
@@ -585,42 +589,42 @@ function AutoBackupTab() {
                 <>
                   <div className="rounded-xl border border-border bg-surface-hover/60 p-3">
                     <label className="flex items-center justify-between gap-3 cursor-pointer select-none">
-                      <span className="text-sm font-medium text-text-primary">Enable scheduled auto-backup</span>
+                      <span className="text-sm font-medium text-text-primary">启用定时自动备份</span>
                       <Toggle checked={config.enabled} onChange={(v) => setConfig((p) => ({ ...p, enabled: v }))} />
                     </label>
                   </div>
 
                   <div className="rounded-xl border border-border bg-surface-hover/40 p-3 space-y-2">
-                    <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">Global Password</p>
-                    <input type="password" value={globalPassword} onChange={(e) => setGlobalPassword(e.target.value)} placeholder={hasPassword ? 'Leave blank to keep existing global password' : 'Global backup password (min 8 chars)'} className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
-                    <input type="password" value={globalPasswordConfirm} onChange={(e) => setGlobalPasswordConfirm(e.target.value)} placeholder="Confirm global password" className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
+                    <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">全局密码</p>
+                    <input type="password" value={globalPassword} onChange={(e) => setGlobalPassword(e.target.value)} placeholder={hasPassword ? '留空则保留现有全局密码' : '全局备份密码（至少 8 个字符）'} className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
+                    <input type="password" value={globalPasswordConfirm} onChange={(e) => setGlobalPasswordConfirm(e.target.value)} placeholder="确认全局密码" className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
                   </div>
 
                   <div className="rounded-xl border border-border bg-surface-hover/40 p-3 space-y-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">Destination Mode</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">目标模式</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setConfig((p) => ({ ...p, destinationMode: 'saved' }))}
                     className={`px-3 py-2 rounded-lg border text-sm text-left transition-colors ${config.destinationMode === 'saved' ? 'border-accent bg-accent/10 text-accent' : 'border-border bg-surface text-text-secondary hover:text-text-primary'}`}
                   >
-                    Saved SMB connection
+                    已保存的 SMB 连接
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfig((p) => ({ ...p, destinationMode: 'adhoc' }))}
                     className={`px-3 py-2 rounded-lg border text-sm text-left transition-colors ${config.destinationMode === 'adhoc' ? 'border-accent bg-accent/10 text-accent' : 'border-border bg-surface text-text-secondary hover:text-text-primary'}`}
                   >
-                    Ad-hoc SMB destination
+                    临时 SMB 目标
                   </button>
                 </div>
                   </div>
 
                   {config.destinationMode === 'saved' && (
                 <div className="rounded-xl border border-border bg-surface-hover/40 p-3 space-y-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">Saved Destination</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">已保存的目标</p>
                   <select value={config.connectionId} onChange={(e) => setConfig((p) => ({ ...p, connectionId: e.target.value }))} className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm">
-                    <option value="">Select admin-owned SMB destination...</option>
+                    <option value="">选择管理员拥有的 SMB 目标…</option>
                     {connections.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.host}:{c.port})</option>)}
                   </select>
                 </div>
@@ -628,28 +632,28 @@ function AutoBackupTab() {
 
                   {config.destinationMode === 'adhoc' && (
                 <details className="rounded-xl border border-border bg-surface-hover/40" open={adhocOpen} onToggle={(e) => setAdhocOpen((e.target as HTMLDetailsElement).open)}>
-                  <summary className="px-3 py-2 text-sm cursor-pointer text-text-primary font-medium">Optional ad-hoc SMB settings</summary>
+                  <summary className="px-3 py-2 text-sm cursor-pointer text-text-primary font-medium">可选的临时 SMB 设置</summary>
                   <div className="px-3 pb-3 space-y-2">
-                    <input type="text" value={adhoc.host} onChange={(e) => setAdhoc((p) => ({ ...p, host: e.target.value }))} placeholder="SMB host" className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
+                    <input type="text" value={adhoc.host} onChange={(e) => setAdhoc((p) => ({ ...p, host: e.target.value }))} placeholder="SMB 主机" className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
                     <div className="grid grid-cols-2 gap-2">
-                      <input type="number" min="1" value={adhoc.port} onChange={(e) => setAdhoc((p) => ({ ...p, port: parseInt(e.target.value || '445', 10) }))} placeholder="Port" className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
-                      <input type="text" value={adhoc.share} onChange={(e) => setAdhoc((p) => ({ ...p, share: e.target.value }))} placeholder="Share" className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
+                      <input type="number" min="1" value={adhoc.port} onChange={(e) => setAdhoc((p) => ({ ...p, port: parseInt(e.target.value || '445', 10) }))} placeholder="端口" className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
+                      <input type="text" value={adhoc.share} onChange={(e) => setAdhoc((p) => ({ ...p, share: e.target.value }))} placeholder="共享名" className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
                     </div>
-                    <input type="text" value={adhoc.username} onChange={(e) => setAdhoc((p) => ({ ...p, username: e.target.value }))} placeholder="Username" className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
-                    <input type="password" value={adhoc.password} onChange={(e) => setAdhoc((p) => ({ ...p, password: e.target.value }))} placeholder={adhocHasPassword ? 'Leave blank to keep ad-hoc password' : 'Ad-hoc password'} className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
-                    <input type="text" value={adhoc.domain} onChange={(e) => setAdhoc((p) => ({ ...p, domain: e.target.value }))} placeholder="Domain (optional)" className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
+                    <input type="text" value={adhoc.username} onChange={(e) => setAdhoc((p) => ({ ...p, username: e.target.value }))} placeholder="用户名" className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
+                    <input type="password" value={adhoc.password} onChange={(e) => setAdhoc((p) => ({ ...p, password: e.target.value }))} placeholder={adhocHasPassword ? '留空则保留临时目标密码' : '临时目标密码'} className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
+                    <input type="text" value={adhoc.domain} onChange={(e) => setAdhoc((p) => ({ ...p, domain: e.target.value }))} placeholder="域（可选）" className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
                   </div>
                 </details>
                   )}
 
                   <div className="rounded-xl border border-border bg-surface-hover/40 p-3 space-y-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">Schedule & Retention</p>
-                <input type="text" value={config.remotePath} onChange={(e) => setConfig((p) => ({ ...p, remotePath: e.target.value }))} placeholder="Remote folder path" className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
+                <p className="text-xs font-medium uppercase tracking-wide text-text-secondary">计划与保留</p>
+                <input type="text" value={config.remotePath} onChange={(e) => setConfig((p) => ({ ...p, remotePath: e.target.value }))} placeholder="远程文件夹路径" className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
 
                 <div className="grid grid-cols-2 gap-2">
                   <select value={config.scheduleType} onChange={(e) => setConfig((p) => ({ ...p, scheduleType: e.target.value as 'daily' | 'weekly' }))} className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm">
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
+                    <option value="daily">每天</option>
+                    <option value="weekly">每周</option>
                   </select>
                   <input type="time" value={config.scheduleTime} onChange={(e) => setConfig((p) => ({ ...p, scheduleTime: e.target.value }))} className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
                 </div>
@@ -663,22 +667,22 @@ function AutoBackupTab() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <label className="flex items-center gap-3 cursor-pointer select-none w-fit">
                     <Toggle checked={config.includeRecordings} onChange={(v) => setConfig((p) => ({ ...p, includeRecordings: v }))} />
-                    <span className="text-sm text-text-secondary">Include recordings</span>
+                    <span className="text-sm text-text-secondary">包含录像</span>
                   </label>
 
                   <div>
-                    <label className="block text-sm text-text-secondary mb-1">Retention count</label>
+                    <label className="block text-sm text-text-secondary mb-1">保留数量</label>
                     <input type="number" min="1" max="365" value={config.retentionCount} onChange={(e) => setConfig((p) => ({ ...p, retentionCount: parseInt(e.target.value || '1', 10) }))} className="w-28 px-3 py-2 bg-surface border border-border rounded-lg text-text-primary text-sm" />
                   </div>
                 </div>
                   </div>
 
-                  <p className="text-xs text-text-secondary">Max backup size is enforced server-side at 4 GB.</p>
+                  <p className="text-xs text-text-secondary">服务器端限制备份大小上限为 4 GB。</p>
 
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={saveConfig} disabled={saving} className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium">{saving ? 'Saving...' : 'Save'}</button>
-                    <button onClick={testDestination} disabled={testing} className="px-4 py-2 border border-border rounded text-text-secondary hover:bg-surface-hover disabled:opacity-50 text-sm font-medium">{testing ? 'Testing...' : 'Test Destination'}</button>
-                    <button onClick={runNow} disabled={runningNow} className="px-4 py-2 border border-border rounded text-text-secondary hover:bg-surface-hover disabled:opacity-50 text-sm font-medium">{runningNow ? 'Running...' : 'Run Now'}</button>
+                    <button onClick={saveConfig} disabled={saving} className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium">{saving ? '保存中…' : '保存'}</button>
+                    <button onClick={testDestination} disabled={testing} className="px-4 py-2 border border-border rounded text-text-secondary hover:bg-surface-hover disabled:opacity-50 text-sm font-medium">{testing ? '测试中…' : '测试目标'}</button>
+                    <button onClick={runNow} disabled={runningNow} className="px-4 py-2 border border-border rounded text-text-secondary hover:bg-surface-hover disabled:opacity-50 text-sm font-medium">{runningNow ? '运行中…' : '立即运行'}</button>
                   </div>
                 </>
               )}
@@ -687,23 +691,23 @@ function AutoBackupTab() {
         </section>
 
         <section className="space-y-4 border border-border rounded-lg p-4">
-          <h2 className="text-base font-semibold text-text-primary">Status</h2>
+          <h2 className="text-base font-semibold text-text-primary">状态</h2>
           {!status ? (
-            <p className="text-sm text-text-secondary">Loading status...</p>
+            <p className="text-sm text-text-secondary">正在加载状态…</p>
           ) : (
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between"><span className="text-text-secondary">Enabled</span><span className="text-text-primary">{status.enabled ? 'Yes' : 'No'}</span></div>
-              <div className="flex justify-between"><span className="text-text-secondary">Running</span><span className="text-text-primary">{status.runInProgress ? 'Yes' : 'No'}</span></div>
-              <div className="flex justify-between"><span className="text-text-secondary">Queued scheduled run</span><span className="text-text-primary">{status.queuedScheduledRun ? 'Yes' : 'No'}</span></div>
-              <div className="flex justify-between"><span className="text-text-secondary">Auto-disabled</span><span className="text-text-primary">{status.autoDisabled ? 'Yes' : 'No'}</span></div>
-              <div className="flex justify-between"><span className="text-text-secondary">Consecutive failures</span><span className="text-text-primary">{status.consecutiveFailures}</span></div>
-              <div className="flex justify-between"><span className="text-text-secondary">Next run</span><span className="text-text-primary">{fmtDate(status.nextRunAt)}</span></div>
-              <div className="flex justify-between"><span className="text-text-secondary">Last run</span><span className="text-text-primary">{fmtDate(status.lastRunAt)}</span></div>
-              <div className="flex justify-between"><span className="text-text-secondary">Last status</span><span className="text-text-primary">{status.lastStatus || '-'}</span></div>
-              <div className="flex justify-between"><span className="text-text-secondary">Last file</span><span className="text-text-primary truncate max-w-[220px] text-right">{status.lastFilename || '-'}</span></div>
-              <div className="flex justify-between"><span className="text-text-secondary">Last size</span><span className="text-text-primary">{fmtBytes(status.lastSizeBytes)}</span></div>
-              <div className="flex justify-between"><span className="text-text-secondary">Max file size</span><span className="text-text-primary">{fmtBytes(status.maxFileSizeBytes)}</span></div>
-              {status.lastError && <p className="text-red-400 text-xs pt-2 border-t border-border">Last error: {status.lastError}</p>}
+              <div className="flex justify-between"><span className="text-text-secondary">已启用</span><span className="text-text-primary">{status.enabled ? '是' : '否'}</span></div>
+              <div className="flex justify-between"><span className="text-text-secondary">运行中</span><span className="text-text-primary">{status.runInProgress ? '是' : '否'}</span></div>
+              <div className="flex justify-between"><span className="text-text-secondary">排队中的定时运行</span><span className="text-text-primary">{status.queuedScheduledRun ? '是' : '否'}</span></div>
+              <div className="flex justify-between"><span className="text-text-secondary">已自动禁用</span><span className="text-text-primary">{status.autoDisabled ? '是' : '否'}</span></div>
+              <div className="flex justify-between"><span className="text-text-secondary">连续失败次数</span><span className="text-text-primary">{status.consecutiveFailures}</span></div>
+              <div className="flex justify-between"><span className="text-text-secondary">下次运行</span><span className="text-text-primary">{fmtDate(status.nextRunAt)}</span></div>
+              <div className="flex justify-between"><span className="text-text-secondary">上次运行</span><span className="text-text-primary">{fmtDate(status.lastRunAt)}</span></div>
+              <div className="flex justify-between"><span className="text-text-secondary">上次状态</span><span className="text-text-primary">{BACKUP_STATUS_LABEL[status.lastStatus] ?? (status.lastStatus || '-')}</span></div>
+              <div className="flex justify-between"><span className="text-text-secondary">上次文件</span><span className="text-text-primary truncate max-w-[220px] text-right">{status.lastFilename || '-'}</span></div>
+              <div className="flex justify-between"><span className="text-text-secondary">上次大小</span><span className="text-text-primary">{fmtBytes(status.lastSizeBytes)}</span></div>
+              <div className="flex justify-between"><span className="text-text-secondary">最大文件大小</span><span className="text-text-primary">{fmtBytes(status.maxFileSizeBytes)}</span></div>
+              {status.lastError && <p className="text-red-400 text-xs pt-2 border-t border-border">上次错误：{status.lastError}</p>}
             </div>
           )}
         </section>
@@ -711,38 +715,38 @@ function AutoBackupTab() {
 
       <section className="border border-border rounded-lg p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-text-primary">Run History</h2>
-          <button onClick={() => void loadHistory(historyPage)} className="px-3 py-1.5 border border-border rounded text-text-secondary hover:bg-surface-hover text-sm">Refresh</button>
+          <h2 className="text-base font-semibold text-text-primary">运行历史</h2>
+          <button onClick={() => void loadHistory(historyPage)} className="px-3 py-1.5 border border-border rounded text-text-secondary hover:bg-surface-hover text-sm">刷新</button>
         </div>
-        <p className="text-sm text-text-secondary">History retention is 90 days.</p>
+        <p className="text-sm text-text-secondary">历史记录保留 90 天。</p>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
               <tr className="text-left text-text-secondary border-b border-border">
-                <th className="py-2 pr-3">Started</th>
-                <th className="py-2 pr-3">Status</th>
-                <th className="py-2 pr-3">Trigger</th>
-                <th className="py-2 pr-3">Size</th>
-                <th className="py-2 pr-3">File</th>
-                <th className="py-2 pr-3">Error</th>
+                <th className="py-2 pr-3">开始时间</th>
+                <th className="py-2 pr-3">状态</th>
+                <th className="py-2 pr-3">触发方式</th>
+                <th className="py-2 pr-3">大小</th>
+                <th className="py-2 pr-3">文件</th>
+                <th className="py-2 pr-3">错误</th>
               </tr>
             </thead>
             <tbody>
               {historyLoading && (
                 <tr>
-                  <td className="py-3 text-text-secondary" colSpan={6}>Loading history...</td>
+                  <td className="py-3 text-text-secondary" colSpan={6}>正在加载历史记录…</td>
                 </tr>
               )}
               {!historyLoading && history.length === 0 && (
                 <tr>
-                  <td className="py-3 text-text-secondary" colSpan={6}>No runs yet.</td>
+                  <td className="py-3 text-text-secondary" colSpan={6}>暂无运行记录。</td>
                 </tr>
               )}
               {history.map((r) => (
                 <tr key={r.id} className="border-b border-border/60 text-text-primary">
                   <td className="py-2 pr-3">{fmtDate(r.started_at)}</td>
-                  <td className="py-2 pr-3">{r.status}</td>
-                  <td className="py-2 pr-3">{r.trigger_type}</td>
+                  <td className="py-2 pr-3">{BACKUP_STATUS_LABEL[r.status] ?? r.status}</td>
+                  <td className="py-2 pr-3">{BACKUP_TRIGGER_LABEL[r.trigger_type] ?? r.trigger_type}</td>
                   <td className="py-2 pr-3">{fmtBytes(r.size_bytes ?? 0)}</td>
                   <td className="py-2 pr-3 max-w-[220px] truncate">{r.filename || '-'}</td>
                   <td className="py-2 pr-3 max-w-[260px] truncate text-red-400">{r.error_message || '-'}</td>
@@ -753,8 +757,8 @@ function AutoBackupTab() {
         </div>
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs text-text-secondary">
-            Showing {history.length === 0 ? 0 : (historyPage - 1) * HISTORY_PAGE_SIZE + 1}
-            {history.length > 0 ? `-${(historyPage - 1) * HISTORY_PAGE_SIZE + history.length}` : ''} of {historyTotal}
+            第 {history.length === 0 ? 0 : (historyPage - 1) * HISTORY_PAGE_SIZE + 1}
+            {history.length > 0 ? `-${(historyPage - 1) * HISTORY_PAGE_SIZE + history.length}` : ''} 条，共 {historyTotal} 条
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -762,15 +766,15 @@ function AutoBackupTab() {
               disabled={historyLoading || historyPage <= 1}
               className="px-3 py-1.5 border border-border rounded text-text-secondary hover:bg-surface-hover disabled:opacity-50 text-sm"
             >
-              Previous
+              上一页
             </button>
-            <span className="text-xs text-text-secondary min-w-[80px] text-center">Page {historyPage} / {totalHistoryPages}</span>
+            <span className="text-xs text-text-secondary min-w-[80px] text-center">第 {historyPage} / {totalHistoryPages} 页</span>
             <button
               onClick={() => void goToHistoryPage(historyPage + 1)}
               disabled={historyLoading || historyPage >= totalHistoryPages}
               className="px-3 py-1.5 border border-border rounded text-text-secondary hover:bg-surface-hover disabled:opacity-50 text-sm"
             >
-              Next
+              下一页
             </button>
           </div>
         </div>

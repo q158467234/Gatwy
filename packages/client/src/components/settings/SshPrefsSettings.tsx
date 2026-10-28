@@ -3,7 +3,7 @@ import { showToast } from '../../hooks/useToast';
 import { SSH_THEMES, THEME_NAMES, DEFAULT_THEME, type SshThemeName } from '../../lib/sshThemes';
 
 const FONT_FAMILIES = [
-  { key: 'monospace',       label: 'Monospace',       css: 'monospace' },
+  { key: 'monospace',       label: '等宽字体',        css: 'monospace' },
   { key: 'fira-code',       label: 'Fira Code',       css: '"Fira Code", monospace' },
   { key: 'source-code-pro', label: 'Source Code Pro', css: '"Source Code Pro", monospace' },
   { key: 'inconsolata',     label: 'Inconsolata',     css: '"Inconsolata", monospace' },
@@ -219,13 +219,13 @@ export function SshPrefsSettings() {
         }),
       });
       if (res.ok) {
-        showToast('Saved. New SSH sessions will use these settings.', 'success');
+        showToast('已保存。新的 SSH 会话将使用这些设置。', 'success');
       } else {
         const d = await res.json() as { error?: string };
-        showToast(d.error || 'Failed to save.', 'error');
+        showToast(d.error || '保存失败。', 'error');
       }
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setSaving(false);
     }
@@ -237,10 +237,10 @@ export function SshPrefsSettings() {
         {/* Left: controls */}
         <div className="flex flex-col gap-5 w-72 shrink-0 overflow-y-auto pr-2">
           <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-3">Font</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-3">字体</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Font Family</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">字体系列</label>
                 <select
                   value={fontFamilyKey}
                   onChange={(e) => setFontFamilyKey(e.target.value as FontFamilyKey)}
@@ -252,7 +252,7 @@ export function SshPrefsSettings() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Font Size</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">字号</label>
                 <Select
                   value={fontSize}
                   onChange={setFontSize}
@@ -264,30 +264,30 @@ export function SshPrefsSettings() {
           </section>
 
           <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-3">Cursor</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-3">光标</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Cursor Style</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">光标样式</label>
                 <Select
                   value={cursorStyle}
                   onChange={setCursorStyle}
                   options={[
-                    { value: 'block', label: 'Block' },
-                    { value: 'underline', label: 'Underline' },
-                    { value: 'bar', label: 'Bar' },
+                    { value: 'block', label: '方块' },
+                    { value: 'underline', label: '下划线' },
+                    { value: 'bar', label: '竖线' },
                   ]}
                   className="w-full"
                 />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-text-secondary">Cursor Blinking</span>
+                <span className="text-sm font-medium text-text-secondary">光标闪烁</span>
                 <Toggle value={cursorBlink} onChange={setCursorBlink} />
               </div>
             </div>
           </section>
 
           <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-3">Theme</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-3">主题</h3>
             <Select
               value={theme}
               onChange={setTheme}
@@ -297,9 +297,9 @@ export function SshPrefsSettings() {
           </section>
 
           <section>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-3">Advanced</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-3">高级</h3>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Scrollback Lines</label>
+              <label className="block text-sm font-medium text-text-secondary mb-1">回滚行数</label>
               <input
                 type="number"
                 min="100"
@@ -317,7 +317,7 @@ export function SshPrefsSettings() {
               disabled={saving}
               className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium w-full"
             >
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? '保存中…' : '保存'}
             </button>
             <button
               type="button"
@@ -342,16 +342,16 @@ export function SshPrefsSettings() {
                     setTheme((d.theme as SshThemeName) ?? DEFAULT_THEME);
                     setScrollback(String(d.scrollback ?? '5000'));
                   }
-                  showToast('Reset to global defaults.', 'success');
+                  showToast('已恢复为全局默认设置。', 'success');
                 } catch {
-                  showToast('Network error.', 'error');
+                  showToast('网络错误。', 'error');
                 } finally {
                   setSaving(false);
                 }
               }}
               className="px-4 py-2 bg-surface-hover border border-border text-text-secondary rounded hover:text-text-primary disabled:opacity-50 text-sm w-full mt-2"
             >
-              Reset to Defaults
+              恢复默认设置
             </button>
           </div>
         </div>
@@ -359,7 +359,7 @@ export function SshPrefsSettings() {
         {/* Right: live preview */}
         <div className="flex-1 flex flex-col min-h-0">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-3 shrink-0">
-            Preview
+            预览
           </h3>
           <SshPreview
             fontFamily={fontKeyToCss(fontFamilyKey)}

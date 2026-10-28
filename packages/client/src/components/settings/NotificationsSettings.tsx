@@ -6,9 +6,9 @@ import { NotifHistoryTab } from './notifications/NotifHistoryTab';
 type Tab = 'config' | 'rules' | 'history';
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'config', label: 'Configuration' },
-  { id: 'rules', label: 'Rules' },
-  { id: 'history', label: 'History' },
+  { id: 'config', label: '配置' },
+  { id: 'rules', label: '规则' },
+  { id: 'history', label: '历史' },
 ];
 
 export function NotificationsSettings() {
@@ -17,9 +17,9 @@ export function NotificationsSettings() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-base font-semibold text-text-primary">Notifications</h2>
+        <h2 className="text-base font-semibold text-text-primary">通知</h2>
         <p className="text-sm text-text-secondary mt-0.5">
-          Configure notification channels and build automated alert rules.
+          配置通知渠道并创建自动告警规则。
         </p>
       </div>
 

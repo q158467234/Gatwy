@@ -9,8 +9,8 @@ interface DateTimePickerProps {
   align?: 'left' | 'right';
 }
 
-const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DAYS = ['日', '一', '二', '三', '四', '五', '六'];
+const MONTHS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
 
 function daysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -123,7 +123,7 @@ export function DateTimePicker({ value, onChange, className = '', placeholder, l
         type="text"
         readOnly
         value={displayValue}
-        placeholder={placeholder ?? 'Select date & time'}
+        placeholder={placeholder ?? '选择日期和时间'}
         onClick={() => setOpen(!open)}
         className={`cursor-pointer ${className}`}
       />
@@ -134,7 +134,7 @@ export function DateTimePicker({ value, onChange, className = '', placeholder, l
             <button type="button" onClick={prevMonth} className="p-1 rounded hover:bg-surface-hover text-text-secondary">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
-            <span className="text-sm font-medium text-text-primary">{MONTHS[viewMonth]} {viewYear}</span>
+            <span className="text-sm font-medium text-text-primary">{viewYear}年{MONTHS[viewMonth]}</span>
             <button type="button" onClick={nextMonth} className="p-1 rounded hover:bg-surface-hover text-text-secondary">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
             </button>
@@ -205,14 +205,14 @@ export function DateTimePicker({ value, onChange, className = '', placeholder, l
               onClick={handleToday}
               className="px-2 py-1 text-xs text-accent hover:text-accent-hover hover:bg-surface-hover rounded font-medium"
             >
-              Today
+              今天
             </button>
             <button
               type="button"
               onClick={handleClear}
               className="px-2 py-1 text-xs text-text-secondary hover:text-text-primary hover:bg-surface-hover rounded"
             >
-              Clear
+              清除
             </button>
           </div>
         </div>

@@ -71,7 +71,7 @@ export function RecordingSettings() {
       return { ok: true };
     }
     const d = (await res.json()) as { error?: string };
-    return { ok: false, error: d.error || 'Failed to save.' };
+    return { ok: false, error: d.error || '保存失败。' };
   }
 
   async function handleRecordingSave(e: FormEvent) {
@@ -85,9 +85,9 @@ export function RecordingSettings() {
         'session.recording_retention_size_enabled': String(retentionSizeEnabled),
         'session.recording_retention_max_size_gb': retentionMaxSizeGb,
       });
-      showToast(result.ok ? 'Saved.' : result.error!, result.ok ? 'success' : 'error');
+      showToast(result.ok ? '已保存。' : result.error!, result.ok ? 'success' : 'error');
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setSavingRecording(false);
     }
@@ -109,16 +109,16 @@ export function RecordingSettings() {
         error?: string;
       };
       if (res.ok) {
-        const fileNote = (d.deletedFileSessions ?? 0) > 0 ? ` and ${d.deletedFileSessions} file activity session(s)` : '';
-        const queryNote = (d.deletedQueryHistory ?? 0) > 0 ? ` and ${d.deletedQueryHistory} DB query history row(s)` : '';
-        showToast(`Deleted ${d.deletedSessions ?? 0} sessions and ${d.deletedRecordings ?? 0} recordings${fileNote}${queryNote}.`, 'success');
+        const fileNote = (d.deletedFileSessions ?? 0) > 0 ? `、${d.deletedFileSessions} 个文件活动会话` : '';
+        const queryNote = (d.deletedQueryHistory ?? 0) > 0 ? `、${d.deletedQueryHistory} 条数据库查询历史` : '';
+        showToast(`已删除 ${d.deletedSessions ?? 0} 个会话、${d.deletedRecordings ?? 0} 个录像${fileNote}${queryNote}。`, 'success');
         setShowPurgeConfirm(false);
         setStorageBytes(0);
       } else {
-        showToast(d.error || 'Failed to purge.', 'error');
+        showToast(d.error || '清除失败。', 'error');
       }
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setPurging(false);
     }
@@ -129,18 +129,18 @@ export function RecordingSettings() {
       <form onSubmit={handleRecordingSave} className="space-y-4">
         <div className="flex items-center gap-3">
           <Toggle value={recordingEnabled} onChange={setRecordingEnabled} />
-          <span className="text-sm text-text-secondary">Session recording enabled <span className="text-xs text-text-secondary/60">(SSH &amp; RDP)</span></span>
+          <span className="text-sm text-text-secondary">启用会话录像 <span className="text-xs text-text-secondary/60">（SSH 和 RDP）</span></span>
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <Toggle value={retentionDaysEnabled} onChange={setRetentionDaysEnabled} />
-            <span className="text-sm text-text-secondary">Retention by age</span>
+            <span className="text-sm text-text-secondary">按时间保留</span>
           </div>
           {retentionDaysEnabled && (
             <div className="ml-12">
-              <label className="block text-sm font-medium text-text-secondary mb-1">Recording retention (days)</label>
-              <p className="text-xs text-text-secondary mb-1">Recordings older than this will be automatically removed.</p>
+              <label className="block text-sm font-medium text-text-secondary mb-1">录像保留期限（天）</label>
+              <p className="text-xs text-text-secondary mb-1">超过此期限的录像将被自动删除。</p>
               <input
                 type="number"
                 min="1"
@@ -155,12 +155,12 @@ export function RecordingSettings() {
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <Toggle value={retentionSizeEnabled} onChange={setRetentionSizeEnabled} />
-            <span className="text-sm text-text-secondary">Retention by size</span>
+            <span className="text-sm text-text-secondary">按容量保留</span>
           </div>
           {retentionSizeEnabled && (
             <div className="ml-12">
-              <label className="block text-sm font-medium text-text-secondary mb-1">Max recording storage (GB)</label>
-              <p className="text-xs text-text-secondary mb-1">When total storage exceeds this limit, the oldest recordings are removed first.</p>
+              <label className="block text-sm font-medium text-text-secondary mb-1">录像最大存储空间（GB）</label>
+              <p className="text-xs text-text-secondary mb-1">当总存储超过此上限时，将优先删除最早的录像。</p>
               <input
                 type="number"
                 min="0.1"
@@ -175,7 +175,7 @@ export function RecordingSettings() {
 
         {retentionDaysEnabled && retentionSizeEnabled && (
           <p className="text-xs text-text-secondary bg-surface rounded px-3 py-2 border border-border">
-            Both retention policies are active, whichever limit is reached first will trigger cleanup (FIFO).
+            两种保留策略同时生效，先达到的上限将触发清理（先进先出）。
           </p>
         )}
         <button
@@ -183,14 +183,14 @@ export function RecordingSettings() {
           disabled={savingRecording}
           className="px-4 py-2 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 text-sm font-medium"
         >
-          {savingRecording ? 'Saving...' : 'Save'}
+          {savingRecording ? '保存中…' : '保存'}
         </button>
       </form>
 
       {storageBytes !== null && (
         <div className="border border-border rounded-lg p-4 space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-text-primary">Recording Storage</h3>
+            <h3 className="text-sm font-medium text-text-primary">录像存储</h3>
             <span className="text-xs font-mono text-text-secondary">{formatBytes(storageBytes)}</span>
           </div>
           <div className="w-full h-2 bg-surface rounded-full overflow-hidden">
@@ -199,16 +199,16 @@ export function RecordingSettings() {
               style={{ width: storageBytes > 0 ? `${Math.min(100, (storageBytes / (10 * 1024 ** 3)) * 100)}%` : '0%' }}
             />
           </div>
-          <p className="text-xs text-text-secondary">Space used by all recording files on disk.</p>
+          <p className="text-xs text-text-secondary">所有录像文件在磁盘上占用的空间。</p>
         </div>
       )}
 
       <div className="mt-8 border border-red-500/20 rounded-lg p-4 space-y-3">
-        <h3 className="text-sm font-semibold text-red-400">Danger Zone</h3>
+        <h3 className="text-sm font-semibold text-red-400">危险操作</h3>
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-text-primary">Delete all recordings</p>
-            <p className="text-xs text-text-secondary mt-0.5">Permanently deletes all recording files and their session records from disk.</p>
+            <p className="text-sm font-medium text-text-primary">删除所有录像</p>
+            <p className="text-xs text-text-secondary mt-0.5">从磁盘永久删除所有录像文件及其会话记录。</p>
           </div>
           <button
             type="button"
@@ -217,7 +217,7 @@ export function RecordingSettings() {
             }}
             className="shrink-0 px-3 py-1.5 border border-red-500/40 rounded text-sm text-red-400 hover:bg-red-500/10 font-medium"
           >
-            Delete History
+            删除历史
           </button>
         </div>
       </div>
@@ -230,10 +230,10 @@ export function RecordingSettings() {
           }}
         >
           <div className="bg-surface-alt border border-border rounded-lg shadow-xl w-full max-w-md p-6 space-y-4">
-            <h3 className="text-base font-semibold text-text-primary">Delete all recordings?</h3>
+            <h3 className="text-base font-semibold text-text-primary">删除所有录像？</h3>
             <p className="text-sm text-text-secondary">
-              This will permanently delete all recording files and their session records from disk.
-              This action cannot be undone.
+              此操作将从磁盘永久删除所有录像文件及其会话记录。
+              此操作无法撤销。
             </p>
             <div className="flex gap-2 pt-1">
               <button
@@ -241,13 +241,13 @@ export function RecordingSettings() {
                 disabled={purging}
                 className="flex-1 py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 font-medium text-sm"
               >
-                {purging ? 'Deleting…' : 'Yes, delete everything'}
+                {purging ? '删除中…' : '是，全部删除'}
               </button>
               <button
                 onClick={() => setShowPurgeConfirm(false)}
                 className="px-4 py-2 border border-border rounded text-text-secondary hover:bg-surface-hover text-sm"
               >
-                Cancel
+                取消
               </button>
             </div>
           </div>

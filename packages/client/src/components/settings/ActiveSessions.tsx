@@ -15,10 +15,10 @@ const POLL_MS = 5000;
 
 function formatDuration(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
-  if (s < 60) return `${s}s`;
+  if (s < 60) return `${s}秒`;
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ${s % 60}s`;
-  return `${Math.floor(m / 60)}h ${m % 60}m`;
+  if (m < 60) return `${m}分${s % 60}秒`;
+  return `${Math.floor(m / 60)}小时${m % 60}分`;
 }
 
 export function ActiveSessions() {
@@ -52,13 +52,13 @@ export function ActiveSessions() {
           clearInterval(timer);
           clearInterval(tick);
           if (!cancelled) { setSessions([]); setStopped(true); }
-          throw new Error(res.status === 401 ? 'Session expired. Sign in again.' : 'You no longer have permission to view active sessions.');
+          throw new Error(res.status === 401 ? '登录已过期，请重新登录。' : '你已无权查看活动会话。');
         }
-        if (!res.ok) throw new Error('Failed to load active sessions');
+        if (!res.ok) throw new Error('加载活动会话失败');
         const d = await res.json() as { sessions: ActiveSessionRow[] };
         if (!cancelled) { setSessions(d.sessions); setFetchedAt(Date.now()); setError(''); }
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load active sessions');
+        if (!cancelled) setError(e instanceof Error ? e.message : '加载活动会话失败');
       }
       inFlight = false;
       if (!cancelled) setLoading(false);
@@ -78,10 +78,10 @@ export function ActiveSessions() {
       const res = await fetch(`/api/v1/sessions/active/${encodeURIComponent(id)}/disconnect`, { method: 'POST', credentials: 'include' });
       const data = await res.json().catch(() => ({})) as { error?: string };
       // 404: the session ended on its own in the meantime, so it only needs to leave the table.
-      if (!res.ok && res.status !== 404) throw new Error(data.error || `Server error (${res.status})`);
+      if (!res.ok && res.status !== 404) throw new Error(data.error || `服务器错误（${res.status}）`);
       setSessions((prev) => prev.filter((x) => x.id !== id));
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Failed to disconnect the session');
+      setActionError(e instanceof Error ? e.message : '断开会话失败');
     }
     setBusyId(null);
     setConfirmingId(null);
@@ -90,32 +90,32 @@ export function ActiveSessions() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-text-primary">Active Sessions</h2>
-        {!stopped && <span className="text-xs text-text-secondary">Refreshes every {POLL_MS / 1000}s</span>}
+        <h2 className="text-base font-semibold text-text-primary">活动会话</h2>
+        {!stopped && <span className="text-xs text-text-secondary">每 {POLL_MS / 1000} 秒刷新</span>}
       </div>
 
       {error && <p className="text-sm text-red-500">{error}</p>}
       {actionError && <p className="text-sm text-red-500">{actionError}</p>}
-      {loading && <p className="text-text-secondary text-sm">Loading active sessions...</p>}
+      {loading && <p className="text-text-secondary text-sm">正在加载活动会话…</p>}
       {!loading && !error && !stopped && sessions.length === 0 && (
-        <p className="text-text-secondary text-sm">No active sessions.</p>
+        <p className="text-text-secondary text-sm">暂无活动会话。</p>
       )}
 
       {sessions.length > 0 && (
         <>
           <p className="text-xs text-text-secondary">
-            <span className="font-medium text-text-primary">{sessions.length}</span> active session{sessions.length === 1 ? '' : 's'}
+            <span className="font-medium text-text-primary">{sessions.length}</span> 个活动会话
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-text-secondary">
-                  <th className="pb-2 pr-4 font-medium">User</th>
-                  <th className="pb-2 pr-4 font-medium">Connection</th>
-                  <th className="pb-2 pr-4 font-medium">Protocol</th>
-                  <th className="pb-2 pr-4 font-medium">Duration</th>
-                  <th className="pb-2 pr-4 font-medium">Status</th>
-                  {canDisconnect && <th className="pb-2 font-medium">Action</th>}
+                  <th className="pb-2 pr-4 font-medium">用户</th>
+                  <th className="pb-2 pr-4 font-medium">连接</th>
+                  <th className="pb-2 pr-4 font-medium">协议</th>
+                  <th className="pb-2 pr-4 font-medium">时长</th>
+                  <th className="pb-2 pr-4 font-medium">状态</th>
+                  {canDisconnect && <th className="pb-2 font-medium">操作</th>}
                 </tr>
               </thead>
               <tbody>
@@ -131,13 +131,13 @@ export function ActiveSessions() {
                     <td className="py-2 pr-4 text-xs text-text-secondary">{formatDuration(s.durationMs + Math.max(0, now - fetchedAt))}</td>
                     <td className="py-2 pr-4">
                       {s.status === 'connected' ? (
-                        <span className="px-1.5 py-0.5 rounded text-xs bg-accent/10 text-accent border border-accent/20">Connected</span>
+                        <span className="px-1.5 py-0.5 rounded text-xs bg-accent/10 text-accent border border-accent/20">已连接</span>
                       ) : (
                         <span
                           className="px-1.5 py-0.5 rounded text-xs bg-surface-hover text-text-secondary border border-border"
-                          title="The browser disconnected. The session stays open for a short time waiting for a reattach"
+                          title="浏览器已断开。会话会保持一小段时间，等待重新接入"
                         >
-                          Reconnecting
+                          重连中
                         </span>
                       )}
                     </td>
@@ -150,23 +150,23 @@ export function ActiveSessions() {
                               disabled={busyId === s.id}
                               className="px-2 py-1 text-xs bg-red-500/10 text-red-500 rounded hover:bg-red-500/20 border border-red-500/30 disabled:opacity-50"
                             >
-                              {busyId === s.id ? '…' : 'Confirm'}
+                              {busyId === s.id ? '…' : '确认'}
                             </button>
                             <button
                               onClick={() => setConfirmingId(null)}
                               disabled={busyId === s.id}
                               className="px-2 py-1 text-xs border border-border text-text-secondary rounded hover:bg-surface-hover hover:text-text-primary disabled:opacity-50"
                             >
-                              Cancel
+                              取消
                             </button>
                           </span>
                         ) : (
                           <button
                             onClick={() => { setActionError(''); setConfirmingId(s.id); }}
                             className="px-2 py-1 text-xs border border-border text-text-secondary rounded hover:bg-surface-hover hover:text-text-primary"
-                            title="End this session and close the user's connection"
+                            title="结束此会话并关闭该用户的连接"
                           >
-                            Disconnect
+                            断开
                           </button>
                         )}
                       </td>

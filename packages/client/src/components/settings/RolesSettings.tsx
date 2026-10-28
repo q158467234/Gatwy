@@ -87,7 +87,7 @@ export function RolesSettings() {
   }
 
   async function handleSave() {
-    if (!name.trim()) { setError('Name is required'); return; }
+    if (!name.trim()) { setError('名称为必填项'); return; }
     setSaving(true);
     setError('');
     try {
@@ -100,7 +100,7 @@ export function RolesSettings() {
         credentials: 'include',
         body: JSON.stringify(body),
       });
-      if (!res.ok) { const d = await res.json(); setError(d.error || 'Save failed'); return; }
+      if (!res.ok) { const d = await res.json(); setError(d.error || '保存失败'); return; }
       close();
       loadRoles();
     } finally {
@@ -111,7 +111,7 @@ export function RolesSettings() {
   async function handleDelete(role: Role) {
     setDeleteConfirm(null);
     const res = await fetch(`/api/v1/roles/${role.id}`, { method: 'DELETE', credentials: 'include' });
-    if (!res.ok) { const d = await res.json(); setError(d.error || 'Delete failed'); return; }
+    if (!res.ok) { const d = await res.json(); setError(d.error || '删除失败'); return; }
     loadRoles();
   }
 
@@ -125,7 +125,7 @@ export function RolesSettings() {
         method: 'POST',
         credentials: 'include',
       });
-      if (!res.ok) { const d = await res.json(); setError(d.error || 'Reset failed'); return; }
+      if (!res.ok) { const d = await res.json(); setError(d.error || '重置失败'); return; }
       const updated = await res.json() as Role;
       setSelectedPerms(new Set(updated.permissions));
       loadRoles();
@@ -141,14 +141,14 @@ export function RolesSettings() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-base font-semibold text-text-primary">Roles & Permissions</h2>
-          <p className="text-xs text-text-secondary mt-0.5">Define roles with granular permissions. Built-in roles cannot be deleted but their permissions can be customized.</p>
+          <h2 className="text-base font-semibold text-text-primary">角色与权限</h2>
+          <p className="text-xs text-text-secondary mt-0.5">定义具有细粒度权限的角色。内置角色不可删除，但其权限可以自定义。</p>
         </div>
         <button
           onClick={openCreate}
           className="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white rounded text-xs font-medium"
         >
-          + New Role
+          + 新建角色
         </button>
       </div>
 
@@ -166,16 +166,16 @@ export function RolesSettings() {
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-text-primary">{role.name}</span>
                 {role.isBuiltin && (
-                  <span className="px-1.5 py-0.5 bg-accent/15 text-accent text-[10px] rounded font-medium">Built-in</span>
+                  <span className="px-1.5 py-0.5 bg-accent/15 text-accent text-[10px] rounded font-medium">内置</span>
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-text-secondary">{role.permissions.length} permissions</span>
+                <span className="text-[10px] text-text-secondary">{role.permissions.length} 项权限</span>
                 {!role.isBuiltin && (
                   <button
                     onClick={(e) => { e.stopPropagation(); setDeleteConfirm(role); }}
                     className="p-1 rounded text-text-secondary hover:text-red-400 hover:bg-surface"
-                    title="Delete role"
+                    title="删除角色"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <polyline points="3 6 5 6 21 6" /><path d="M19 6l-2 14H7L5 6" /><path d="M10 11v6" /><path d="M14 11v6" />
@@ -198,8 +198,8 @@ export function RolesSettings() {
           <div className="bg-surface-alt border border-border rounded-lg shadow-xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
           <div className="flex items-center justify-between">
             <h3 className="text-base font-semibold text-text-primary">
-              {creating ? 'New Role' : `Edit: ${editing!.name}`}
-              {editing?.isBuiltin && <span className="text-xs font-normal text-text-secondary ml-2">(permissions only)</span>}
+              {creating ? '新建角色' : `编辑：${editing!.name}`}
+              {editing?.isBuiltin && <span className="text-xs font-normal text-text-secondary ml-2">（仅权限）</span>}
             </h3>
             <button onClick={close} className="p-1 rounded hover:bg-surface-hover text-text-secondary hover:text-text-primary">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -214,21 +214,21 @@ export function RolesSettings() {
           {!(editing?.isBuiltin) && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-text-secondary mb-1">Name</label>
+                <label className="block text-xs font-medium text-text-secondary mb-1">名称</label>
                 <input
                   value={name}
                   onChange={e => setName(e.target.value)}
                   className="w-full px-2.5 py-1.5 bg-surface border border-border rounded text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
-                  placeholder="e.g. Operator"
+                  placeholder="例如 运维员"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-text-secondary mb-1">Description</label>
+                <label className="block text-xs font-medium text-text-secondary mb-1">描述</label>
                 <input
                   value={description}
                   onChange={e => setDescription(e.target.value)}
                   className="w-full px-2.5 py-1.5 bg-surface border border-border rounded text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
-                  placeholder="Optional description"
+                  placeholder="可选描述"
                 />
               </div>
             </div>
@@ -236,7 +236,7 @@ export function RolesSettings() {
 
           {/* Permission checkboxes grouped */}
           <div>
-            <label className="block text-xs font-medium text-text-secondary mb-2">Permissions</label>
+            <label className="block text-xs font-medium text-text-secondary mb-2">权限</label>
             <div className="grid grid-cols-2 gap-4">
               {Object.entries(permGroups).map(([groupKey, group]) => {
                 const allChecked = group.permissions.every(p => selectedPerms.has(p.key));
@@ -280,36 +280,36 @@ export function RolesSettings() {
                 disabled={saving}
                 className="px-3 py-1.5 text-xs border border-yellow-500/40 text-yellow-400 rounded hover:bg-yellow-500/10 font-medium disabled:opacity-50 mr-auto"
               >
-                Reset to Default
+                恢复默认
               </button>
             )}
             {editing?.isBuiltin && resetConfirm && (
               <div className="flex items-center gap-2 mr-auto bg-yellow-500/10 border border-yellow-500/30 rounded px-3 py-1.5">
-                <span className="text-xs text-yellow-400">Reset "{editing.name}" to default permissions?</span>
+                <span className="text-xs text-yellow-400">将“{editing.name}”恢复为默认权限？</span>
                 <button
                   onClick={handleReset}
                   disabled={saving}
                   className="px-2 py-0.5 text-xs bg-yellow-500 hover:bg-yellow-600 text-black rounded font-medium disabled:opacity-50"
                 >
-                  Confirm
+                  确认
                 </button>
                 <button
                   onClick={() => setResetConfirm(false)}
                   className="px-2 py-0.5 text-xs border border-yellow-500/40 text-yellow-400 rounded hover:bg-yellow-500/10"
                 >
-                  Cancel
+                  取消
                 </button>
               </div>
             )}
             <button onClick={close} className="px-3 py-1.5 text-xs border border-border rounded text-text-secondary hover:bg-surface-hover">
-              Cancel
+              取消
             </button>
             <button
               onClick={handleSave}
               disabled={saving}
               className="px-3 py-1.5 text-xs bg-accent hover:bg-accent-hover text-white rounded font-medium disabled:opacity-50"
             >
-              {saving ? 'Saving…' : creating ? 'Create Role' : 'Save Changes'}
+              {saving ? '保存中…' : creating ? '创建角色' : '保存更改'}
             </button>
           </div>
           </div>
@@ -320,9 +320,9 @@ export function RolesSettings() {
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-surface border border-border rounded-lg p-5 max-w-sm w-full shadow-xl space-y-4">
-            <h3 className="text-sm font-semibold text-text-primary">Delete Role</h3>
+            <h3 className="text-sm font-semibold text-text-primary">删除角色</h3>
             <p className="text-xs text-text-secondary">
-              Delete role "<span className="text-text-primary font-medium">{deleteConfirm.name}</span>"? Users assigned to this role will need to be reassigned.
+              确定删除角色“<span className="text-text-primary font-medium">{deleteConfirm.name}</span>”吗？分配到此角色的用户需要重新分配角色。
             </p>
             {error && <div className="text-xs text-red-400 bg-red-400/10 rounded px-3 py-2">{error}</div>}
             <div className="flex gap-2 justify-end">
@@ -330,13 +330,13 @@ export function RolesSettings() {
                 onClick={() => { setDeleteConfirm(null); setError(''); }}
                 className="px-3 py-1.5 text-xs border border-border rounded text-text-secondary hover:bg-surface-hover"
               >
-                Cancel
+                取消
               </button>
               <button
                 onClick={() => handleDelete(deleteConfirm)}
                 className="px-3 py-1.5 text-xs bg-red-500 hover:bg-red-600 text-white rounded font-medium"
               >
-                Delete
+                删除
               </button>
             </div>
           </div>

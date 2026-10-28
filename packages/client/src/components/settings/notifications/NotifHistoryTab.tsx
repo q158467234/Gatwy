@@ -55,6 +55,8 @@ function formatDate(iso: string) {
   return new Date(iso.includes('T') ? iso : iso + 'Z').toLocaleString();
 }
 
+const STATUS_LABEL: Record<string, string> = { sent: '已发送', failed: '失败' };
+
 function StatusBadge({ status }: { status: 'sent' | 'failed' }) {
   return (
     <span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full font-medium ${
@@ -67,7 +69,7 @@ function StatusBadge({ status }: { status: 'sent' | 'failed' }) {
       ) : (
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
       )}
-      {status}
+      {STATUS_LABEL[status] ?? status}
     </span>
   );
 }
@@ -117,7 +119,7 @@ export function NotifHistoryTab() {
     setRetrying(id);
     const { ok, data } = await apiFetch(`/log/${id}/retry`, { method: 'POST' });
     setRetrying(null);
-    setRetryMsg((m) => ({ ...m, [id]: ok ? '✓ Resent' : ((data as { error?: string }).error ?? 'Failed') }));
+    setRetryMsg((m) => ({ ...m, [id]: ok ? '✓ 已重新发送' : ((data as { error?: string }).error ?? '失败') }));
     if (ok) await load();
   }
 
@@ -158,7 +160,7 @@ export function NotifHistoryTab() {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-text-secondary shrink-0">
           <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
         </svg>
-        <span className="text-text-secondary text-xs">Log retention:</span>
+        <span className="text-text-secondary text-xs">日志保留期限：</span>
         {editingRetention ? (
           <div className="flex items-center gap-2">
             <input
@@ -168,21 +170,21 @@ export function NotifHistoryTab() {
               onChange={(e) => setRetentionInput(e.target.value)}
               className="w-20 px-2 py-1 text-xs rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent"
             />
-            <span className="text-xs text-text-secondary">days</span>
+            <span className="text-xs text-text-secondary">天</span>
             <button
               onClick={() => { void saveRetention(); }}
               disabled={savingRetention}
               className="px-2 py-1 text-xs bg-accent hover:bg-accent-hover text-white rounded disabled:opacity-50 transition-colors"
-            >{savingRetention ? 'Saving…' : 'Save'}</button>
+            >{savingRetention ? '保存中…' : '保存'}</button>
             <button onClick={() => { setEditingRetention(false); setRetentionInput(String(retentionDays)); }}
               className="px-2 py-1 text-xs border border-border rounded hover:bg-surface-hover text-text-secondary transition-colors">
-              Cancel
+              取消
             </button>
           </div>
         ) : (
           <>
-            <span className="text-xs font-medium text-text-primary">{retentionDays} days</span>
-            <button onClick={() => setEditingRetention(true)} className="text-xs text-accent hover:underline">Edit</button>
+            <span className="text-xs font-medium text-text-primary">{retentionDays} 天</span>
+            <button onClick={() => setEditingRetention(true)} className="text-xs text-accent hover:underline">编辑</button>
           </>
         )}
       </div>
@@ -194,14 +196,14 @@ export function NotifHistoryTab() {
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
           className="px-3 py-1.5 text-sm rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent"
         >
-          <option value="">All statuses</option>
-          <option value="sent">Sent</option>
-          <option value="failed">Failed</option>
+          <option value="">全部状态</option>
+          <option value="sent">已发送</option>
+          <option value="failed">失败</option>
         </select>
         <button onClick={() => { void load(); }} className="px-3 py-1.5 text-sm border border-border rounded hover:bg-surface-hover text-text-primary transition-colors">
-          Refresh
+          刷新
         </button>
-        <span className="text-xs text-text-secondary">{total} total</span>
+        <span className="text-xs text-text-secondary">共 {total} 条</span>
         {total > 0 && (
           <button
             onClick={() => setConfirmClear(true)}
@@ -210,7 +212,7 @@ export function NotifHistoryTab() {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
             </svg>
-            {statusFilter ? `Clear ${statusFilter}` : 'Clear all'}
+            {statusFilter ? `清除${STATUS_LABEL[statusFilter] ?? statusFilter}记录` : '全部清除'}
           </button>
         )}
       </div>
@@ -220,19 +222,19 @@ export function NotifHistoryTab() {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={() => setConfirmClear(false)} />
           <div className="relative bg-surface border border-border rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4 space-y-4">
-            <h3 className="text-sm font-semibold text-text-primary">Clear notification history?</h3>
+            <h3 className="text-sm font-semibold text-text-primary">清除通知历史？</h3>
             <p className="text-xs text-text-secondary">
-              This will permanently delete {statusFilter ? `all <strong>${statusFilter}</strong>` : 'all'} notification log entries{statusFilter ? ` with status "${statusFilter}"` : ''}.
-              This action is irreversible.
+              将永久删除{statusFilter ? `所有状态为“${STATUS_LABEL[statusFilter] ?? statusFilter}”的` : '全部'}通知日志记录。
+              此操作不可撤销。
             </p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setConfirmClear(false)}
                 className="px-3 py-1.5 text-sm border border-border rounded hover:bg-surface-hover text-text-primary transition-colors">
-                Cancel
+                取消
               </button>
               <button onClick={() => { void clearAll(); }}
                 className="px-4 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded transition-colors">
-                Clear
+                清除
               </button>
             </div>
           </div>
@@ -240,20 +242,20 @@ export function NotifHistoryTab() {
       )}
 
       {loading ? (
-        <p className="text-sm text-text-secondary">Loading…</p>
+        <p className="text-sm text-text-secondary">加载中…</p>
       ) : entries.length === 0 ? (
-        <div className="text-center py-12 text-text-secondary text-sm">No notifications logged yet.</div>
+        <div className="text-center py-12 text-text-secondary text-sm">暂无通知记录。</div>
       ) : (
         <>
           <div className="border border-border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-surface-alt border-b border-border">
                 <tr>
-                  <th className="text-left px-3 py-2 text-xs font-medium text-text-secondary">Time</th>
-                  <th className="text-left px-3 py-2 text-xs font-medium text-text-secondary">Rule</th>
-                  <th className="text-left px-3 py-2 text-xs font-medium text-text-secondary">Channel</th>
-                  <th className="text-left px-3 py-2 text-xs font-medium text-text-secondary">Status</th>
-                  <th className="px-3 py-2 text-right text-xs font-medium text-text-secondary">Actions</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-text-secondary">时间</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-text-secondary">规则</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-text-secondary">渠道</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-text-secondary">状态</th>
+                  <th className="px-3 py-2 text-right text-xs font-medium text-text-secondary">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -283,13 +285,13 @@ export function NotifHistoryTab() {
                               disabled={retrying === entry.id}
                               className="text-xs text-accent hover:underline disabled:opacity-50"
                             >
-                              {retrying === entry.id ? 'Retrying…' : retryMsg[entry.id] ?? 'Retry'}
+                              {retrying === entry.id ? '重试中…' : retryMsg[entry.id] ?? '重试'}
                             </button>
                           )}
                           <button
                             onClick={(e) => { e.stopPropagation(); void deleteEntry(entry.id); }}
                             disabled={deleting === entry.id}
-                            title="Delete this log entry"
+                            title="删除此日志记录"
                             className="text-text-secondary hover:text-red-500 disabled:opacity-40 transition-colors"
                           >
                             {deleting === entry.id ? (
@@ -307,7 +309,7 @@ export function NotifHistoryTab() {
                       <tr key={`${entry.id}-exp`} className="bg-surface-alt">
                         <td colSpan={5} className="px-4 py-3 text-xs">
                           {entry.error && (
-                            <p className="text-red-500 mb-2"><strong>Error:</strong> {entry.error}</p>
+                            <p className="text-red-500 mb-2"><strong>错误：</strong> {entry.error}</p>
                           )}
                           {entry.payload !== null && entry.payload !== undefined && (
                             <pre className="text-text-secondary font-mono text-[11px] whitespace-pre-wrap break-all bg-surface border border-border rounded p-2 max-h-40 overflow-y-auto">
@@ -328,12 +330,12 @@ export function NotifHistoryTab() {
             <div className="flex items-center justify-center gap-2">
               <button disabled={page === 1} onClick={() => setPage((p) => p - 1)}
                 className="px-3 py-1.5 text-xs border border-border rounded hover:bg-surface-hover disabled:opacity-40 transition-colors">
-                ← Prev
+                ← 上一页
               </button>
-              <span className="text-xs text-text-secondary">Page {page} / {pages}</span>
+              <span className="text-xs text-text-secondary">第 {page} / {pages} 页</span>
               <button disabled={page === pages} onClick={() => setPage((p) => p + 1)}
                 className="px-3 py-1.5 text-xs border border-border rounded hover:bg-surface-hover disabled:opacity-40 transition-colors">
-                Next →
+                下一页 →
               </button>
             </div>
           )}

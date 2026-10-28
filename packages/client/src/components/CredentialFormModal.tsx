@@ -61,7 +61,7 @@ export function CredentialFormModal({ editing, canShare, onClose, onSaved, onCon
     // a caller rendering this modal from inside its own <form> (e.g. ConnectionModal) would also submit that form.
     e.stopPropagation();
     setFormError('');
-    if (!editing && type === 'key' && !privateKey.trim()) { setFormError('Private key is required'); return; }
+    if (!editing && type === 'key' && !privateKey.trim()) { setFormError('私钥为必填项'); return; }
     setSaving(true);
     try {
       const body: Record<string, unknown> = { name, username };
@@ -88,16 +88,16 @@ export function CredentialFormModal({ editing, canShare, onClose, onSaved, onCon
           name: editing.name,
           connections: data.connections ?? [],
           otherCount: data.otherCount ?? 0,
-          message: data.error ?? 'Credential is in use',
+          message: data.error ?? '凭据正在使用中',
         });
         return;
       }
-      if (!res.ok) throw new Error(data.error || `Server error (${res.status})`);
-      showToast(editing ? 'Credential updated' : 'Credential created');
+      if (!res.ok) throw new Error(data.error || `服务器错误（${res.status}）`);
+      showToast(editing ? '凭据已更新' : '凭据已创建');
       onSaved(data as CredentialSummary);
       onClose();
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Save failed');
+      setFormError(err instanceof Error ? err.message : '保存失败');
     } finally {
       setSaving(false);
     }
@@ -111,7 +111,7 @@ export function CredentialFormModal({ editing, canShare, onClose, onSaved, onCon
       <div className="bg-surface-alt border border-border rounded-lg shadow-xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold text-text-primary">
-            {editing ? `Edit Credential — ${editing.name}` : 'New Credential'}
+            {editing ? `编辑凭据 — ${editing.name}` : '新建凭据'}
           </h3>
           <button onClick={onClose} className="p-1 rounded hover:bg-surface-hover text-text-secondary hover:text-text-primary">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -122,13 +122,13 @@ export function CredentialFormModal({ editing, canShare, onClose, onSaved, onCon
 
         <form onSubmit={handleSave} className="space-y-3">
           <div>
-            <label className="block text-xs text-text-secondary mb-1">Name</label>
+            <label className="block text-xs text-text-secondary mb-1">名称</label>
             <input type="text" required autoFocus value={name} onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Homelab root key" className={inputCls} />
+              placeholder="例如 家庭实验室 root 密钥" className={inputCls} />
           </div>
 
           <div>
-            <label className="block text-xs text-text-secondary mb-1">Type</label>
+            <label className="block text-xs text-text-secondary mb-1">类型</label>
             <div className="flex gap-2">
               {(['password', 'key'] as const).map((t) => (
                 <button
@@ -143,19 +143,19 @@ export function CredentialFormModal({ editing, canShare, onClose, onSaved, onCon
                   }`}
                 >
                   {t === 'key' ? <KeyGlyph /> : <LockGlyph />}
-                  {t === 'key' ? 'Username + SSH key' : 'Username + password'}
+                  {t === 'key' ? '用户名 + SSH 密钥' : '用户名 + 密码'}
                 </button>
               ))}
             </div>
             {type === 'key' && (
               <p className="text-[11px] text-text-secondary mt-1">
-                SSH keys work with SSH and SFTP connections. OpenSSH, PEM and PKCS#8 keys (RSA, ECDSA, Ed25519) are accepted.
+                SSH 密钥适用于 SSH 和 SFTP 连接。支持 OpenSSH、PEM 和 PKCS#8 格式的密钥（RSA、ECDSA、Ed25519）。
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-xs text-text-secondary mb-1">Username</label>
+            <label className="block text-xs text-text-secondary mb-1">用户名</label>
             <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
               placeholder="user" autoComplete="off" className={inputCls} />
           </div>
@@ -163,44 +163,44 @@ export function CredentialFormModal({ editing, canShare, onClose, onSaved, onCon
           {type === 'password' ? (
             <>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Password</label>
+                <label className="block text-xs text-text-secondary mb-1">密码</label>
                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password"
-                  placeholder={editing?.hasPassword ? '(unchanged)' : ''} className={inputCls} />
+                  placeholder={editing?.hasPassword ? '（未更改）' : ''} className={inputCls} />
               </div>
               <div>
                 <label className="block text-xs text-text-secondary mb-1">
-                  Domain <span className="font-normal">(optional)</span>
+                  域 <span className="font-normal">（可选）</span>
                 </label>
                 <input type="text" value={domain} onChange={(e) => setDomain(e.target.value)}
                   placeholder="WORKGROUP" autoComplete="off" className={inputCls} />
-                <p className="text-[11px] text-text-secondary mt-1">Used for SMB connections instead of retyping it per connection.</p>
+                <p className="text-[11px] text-text-secondary mt-1">用于 SMB 连接，无需在每个连接中重复填写。</p>
               </div>
             </>
           ) : (
             <>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Private Key</label>
+                <label className="block text-xs text-text-secondary mb-1">私钥</label>
                 <textarea
                   value={privateKey}
                   onChange={(e) => setPrivateKey(e.target.value)}
                   rows={5}
-                  placeholder={editing ? '(unchanged — paste a new key to replace)' : '-----BEGIN OPENSSH PRIVATE KEY-----'}
+                  placeholder={editing ? '（未更改 — 粘贴新密钥以替换）' : '-----BEGIN OPENSSH PRIVATE KEY-----'}
                   className={`${inputCls} font-mono text-xs resize-none`}
                 />
               </div>
               <div>
                 <label className="block text-xs text-text-secondary mb-1">
-                  Key Passphrase <span className="font-normal">(optional)</span>
+                  私钥口令 <span className="font-normal">（可选）</span>
                 </label>
                 <input type="password" value={passphrase}
                   onChange={(e) => { setPassphrase(e.target.value); if (e.target.value) setClearPassphrase(false); }}
                   autoComplete="new-password"
-                  placeholder={editing?.hasPassphrase && !clearPassphrase ? '(unchanged)' : ''} className={inputCls} />
+                  placeholder={editing?.hasPassphrase && !clearPassphrase ? '（未更改）' : ''} className={inputCls} />
                 {editing?.hasPassphrase && !passphrase && (
                   <label className="flex items-center gap-2 mt-1.5 cursor-pointer">
                     <input type="checkbox" checked={clearPassphrase} onChange={(e) => setClearPassphrase(e.target.checked)} className="accent-accent" />
-                    <span className="text-xs text-text-secondary">Remove stored passphrase</span>
+                    <span className="text-xs text-text-secondary">移除已保存的私钥口令</span>
                   </label>
                 )}
               </div>
@@ -219,10 +219,10 @@ export function CredentialFormModal({ editing, canShare, onClose, onSaved, onCon
                 <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${shared ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </button>
               <div>
-                <span className="text-xs text-text-primary">Shared credential</span>
+                <span className="text-xs text-text-primary">共享凭据</span>
                 <p className="text-[11px] text-text-secondary leading-tight mt-0.5">
-                  Can be used by shared connections, and by users allowed to use shared credentials.
-                  The secret is never shown, but anyone who can use it can connect with it.
+                  可供共享连接以及有权使用共享凭据的用户使用。
+                  密钥内容不会显示，但任何能使用该凭据的人都可以用它建立连接。
                 </p>
               </div>
             </div>
@@ -233,11 +233,11 @@ export function CredentialFormModal({ editing, canShare, onClose, onSaved, onCon
           <div className="flex gap-2 pt-1">
             <button type="submit" disabled={saving}
               className="flex-1 py-2 px-4 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 font-medium text-sm">
-              {saving ? 'Saving…' : editing ? 'Save Changes' : 'Create Credential'}
+              {saving ? '保存中…' : editing ? '保存更改' : '创建凭据'}
             </button>
             <button type="button" onClick={onClose}
               className="px-4 py-2 border border-border rounded text-text-secondary hover:bg-surface-hover text-sm">
-              Cancel
+              取消
             </button>
           </div>
         </form>

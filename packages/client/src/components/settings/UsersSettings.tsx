@@ -107,13 +107,13 @@ export function UsersSettings() {
         setUsers((prev) => prev.map((u) => u.id === editUser.id
           ? { ...u, displayName: editDisplayName.trim(), email: editEmail.trim() || null, role: editRole }
           : u));
-        showToast('Saved.', 'success');
+        showToast('已保存。', 'success');
         setTimeout(closeEdit, 900);
       } else {
-        showToast(d.error || 'Failed to save.', 'error');
+        showToast(d.error || '保存失败。', 'error');
       }
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setSaving(false);
     }
@@ -137,10 +137,10 @@ export function UsersSettings() {
         const d = await res.json();
         setUsers(d.users);
       } else {
-        setError('Failed to load users.');
+        setError('加载用户失败。');
       }
     } catch {
-      setError('Network error.');
+      setError('网络错误。');
     } finally {
       setLoading(false);
     }
@@ -166,10 +166,10 @@ export function UsersSettings() {
     });
     if (res.ok) {
       setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, role: newRole } : u));
-      showToast('Role updated.', 'success');
+      showToast('角色已更新。', 'success');
     } else {
       const d = await res.json();
-      showToast(d.error || 'Failed.', 'error');
+      showToast(d.error || '操作失败。', 'error');
     }
   }
 
@@ -180,10 +180,10 @@ export function UsersSettings() {
     });
     if (res.ok) {
       setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, lockedUntil: null, failedLoginCount: 0 } : u));
-      showToast('User unlocked.', 'success');
+      showToast('用户已解锁。', 'success');
     } else {
       const d = await res.json();
-      showToast(d.error || 'Failed.', 'error');
+      showToast(d.error || '操作失败。', 'error');
     }
   }
 
@@ -201,11 +201,11 @@ export function UsersSettings() {
         setDeleteTarget(null);
       } else {
         const d = await res.json();
-        showToast(d.error || 'Failed.', 'error');
+        showToast(d.error || '操作失败。', 'error');
         setDeleteTarget(null);
       }
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
       setDeleteTarget(null);
     } finally {
       setDeleting(false);
@@ -224,13 +224,13 @@ export function UsersSettings() {
       });
       const d = await res.json();
       if (res.ok) {
-        showToast('Password reset.', 'success');
+        showToast('密码已重置。', 'success');
         setTimeout(() => { setResetPasswordUserId(null); setResetPasswordValue(''); }, 1500);
       } else {
-        showToast(d.error || 'Failed.', 'error');
+        showToast(d.error || '操作失败。', 'error');
       }
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setResettingPassword(false);
     }
@@ -238,7 +238,7 @@ export function UsersSettings() {
 
   async function handleResetPasskeys(userId: string) {
     if (!passkeyResetReason || passkeyResetReason.trim().length < 5) {
-      showToast('Reason must be at least 5 characters.', 'error');
+      showToast('原因至少需要 5 个字符。', 'error');
       return;
     }
     setResettingPasskeys(true);
@@ -251,14 +251,14 @@ export function UsersSettings() {
       });
       const d = await res.json() as { success?: boolean; passkeysDisabled?: number; error?: string };
       if (res.ok) {
-        showToast(`${d.passkeysDisabled || 0} passkey(s) disabled.`, 'success');
+        showToast(`已禁用 ${d.passkeysDisabled || 0} 个通行密钥。`, 'success');
         setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, passkeyCount: 0, mfaMethod: null, mfaEnabled: false } : u));
         setTimeout(() => { setPasskeyResetUserId(null); setPasskeyResetReason(''); }, 1500);
       } else {
-        showToast(d.error || 'Failed.', 'error');
+        showToast(d.error || '操作失败。', 'error');
       }
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setResettingPasskeys(false);
     }
@@ -283,7 +283,7 @@ export function UsersSettings() {
       if (res.ok) {
         const d = await res.json();
         setUsers((prev) => [...prev, d]);
-        showToast('User created.', 'success');
+        showToast('用户已创建。', 'success');
         setCreateUsername('');
         setCreateDisplayName('');
         setCreateEmail('');
@@ -292,16 +292,16 @@ export function UsersSettings() {
         setShowCreate(false);
       } else {
         const d = await res.json();
-        showToast(d.error || 'Failed to create user.', 'error');
+        showToast(d.error || '创建用户失败。', 'error');
       }
     } catch {
-      showToast('Network error.', 'error');
+      showToast('网络错误。', 'error');
     } finally {
       setCreating(false);
     }
   }
 
-  if (loading) return <p className="text-text-secondary text-sm">Loading users...</p>;
+  if (loading) return <p className="text-text-secondary text-sm">加载用户中…</p>;
   if (error) return <p className="text-red-500 text-sm">{error}</p>;
 
   function isLocked(u: UserRow) {
@@ -311,12 +311,12 @@ export function UsersSettings() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-text-primary">Users</h2>
+        <h2 className="text-base font-semibold text-text-primary">用户</h2>
         <button
           onClick={() => setShowCreate(true)}
           className="px-3 py-1.5 bg-accent text-white rounded hover:bg-accent-hover text-sm font-medium"
         >
-          + Create User
+          + 创建用户
         </button>
       </div>
 
@@ -326,7 +326,7 @@ export function UsersSettings() {
           onClick={(e) => { if (e.target === e.currentTarget) setShowCreate(false); }}>
           <div className="bg-surface-alt border border-border rounded-lg shadow-xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-text-primary">New User</h3>
+              <h3 className="text-base font-semibold text-text-primary">新建用户</h3>
               <button onClick={() => setShowCreate(false)} className="p-1 rounded hover:bg-surface-hover text-text-secondary hover:text-text-primary">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -336,27 +336,27 @@ export function UsersSettings() {
 
             <form onSubmit={handleCreateUser} className="space-y-3">
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Username</label>
+                <label className="block text-xs text-text-secondary mb-1">用户名</label>
                 <input type="text" required autoFocus value={createUsername} onChange={(e) => setCreateUsername(e.target.value)}
                   className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Display Name</label>
+                <label className="block text-xs text-text-secondary mb-1">显示名称</label>
                 <input type="text" required value={createDisplayName} onChange={(e) => setCreateDisplayName(e.target.value)}
                   className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Email</label>
+                <label className="block text-xs text-text-secondary mb-1">邮箱</label>
                 <input type="email" value={createEmail} onChange={(e) => setCreateEmail(e.target.value)}
                   className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Password</label>
+                <label className="block text-xs text-text-secondary mb-1">密码</label>
                 <input type="password" required value={createPassword} onChange={(e) => setCreatePassword(e.target.value)}
                   className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm" />
               </div>
               <div>
-                <label className="block text-xs text-text-secondary mb-1">Role</label>
+                <label className="block text-xs text-text-secondary mb-1">角色</label>
                 <select value={createRole} onChange={(e) => setCreateRole(e.target.value)}
                   className="w-full px-3 py-2 bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-2 focus:ring-accent text-sm">
                   {availableRoles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -366,11 +366,11 @@ export function UsersSettings() {
               <div className="flex gap-2 pt-1">
                 <button type="submit" disabled={creating}
                   className="flex-1 py-2 px-4 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 font-medium text-sm">
-                  {creating ? 'Creating…' : 'Create User'}
+                  {creating ? '创建中…' : '创建用户'}
                 </button>
                 <button type="button" onClick={() => setShowCreate(false)}
                   className="px-4 py-2 border border-border rounded text-text-secondary hover:bg-surface-hover text-sm">
-                  Cancel
+                  取消
                 </button>
               </div>
             </form>
@@ -382,13 +382,13 @@ export function UsersSettings() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left">
-              <th className="pb-2 pr-4 text-text-secondary font-medium">User</th>
-              <th className="pb-2 pr-4 text-text-secondary font-medium">Email</th>
-              <th className="pb-2 pr-4 text-text-secondary font-medium">Role</th>
-              <th className="pb-2 pr-4 text-text-secondary font-medium">Status</th>
+              <th className="pb-2 pr-4 text-text-secondary font-medium">用户</th>
+              <th className="pb-2 pr-4 text-text-secondary font-medium">邮箱</th>
+              <th className="pb-2 pr-4 text-text-secondary font-medium">角色</th>
+              <th className="pb-2 pr-4 text-text-secondary font-medium">状态</th>
               <th className="pb-2 pr-4 text-text-secondary font-medium">MFA</th>
-              <th className="pb-2 pr-4 text-text-secondary font-medium">Last Login</th>
-              <th className="pb-2 text-text-secondary font-medium">Actions</th>
+              <th className="pb-2 pr-4 text-text-secondary font-medium">上次登录</th>
+              <th className="pb-2 text-text-secondary font-medium">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -421,15 +421,15 @@ export function UsersSettings() {
                   </td>
                   <td className="py-3 pr-4">
                     {locked ? (
-                      <span className="px-2 py-0.5 rounded text-xs bg-red-500/15 text-red-400 font-medium">Locked</span>
+                      <span className="px-2 py-0.5 rounded text-xs bg-red-500/15 text-red-400 font-medium">已锁定</span>
                     ) : (
-                      <span className="px-2 py-0.5 rounded text-xs bg-green-500/15 text-green-400 font-medium">Active</span>
+                      <span className="px-2 py-0.5 rounded text-xs bg-green-500/15 text-green-400 font-medium">正常</span>
                     )}
                   </td>
                   <td className="py-3 pr-4">
                     {u.mfaEnabled ? (
                       <span className="flex items-center gap-1 text-green-400 text-xs font-medium">
-                        <MfaShieldIcon /> {u.mfaMethod === 'passkey' ? `Passkey (${u.passkeyCount})` : 'TOTP'}
+                        <MfaShieldIcon /> {u.mfaMethod === 'passkey' ? `通行密钥（${u.passkeyCount}）` : 'TOTP'}
                       </span>
                     ) : (
                       <span className="text-text-secondary text-xs">—</span>
@@ -443,7 +443,7 @@ export function UsersSettings() {
                           onClick={() => handleUnlock(u.id)}
                           className="px-2 py-1 text-xs bg-surface-hover border border-border rounded hover:bg-surface text-text-primary"
                         >
-                          Unlock
+                          解锁
                         </button>
                       )}
                       {resetPasswordUserId === u.id ? (
@@ -452,7 +452,7 @@ export function UsersSettings() {
                             type="password"
                             value={resetPasswordValue}
                             onChange={(e) => setResetPasswordValue(e.target.value)}
-                            placeholder="New password"
+                            placeholder="新密码"
                             className="px-2 py-1 text-xs bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-1 focus:ring-accent w-28"
                             autoFocus
                           />
@@ -475,27 +475,27 @@ export function UsersSettings() {
                           onClick={() => { setResetPasswordUserId(u.id); setResetPasswordValue(''); }}
                           className="px-2 py-1 text-xs border border-border rounded text-text-secondary hover:bg-surface-hover"
                         >
-                          Reset Password
+                          重置密码
                         </button>
                       )}
                       <button
                         onClick={() => openEdit(u)}
                         className="px-2 py-1 text-xs border border-border rounded text-text-secondary hover:bg-surface-hover flex items-center gap-1"
-                        title="Edit user"
+                        title="编辑用户"
                       >
                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                         </svg>
-                        Edit
+                        编辑
                       </button>
                       {u.passkeyCount > 0 && passkeyResetUserId !== u.id && (
                         <button
                           onClick={() => { setPasskeyResetUserId(u.id); setPasskeyResetReason(''); }}
                           className="px-2 py-1 text-xs border border-yellow-500/30 rounded text-yellow-400 hover:bg-yellow-500/10"
-                          title="Reset passkeys"
+                          title="重置通行密钥"
                         >
-                          Reset Passkeys
+                          重置通行密钥
                         </button>
                       )}
                       {passkeyResetUserId === u.id && (
@@ -504,7 +504,7 @@ export function UsersSettings() {
                             type="text"
                             value={passkeyResetReason}
                             onChange={(e) => setPasskeyResetReason(e.target.value)}
-                            placeholder="Reason (min 5 chars)"
+                            placeholder="原因（至少 5 个字符）"
                             className="px-2 py-1 text-xs bg-surface border border-border rounded text-text-primary focus:outline-none focus:ring-1 focus:ring-accent w-36"
                             autoFocus
                           />
@@ -528,7 +528,7 @@ export function UsersSettings() {
                         disabled={isSelf}
                         className="px-2 py-1 text-xs border border-red-500/30 rounded text-red-400 hover:bg-red-500/10 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
-                        Delete
+                        删除
                       </button>
                     </div>
                   </td>
@@ -537,7 +537,7 @@ export function UsersSettings() {
             })}
           </tbody>
         </table>
-        {users.length === 0 && <p className="text-text-secondary text-sm py-4 text-center">No users found.</p>}
+        {users.length === 0 && <p className="text-text-secondary text-sm py-4 text-center">暂无用户。</p>}
       </div>
 
       {/* Delete Confirmation Modal */}
@@ -555,10 +555,10 @@ export function UsersSettings() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-base font-semibold text-text-primary">Delete user?</h3>
+                <h3 className="text-base font-semibold text-text-primary">删除用户？</h3>
                 <p className="text-sm text-text-secondary mt-1">
-                  Are you sure you want to delete <strong className="text-text-primary">{deleteTarget.username}</strong>?
-                  This action <strong className="text-red-400">cannot be undone</strong> and will remove all data associated with this user.
+                  确定要删除 <strong className="text-text-primary">{deleteTarget.username}</strong> 吗？
+                  此操作<strong className="text-red-400">无法撤销</strong>，并将删除与该用户关联的所有数据。
                 </p>
               </div>
             </div>
@@ -568,13 +568,13 @@ export function UsersSettings() {
                 disabled={deleting}
                 className="flex-1 py-2 px-4 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 font-medium text-sm"
               >
-                {deleting ? 'Deleting…' : 'Yes, delete user'}
+                {deleting ? '删除中…' : '是，删除用户'}
               </button>
               <button
                 onClick={() => setDeleteTarget(null)}
                 className="px-4 py-2 border border-border rounded text-text-secondary hover:bg-surface-hover text-sm"
               >
-                Cancel
+                取消
               </button>
             </div>
           </div>
@@ -586,7 +586,7 @@ export function UsersSettings() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) closeEdit(); }}>
           <div className="bg-surface-alt border border-border rounded-lg shadow-xl w-full max-w-md p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-text-primary">Edit User — {editUser.username}</h3>
+              <h3 className="text-base font-semibold text-text-primary">编辑用户 — {editUser.username}</h3>
               <button onClick={closeEdit} className="p-1 rounded hover:bg-surface-hover text-text-secondary hover:text-text-primary">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -596,7 +596,7 @@ export function UsersSettings() {
 
             <form onSubmit={handleEditSave} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Display Name</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">显示名称</label>
                 <input
                   type="text"
                   required
@@ -607,7 +607,7 @@ export function UsersSettings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Email</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">邮箱</label>
                 <input
                   type="email"
                   value={editEmail}
@@ -616,7 +616,7 @@ export function UsersSettings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">Role</label>
+                <label className="block text-sm font-medium text-text-secondary mb-1">角色</label>
                 <select
                   value={editRole}
                   onChange={(e) => setEditRole(e.target.value)}
@@ -626,7 +626,7 @@ export function UsersSettings() {
                   {availableRoles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
                 {editUser.id === currentUser?.id && (
-                  <p className="text-xs text-text-secondary mt-1">You cannot change your own role.</p>
+                  <p className="text-xs text-text-secondary mt-1">不能修改自己的角色。</p>
                 )}
               </div>
 
@@ -636,14 +636,14 @@ export function UsersSettings() {
                   disabled={saving}
                   className="flex-1 py-2 px-4 bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50 font-medium text-sm"
                 >
-                  {saving ? 'Saving…' : 'Save Changes'}
+                  {saving ? '保存中…' : '保存更改'}
                 </button>
                 <button
                   type="button"
                   onClick={closeEdit}
                   className="px-4 py-2 border border-border rounded text-text-secondary hover:bg-surface-hover text-sm"
                 >
-                  Cancel
+                  取消
                 </button>
               </div>
             </form>

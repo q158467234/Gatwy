@@ -56,202 +56,202 @@ interface Rule {
 
 const EVENT_GROUPS: { label: string; events: { value: string; label: string }[] }[] = [
   {
-    label: 'All',
-    events: [{ value: '*', label: 'Any event' }],
+    label: '全部',
+    events: [{ value: '*', label: '任意事件' }],
   },
   {
-    label: 'Auth',
+    label: '认证',
     events: [
-      { value: 'auth.*', label: 'Auth — all' },
-      { value: 'auth.login_success', label: 'Login succeeded' },
-      { value: 'auth.login_failed', label: 'Login failed' },
-      { value: 'auth.logout', label: 'Logout' },
-      { value: 'auth.password_changed', label: 'Password changed' },
-      { value: 'auth.passkey_login_success', label: 'Passkey login succeeded' },
-      { value: 'auth.passkey_login_failed', label: 'Passkey login failed' },
-      { value: 'auth.passkey_registered', label: 'Passkey registered' },
-      { value: 'auth.passkey_renamed', label: 'Passkey renamed' },
-      { value: 'auth.passkey_removed', label: 'Passkey removed' },
-      { value: 'auth.passkey_admin_reset', label: "Admin reset a user's passkeys" },
+      { value: 'auth.*', label: '认证 — 全部' },
+      { value: 'auth.login_success', label: '登录成功' },
+      { value: 'auth.login_failed', label: '登录失败' },
+      { value: 'auth.logout', label: '退出登录' },
+      { value: 'auth.password_changed', label: '密码已修改' },
+      { value: 'auth.passkey_login_success', label: '通行密钥登录成功' },
+      { value: 'auth.passkey_login_failed', label: '通行密钥登录失败' },
+      { value: 'auth.passkey_registered', label: '通行密钥已注册' },
+      { value: 'auth.passkey_renamed', label: '通行密钥已重命名' },
+      { value: 'auth.passkey_removed', label: '通行密钥已移除' },
+      { value: 'auth.passkey_admin_reset', label: '管理员重置了用户的通行密钥' },
     ],
   },
   {
-    label: 'Sessions',
+    label: '会话',
     events: [
-      { value: 'session.*', label: 'Sessions — all' },
-      { value: 'session.rdp.connect', label: 'RDP session connected' },
-      { value: 'session.rdp.disconnect', label: 'RDP session disconnected' },
-      { value: 'session.rdp.file_upload', label: 'RDP file uploaded' },
-      { value: 'session.rdp.file_download', label: 'RDP file downloaded' },
-      { value: 'session.rdp.redirect.blocked', label: 'RDP redirect blocked (SSRF guard)' },
-      { value: 'session.ssh.connect', label: 'SSH session connected' },
-      { value: 'session.ssh.disconnect', label: 'SSH session disconnected' },
-      { value: 'session.ssh.tunnel.blocked', label: 'SSH tunnel blocked (SSRF guard)' },
-      { value: 'session.ssh.host_key_mismatch', label: 'SSH host key changed (connection refused)' },
-      { value: 'session.telnet.connect', label: 'Telnet session connected' },
-      { value: 'session.telnet.disconnect', label: 'Telnet session disconnected' },
-      { value: 'session.vnc.connect', label: 'VNC session connected' },
-      { value: 'session.vnc.disconnect', label: 'VNC session disconnected' },
-      { value: 'session.disconnect.forced', label: 'Session disconnected by an administrator' },
-      { value: 'session.moonlight.connect', label: 'Moonlight session connected' },
-      { value: 'session.moonlight.disconnect', label: 'Moonlight session disconnected' },
-      { value: 'session.moonlight.pair', label: 'Moonlight pairing event' },
-      { value: 'session.moonlight.denied', label: 'Moonlight stream refused (host not permitted)' },
-      { value: 'session.smb.connect', label: 'SMB session connected' },
-      { value: 'session.sftp.connect', label: 'SFTP session connected' },
-      { value: 'session.ftp.connect', label: 'FTP session connected' },
+      { value: 'session.*', label: '会话 — 全部' },
+      { value: 'session.rdp.connect', label: 'RDP 会话已连接' },
+      { value: 'session.rdp.disconnect', label: 'RDP 会话已断开' },
+      { value: 'session.rdp.file_upload', label: 'RDP 文件已上传' },
+      { value: 'session.rdp.file_download', label: 'RDP 文件已下载' },
+      { value: 'session.rdp.redirect.blocked', label: 'RDP 重定向已拦截（SSRF 防护）' },
+      { value: 'session.ssh.connect', label: 'SSH 会话已连接' },
+      { value: 'session.ssh.disconnect', label: 'SSH 会话已断开' },
+      { value: 'session.ssh.tunnel.blocked', label: 'SSH 隧道已拦截（SSRF 防护）' },
+      { value: 'session.ssh.host_key_mismatch', label: 'SSH 主机密钥已变更（连接被拒绝）' },
+      { value: 'session.telnet.connect', label: 'Telnet 会话已连接' },
+      { value: 'session.telnet.disconnect', label: 'Telnet 会话已断开' },
+      { value: 'session.vnc.connect', label: 'VNC 会话已连接' },
+      { value: 'session.vnc.disconnect', label: 'VNC 会话已断开' },
+      { value: 'session.disconnect.forced', label: '会话被管理员断开' },
+      { value: 'session.moonlight.connect', label: 'Moonlight 会话已连接' },
+      { value: 'session.moonlight.disconnect', label: 'Moonlight 会话已断开' },
+      { value: 'session.moonlight.pair', label: 'Moonlight 配对事件' },
+      { value: 'session.moonlight.denied', label: 'Moonlight 串流被拒绝（主机不允许）' },
+      { value: 'session.smb.connect', label: 'SMB 会话已连接' },
+      { value: 'session.sftp.connect', label: 'SFTP 会话已连接' },
+      { value: 'session.ftp.connect', label: 'FTP 会话已连接' },
     ],
   },
   {
-    label: 'Connections',
+    label: '连接',
     events: [
-      { value: 'connection.*', label: 'Connections — all' },
-      { value: 'connection.created', label: 'Connection created' },
-      { value: 'connection.updated', label: 'Connection updated' },
-      { value: 'connection.deleted', label: 'Connection deleted' },
-      { value: 'connection.shares_updated', label: 'Connection shares updated' },
-      { value: 'connections.imported', label: 'Connections imported' },
-      { value: 'group.shares_updated', label: 'Folder shares updated' },
-      { value: 'group.share_capability_changed', label: 'Folder share capability changed' },
+      { value: 'connection.*', label: '连接 — 全部' },
+      { value: 'connection.created', label: '连接已创建' },
+      { value: 'connection.updated', label: '连接已更新' },
+      { value: 'connection.deleted', label: '连接已删除' },
+      { value: 'connection.shares_updated', label: '连接共享已更新' },
+      { value: 'connections.imported', label: '连接已导入' },
+      { value: 'group.shares_updated', label: '文件夹共享已更新' },
+      { value: 'group.share_capability_changed', label: '文件夹共享权限已变更' },
     ],
   },
   {
-    label: 'Credentials',
+    label: '凭据',
     events: [
-      { value: 'credential.*', label: 'Credentials — all' },
-      { value: 'credential.created', label: 'Credential created' },
-      { value: 'credential.updated', label: 'Credential updated' },
-      { value: 'credential.deleted', label: 'Credential deleted' },
+      { value: 'credential.*', label: '凭据 — 全部' },
+      { value: 'credential.created', label: '凭据已创建' },
+      { value: 'credential.updated', label: '凭据已更新' },
+      { value: 'credential.deleted', label: '凭据已删除' },
     ],
   },
   {
-    label: 'Users',
+    label: '用户',
     events: [
-      { value: 'user.*', label: 'Users — all' },
-      { value: 'user.setup', label: 'Initial admin setup completed' },
-      { value: 'user.created', label: 'User created' },
-      { value: 'user.updated', label: 'User updated' },
-      { value: 'user.deleted', label: 'User deleted' },
-      { value: 'user.password_reset', label: 'User password reset' },
-      { value: 'user.unlocked', label: 'User unlocked' },
-      { value: 'user.mfa_enabled', label: 'MFA enabled' },
-      { value: 'user.mfa_disabled', label: 'MFA disabled' },
+      { value: 'user.*', label: '用户 — 全部' },
+      { value: 'user.setup', label: '初始管理员设置已完成' },
+      { value: 'user.created', label: '用户已创建' },
+      { value: 'user.updated', label: '用户已更新' },
+      { value: 'user.deleted', label: '用户已删除' },
+      { value: 'user.password_reset', label: '用户密码已重置' },
+      { value: 'user.unlocked', label: '用户已解锁' },
+      { value: 'user.mfa_enabled', label: 'MFA 已启用' },
+      { value: 'user.mfa_disabled', label: 'MFA 已禁用' },
     ],
   },
   {
-    label: 'Roles',
+    label: '角色',
     events: [
-      { value: 'role.*', label: 'Roles — all' },
-      { value: 'role.created', label: 'Role created' },
-      { value: 'role.updated', label: 'Role updated' },
-      { value: 'role.reset', label: 'Role permissions reset' },
-      { value: 'role.deleted', label: 'Role deleted' },
+      { value: 'role.*', label: '角色 — 全部' },
+      { value: 'role.created', label: '角色已创建' },
+      { value: 'role.updated', label: '角色已更新' },
+      { value: 'role.reset', label: '角色权限已重置' },
+      { value: 'role.deleted', label: '角色已删除' },
     ],
   },
   {
-    label: 'Settings',
+    label: '设置',
     events: [
-      { value: 'settings.*', label: 'Settings — all' },
-      { value: 'settings.updated', label: 'Settings changed' },
-      { value: 'settings.notification_rule_created', label: 'Notification rule created' },
-      { value: 'settings.notification_rule_updated', label: 'Notification rule updated' },
-      { value: 'settings.notification_rule_enabled', label: 'Notification rule enabled' },
-      { value: 'settings.notification_rule_disabled', label: 'Notification rule disabled' },
-      { value: 'settings.notification_rule_deleted', label: 'Notification rule deleted' },
-      { value: 'settings.notifications_channel_updated', label: 'Notification channel updated' },
-      { value: 'settings.notifications_retention_changed', label: 'Notification retention changed' },
+      { value: 'settings.*', label: '设置 — 全部' },
+      { value: 'settings.updated', label: '设置已更改' },
+      { value: 'settings.notification_rule_created', label: '通知规则已创建' },
+      { value: 'settings.notification_rule_updated', label: '通知规则已更新' },
+      { value: 'settings.notification_rule_enabled', label: '通知规则已启用' },
+      { value: 'settings.notification_rule_disabled', label: '通知规则已禁用' },
+      { value: 'settings.notification_rule_deleted', label: '通知规则已删除' },
+      { value: 'settings.notifications_channel_updated', label: '通知渠道已更新' },
+      { value: 'settings.notifications_retention_changed', label: '通知保留期限已更改' },
     ],
   },
   {
-    label: 'Backup',
+    label: '备份',
     events: [
-      { value: 'backup.*', label: 'Backup — all' },
-      { value: 'backup.auto.*', label: 'Auto backup — all' },
-      { value: 'backup.auto.config_updated', label: 'Auto backup config updated' },
-      { value: 'backup.auto.destination_tested', label: 'Auto backup destination tested' },
-      { value: 'backup.auto.run_succeeded', label: 'Auto backup run succeeded' },
-      { value: 'backup.auto.run_failed', label: 'Auto backup run failed' },
-      { value: 'backup.auto.auto_disabled', label: 'Auto backup auto-disabled' },
-      { value: 'admin.backup.export', label: 'Manual backup export' },
+      { value: 'backup.*', label: '备份 — 全部' },
+      { value: 'backup.auto.*', label: '自动备份 — 全部' },
+      { value: 'backup.auto.config_updated', label: '自动备份配置已更新' },
+      { value: 'backup.auto.destination_tested', label: '自动备份目标已测试' },
+      { value: 'backup.auto.run_succeeded', label: '自动备份执行成功' },
+      { value: 'backup.auto.run_failed', label: '自动备份执行失败' },
+      { value: 'backup.auto.auto_disabled', label: '自动备份已被自动禁用' },
+      { value: 'admin.backup.export', label: '手动导出备份' },
     ],
   },
   {
-    label: 'Security',
+    label: '安全',
     events: [
-      { value: 'security.*', label: 'Security — all' },
-      { value: 'security.ip_blocked', label: 'IP address blocked' },
-      { value: 'security.ip_rules_updated', label: 'IP access rules updated' },
-      { value: 'security.account_locked', label: 'Account locked (too many failed logins)' },
-      { value: 'security.locked_account_attempt', label: 'Login attempt on locked account' },
+      { value: 'security.*', label: '安全 — 全部' },
+      { value: 'security.ip_blocked', label: 'IP 地址已封禁' },
+      { value: 'security.ip_rules_updated', label: 'IP 访问规则已更新' },
+      { value: 'security.account_locked', label: '账户已锁定（登录失败次数过多）' },
+      { value: 'security.locked_account_attempt', label: '已锁定账户的登录尝试' },
     ],
   },
   {
-    label: 'Notifications',
+    label: '通知',
     events: [
-      { value: 'notifications.*', label: 'Notifications — all' },
-      { value: 'notifications.log_entry_deleted', label: 'Notification log entry deleted' },
-      { value: 'notifications.log_cleared', label: 'Notification log cleared' },
-      { value: 'notifications.log_purged', label: 'Notification log purged (retention)' },
-      { value: 'notifications.channel_tested', label: 'Notification channel tested' },
-      { value: 'notifications.log_retried', label: 'Notification retry dispatched' },
+      { value: 'notifications.*', label: '通知 — 全部' },
+      { value: 'notifications.log_entry_deleted', label: '通知日志条目已删除' },
+      { value: 'notifications.log_cleared', label: '通知日志已清空' },
+      { value: 'notifications.log_purged', label: '通知日志已清理（保留期限）' },
+      { value: 'notifications.channel_tested', label: '通知渠道已测试' },
+      { value: 'notifications.log_retried', label: '通知重试已发送' },
     ],
   },
   {
-    label: 'Profile',
+    label: '个人资料',
     events: [
-      { value: 'profile.*', label: 'Profile — all' },
-      { value: 'profile.updated', label: 'Profile updated' },
+      { value: 'profile.*', label: '个人资料 — 全部' },
+      { value: 'profile.updated', label: '个人资料已更新' },
     ],
   },
   {
-    label: 'Database',
+    label: '数据库',
     events: [
-      { value: 'db.*', label: 'Database sessions — all' },
-      { value: 'db.connect', label: 'Database session connected' },
-      { value: 'db.disconnect', label: 'Database session disconnected' },
-      { value: 'db.quarantined', label: 'Database quarantined (corruption detected)' },
+      { value: 'db.*', label: '数据库会话 — 全部' },
+      { value: 'db.connect', label: '数据库会话已连接' },
+      { value: 'db.disconnect', label: '数据库会话已断开' },
+      { value: 'db.quarantined', label: '数据库已隔离（检测到损坏）' },
     ],
   },
   {
-    label: 'Admin',
+    label: '管理员',
     events: [
-      { value: 'admin.*', label: 'Admin actions — all' },
-      { value: 'admin.sessions.purge', label: 'Admin sessions purged' },
+      { value: 'admin.*', label: '管理员操作 — 全部' },
+      { value: 'admin.sessions.purge', label: '管理员清理了会话' },
     ],
   },
   {
-    label: 'Recordings',
+    label: '录像',
     events: [
-      { value: 'recordings.*', label: 'Recordings — all' },
-      { value: 'recordings.retention_purged', label: 'Recordings retention purged' },
+      { value: 'recordings.*', label: '录像 — 全部' },
+      { value: 'recordings.retention_purged', label: '录像已按保留期限清理' },
     ],
   },
 ];
 
 const CONDITION_FIELDS: { value: string; label: string }[] = [
-  { value: 'event', label: 'Event type' },
-  { value: 'user', label: 'User ID' },
-  { value: 'ip', label: 'IP Address' },
-  { value: 'time', label: 'Time (HH:MM UTC)' },
-  { value: 'date', label: 'Date (YYYY-MM-DD)' },
-  { value: 'custom', label: 'Details JSON contains' },
+  { value: 'event', label: '事件类型' },
+  { value: 'user', label: '用户 ID' },
+  { value: 'ip', label: 'IP 地址' },
+  { value: 'time', label: '时间（HH:MM UTC）' },
+  { value: 'date', label: '日期（YYYY-MM-DD）' },
+  { value: 'custom', label: '详情 JSON 包含' },
 ];
 
 const OPERATORS: { value: string; label: string }[] = [
-  { value: 'equals', label: 'equals' },
-  { value: 'not_equals', label: 'not equals' },
-  { value: 'contains', label: 'contains' },
-  { value: 'not_contains', label: 'does not contain' },
-  { value: 'starts_with', label: 'starts with' },
-  { value: 'ends_with', label: 'ends with' },
-  { value: 'matches', label: 'matches regex' },
-  { value: 'before', label: 'before' },
-  { value: 'after', label: 'after' },
-  { value: 'between', label: 'between' },
+  { value: 'equals', label: '等于' },
+  { value: 'not_equals', label: '不等于' },
+  { value: 'contains', label: '包含' },
+  { value: 'not_contains', label: '不包含' },
+  { value: 'starts_with', label: '开头为' },
+  { value: 'ends_with', label: '结尾为' },
+  { value: 'matches', label: '匹配正则' },
+  { value: 'before', label: '早于' },
+  { value: 'after', label: '晚于' },
+  { value: 'between', label: '介于' },
 ];
 
 const CHANNEL_OPTIONS: { value: ChannelType; label: string }[] = [
-  { value: 'smtp', label: 'Email (SMTP)' },
+  { value: 'smtp', label: '邮件（SMTP）' },
   { value: 'telegram', label: 'Telegram' },
   { value: 'slack', label: 'Slack' },
   { value: 'webhook', label: 'Webhook' },
@@ -267,10 +267,10 @@ function getEventLabel(value: string): string {
 
 // Category icon mapping for visual hierarchy
 const GROUP_ICONS: Record<string, string> = {
-  All: '🌐', Auth: '🔑', Sessions: '💻', Connections: '🔌',
-  Users: '👤', Roles: '🪪', Settings: '⚙️', Backup: '💾', Security: '🛡️',
-  Notifications: '🔔', Profile: '🧾', Database: '🗄️', Admin: '🛠️',
-  Recordings: '🎥', System: '⚡',
+  全部: '🌐', 认证: '🔑', 会话: '💻', 连接: '🔌',
+  用户: '👤', 角色: '🪪', 设置: '⚙️', 备份: '💾', 安全: '🛡️',
+  通知: '🔔', 个人资料: '🧾', 数据库: '🗄️', 管理员: '🛠️',
+  录像: '🎥',
 };
 
 function EventPicker({ events, onChange }: { events: string[]; onChange: (v: string[]) => void }) {
@@ -389,7 +389,7 @@ function EventPicker({ events, onChange }: { events: string[]; onChange: (v: str
             }
             if (e.key === 'Escape') { setOpen(false); setSearch(''); }
           }}
-          placeholder={events.length === 0 ? 'Search events…' : ''}
+          placeholder={events.length === 0 ? '搜索事件…' : ''}
           className="flex-1 min-w-[80px] text-xs bg-transparent text-text-primary placeholder:text-text-secondary/40 focus:outline-none"
         />
 
@@ -417,14 +417,14 @@ function EventPicker({ events, onChange }: { events: string[]; onChange: (v: str
           <div className="max-h-[280px] overflow-y-auto overscroll-contain">
             {filteredGroups.length === 0 ? (
               <div className="px-3 py-6 text-center text-xs text-text-secondary">
-                No events matching "<span className="font-medium text-text-primary">{search}</span>"
+                没有匹配“<span className="font-medium text-text-primary">{search}</span>”的事件
                 <br />
                 <button
                   type="button"
                   onClick={addCustom}
                   className="mt-2 text-accent hover:underline"
                 >
-                  Add "{search.trim()}" as custom event
+                  将“{search.trim()}”添加为自定义事件
                 </button>
               </div>
             ) : (
@@ -482,15 +482,15 @@ function EventPicker({ events, onChange }: { events: string[]; onChange: (v: str
 
           {/* Footer: quick actions */}
           <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-surface-alt/50 text-[11px] text-text-secondary">
-            <span>{selectedCount} selected</span>
+            <span>已选 {selectedCount} 项</span>
             <div className="flex items-center gap-3">
               {selectedCount > 0 && (
                 <button type="button" onClick={() => onChange([])} className="text-red-400 hover:text-red-500 transition-colors">
-                  Clear all
+                  全部清除
                 </button>
               )}
               <button type="button" onClick={() => { setOpen(false); setSearch(''); }} className="text-text-secondary hover:text-text-primary transition-colors">
-                Done
+                完成
               </button>
             </div>
           </div>
@@ -547,9 +547,9 @@ function RuleEditor({
   }
 
   async function save() {
-    if (!name.trim()) { setErr('Rule name is required'); return; }
-    if (events.length === 0) { setErr('Select at least one event'); return; }
-    if (actions.length === 0) { setErr('Add at least one action'); return; }
+    if (!name.trim()) { setErr('请填写规则名称'); return; }
+    if (events.length === 0) { setErr('请至少选择一个事件'); return; }
+    if (actions.length === 0) { setErr('请至少添加一个动作'); return; }
 
     setSaving(true); setErr('');
     const body = {
@@ -573,7 +573,7 @@ function RuleEditor({
     if (ok) {
       onSave(data.rule as Rule);
     } else {
-      setErr(data.error ?? 'Save failed');
+      setErr(data.error ?? '保存失败');
     }
   }
 
@@ -587,7 +587,7 @@ function RuleEditor({
         {/* Header */}
         <div className="h-12 flex items-center justify-between px-5 border-b border-border shrink-0">
           <span className="text-sm font-semibold text-text-primary">
-            {initial ? 'Edit Rule' : 'New Rule'}
+            {initial ? '编辑规则' : '新建规则'}
           </span>
           <button onClick={onClose} className="p-1.5 rounded hover:bg-surface-hover text-text-secondary">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -601,11 +601,11 @@ function RuleEditor({
 
           {/* Rule name */}
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-text-secondary">Rule name</label>
+            <label className="block text-xs font-medium text-text-secondary">规则名称</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Alert on failed login"
+              placeholder="例如：登录失败告警"
               className="w-full px-3 py-2 text-sm rounded border border-border bg-surface text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:border-accent"
             />
           </div>
@@ -614,10 +614,10 @@ function RuleEditor({
           <section className="space-y-3">
             <div className="flex items-center gap-2">
               <span className="flex items-center justify-center w-5 h-5 rounded-full bg-accent text-white text-[10px] font-bold shrink-0">1</span>
-              <span className="text-sm font-semibold text-text-primary">When</span>
+              <span className="text-sm font-semibold text-text-primary">当</span>
             </div>
             <div className="pl-7 space-y-1">
-              <label className="block text-xs text-text-secondary mb-1">Trigger on these events:</label>
+              <label className="block text-xs text-text-secondary mb-1">在以下事件发生时触发：</label>
               <EventPicker events={events} onChange={setEvents} />
             </div>
           </section>
@@ -626,23 +626,23 @@ function RuleEditor({
           <section className="space-y-3">
             <div className="flex items-center gap-2">
               <span className="flex items-center justify-center w-5 h-5 rounded-full bg-accent text-white text-[10px] font-bold shrink-0">2</span>
-              <span className="text-sm font-semibold text-text-primary">Check If</span>
-              <span className="text-xs text-text-secondary">(optional — leave empty to always trigger)</span>
+              <span className="text-sm font-semibold text-text-primary">检查条件</span>
+              <span className="text-xs text-text-secondary">（可选 — 留空则始终触发）</span>
             </div>
 
             {conditions.length > 0 && (
               <div className="pl-7 space-y-2">
                 <div className="flex items-center gap-2 text-xs text-text-secondary">
-                  <span>Match</span>
+                  <span>满足</span>
                   <select
                     value={condLogic}
                     onChange={(e) => setCondLogic(e.target.value as 'AND' | 'OR')}
                     className="px-2 py-1 rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent text-xs"
                   >
-                    <option value="AND">ALL (AND)</option>
-                    <option value="OR">ANY (OR)</option>
+                    <option value="AND">全部（AND）</option>
+                    <option value="OR">任一（OR）</option>
                   </select>
-                  <span>of these conditions:</span>
+                  <span>以下条件：</span>
                 </div>
 
                 {conditions.map((c, i) => (
@@ -664,16 +664,16 @@ function RuleEditor({
                     <input
                       value={c.value}
                       onChange={(e) => updateCondition(i, { value: e.target.value })}
-                      placeholder="value"
+                      placeholder="值"
                       className="flex-1 min-w-[80px] px-2 py-1 text-xs rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent"
                     />
                     {c.operator === 'between' && (
                       <>
-                        <span className="text-xs text-text-secondary">and</span>
+                        <span className="text-xs text-text-secondary">和</span>
                         <input
                           value={c.value2 ?? ''}
                           onChange={(e) => updateCondition(i, { value2: e.target.value })}
-                          placeholder="end"
+                          placeholder="结束值"
                           className="w-24 px-2 py-1 text-xs rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent"
                         />
                       </>
@@ -694,7 +694,7 @@ function RuleEditor({
                 className="flex items-center gap-1.5 text-xs text-accent hover:text-accent-hover"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Add condition
+                添加条件
               </button>
             </div>
           </section>
@@ -703,20 +703,20 @@ function RuleEditor({
           <section className="space-y-3">
             <div className="flex items-center gap-2">
               <span className="flex items-center justify-center w-5 h-5 rounded-full bg-accent text-white text-[10px] font-bold shrink-0">3</span>
-              <span className="text-sm font-semibold text-text-primary">Do This</span>
+              <span className="text-sm font-semibold text-text-primary">执行动作</span>
             </div>
 
             <div className="pl-7 space-y-3">
               {/* Cadence */}
               <div className="flex items-center gap-3">
-                <span className="text-xs text-text-secondary">Cadence:</span>
+                <span className="text-xs text-text-secondary">频率：</span>
                 <label className="flex items-center gap-1.5 text-xs cursor-pointer">
                   <input type="radio" checked={cadence.type === 'always'} onChange={() => setCadence({ type: 'always' })} className="accent-accent" />
-                  Always
+                  始终
                 </label>
                 <label className="flex items-center gap-1.5 text-xs cursor-pointer">
                   <input type="radio" checked={cadence.type === 'throttle'} onChange={() => setCadence({ type: 'throttle', minutes: 60 })} className="accent-accent" />
-                  Throttle
+                  限流
                 </label>
                 {cadence.type === 'throttle' && (
                   <div className="flex items-center gap-1.5 text-xs">
@@ -727,7 +727,7 @@ function RuleEditor({
                       onChange={(e) => setCadence({ type: 'throttle', minutes: parseInt(e.target.value, 10) || 60 })}
                       className="w-16 px-2 py-1 rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent text-xs"
                     />
-                    <span className="text-text-secondary">minutes between alerts</span>
+                    <span className="text-text-secondary">分钟内最多告警一次</span>
                   </div>
                 )}
               </div>
@@ -750,7 +750,7 @@ function RuleEditor({
                 className="flex items-center gap-1.5 text-xs text-accent hover:text-accent-hover"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Add action
+                添加动作
               </button>
             </div>
           </section>
@@ -761,14 +761,14 @@ function RuleEditor({
           <div>{err && <p className="text-xs text-red-500">{err}</p>}</div>
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="px-3 py-1.5 text-sm border border-border rounded hover:bg-surface-hover text-text-primary">
-              Cancel
+              取消
             </button>
             <button
               onClick={save}
               disabled={saving}
               className="px-4 py-1.5 text-sm bg-accent hover:bg-accent-hover text-white rounded disabled:opacity-50 transition-colors"
             >
-              {saving ? 'Saving…' : 'Save Rule'}
+              {saving ? '保存中…' : '保存规则'}
             </button>
           </div>
         </div>
@@ -792,7 +792,7 @@ function ActionCard({
   return (
     <div className="border border-border rounded-lg p-3 space-y-2 bg-surface-alt">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-text-secondary">Action {index + 1}</span>
+        <span className="text-xs font-medium text-text-secondary">动作 {index + 1}</span>
         <button onClick={onRemove} className="text-text-secondary hover:text-red-500 transition-colors">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
@@ -801,7 +801,7 @@ function ActionCard({
       </div>
 
       <div className="flex items-center gap-2">
-        <label className="text-xs text-text-secondary shrink-0">Channel:</label>
+        <label className="text-xs text-text-secondary shrink-0">渠道：</label>
         <select
           value={action.channel}
           onChange={(e) => onChange({ channel: e.target.value as ChannelType })}
@@ -814,11 +814,11 @@ function ActionCard({
       {action.channel === 'smtp' && (
         <>
           <PillSelect
-            label="Send to users"
+            label="发送给用户"
             options={users.map((u) => ({
               id: u.id,
               label: u.username,
-              sub: u.email ?? 'no email set',
+              sub: u.email ?? '未设置邮箱',
               dimmed: !u.hasEmail,
             }))}
             selected={action.to_users ?? []}
@@ -832,34 +832,34 @@ function ActionCard({
                 <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>
               <span>
-                The following selected user{(action.to_users ?? []).filter((id) => users.find((u) => u.id === id && !u.hasEmail)).length > 1 ? 's have' : ' has'} no email address and will be skipped:{' '}
+                以下选中的用户没有邮箱地址，将被跳过：
                 <strong>
                   {(action.to_users ?? [])
                     .filter((id) => users.find((u) => u.id === id && !u.hasEmail))
                     .map((id) => users.find((u) => u.id === id)?.username)
                     .join(', ')}
                 </strong>
-                . Set their email in <em>Settings → Users</em>.
+                。请在<em>设置 → 用户</em>中设置其邮箱。
               </span>
             </div>
           )}
           <PillSelect
-            label="Send to roles"
+            label="发送给角色"
             options={roles.map((r) => ({ id: r.id, label: r.name }))}
             selected={action.to_roles ?? []}
             onChange={(ids) => onChange({ to_roles: ids })}
           />
           <div className="space-y-1">
-            <label className="block text-xs font-medium text-text-secondary">Additional addresses</label>
+            <label className="block text-xs font-medium text-text-secondary">其他地址</label>
             <input value={action.to ?? ''} onChange={(e) => onChange({ to: e.target.value })}
-              placeholder="e.g. ops@example.com, alerts@example.com"
+              placeholder="例如：ops@example.com, alerts@example.com"
               className="w-full px-2 py-1 text-xs rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent" />
-            <p className="text-[11px] text-text-secondary/60">Comma-separated. Users without an email address are skipped automatically.</p>
+            <p className="text-[11px] text-text-secondary/60">多个地址用逗号分隔。没有邮箱地址的用户会被自动跳过。</p>
           </div>
           <input value={action.subject ?? ''} onChange={(e) => onChange({ subject: e.target.value })}
-            placeholder="Subject (leave empty for default)" className="w-full px-2 py-1 text-xs rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent" />
+            placeholder="主题（留空使用默认值）" className="w-full px-2 py-1 text-xs rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent" />
           <textarea rows={3} value={action.body ?? ''} onChange={(e) => onChange({ body: e.target.value })}
-            placeholder={`Body template (leave empty for default)\n${VARS}`}
+            placeholder={`正文模板（留空使用默认值）\n${VARS}`}
             className="w-full px-2 py-1 text-xs rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent resize-none font-mono" />
         </>
       )}
@@ -867,9 +867,9 @@ function ActionCard({
       {action.channel === 'telegram' && (
         <>
           <input value={action.chat_id ?? ''} onChange={(e) => onChange({ chat_id: e.target.value })}
-            placeholder="Chat ID (leave empty for default)" className="w-full px-2 py-1 text-xs rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent" />
+            placeholder="Chat ID（留空使用默认值）" className="w-full px-2 py-1 text-xs rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent" />
           <textarea rows={3} value={action.template ?? ''} onChange={(e) => onChange({ template: e.target.value })}
-            placeholder={`Message template (leave empty for default)\n${VARS}`}
+            placeholder={`消息模板（留空使用默认值）\n${VARS}`}
             className="w-full px-2 py-1 text-xs rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent resize-none font-mono text-xs" />
         </>
       )}
@@ -878,10 +878,10 @@ function ActionCard({
         <>
           {action.channel === 'webhook' && (
             <input value={action.url ?? ''} onChange={(e) => onChange({ url: e.target.value })}
-              placeholder="Override URL (leave empty for default)" className="w-full px-2 py-1 text-xs rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent" />
+              placeholder="覆盖 URL（留空使用默认值）" className="w-full px-2 py-1 text-xs rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent" />
           )}
           <textarea rows={3} value={action.template ?? ''} onChange={(e) => onChange({ template: e.target.value })}
-            placeholder={`Message template (leave empty for default)\n${VARS}`}
+            placeholder={`消息模板（留空使用默认值）\n${VARS}`}
             className="w-full px-2 py-1 text-xs rounded border border-border bg-surface text-text-primary focus:outline-none focus:border-accent resize-none font-mono text-xs" />
         </>
       )}
@@ -947,7 +947,7 @@ function PillSelect({
             </button>
           );
         })}
-        {options.length === 0 && <span className="text-xs text-text-secondary/50">None available</span>}
+        {options.length === 0 && <span className="text-xs text-text-secondary/50">暂无可选项</span>}
       </div>
     </div>
   );
@@ -956,13 +956,13 @@ function PillSelect({
 // ─── Action Card ──────────────────────────────────────────────────────────────
 
 function formatRelativeTime(iso: string | null): string {
-  if (!iso) return 'Never';
+  if (!iso) return '从不';
   const d = new Date(iso.includes('T') ? iso : iso + 'Z');
   const diff = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (diff < 60) return 'Just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
+  if (diff < 60) return '刚刚';
+  if (diff < 3600) return `${Math.floor(diff / 60)} 分钟前`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} 小时前`;
+  return `${Math.floor(diff / 86400)} 天前`;
 }
 
 export function NotifRulesTab() {
@@ -983,9 +983,9 @@ export function NotifRulesTab() {
     const { ok, data } = await apiFetch(`/rules/${rule.id}/toggle`, { method: 'PATCH' });
     if (ok) {
       const enabled = (data as { enabled: boolean }).enabled;
-      showToast(`"${rule.name}" ${enabled ? 'enabled' : 'disabled'}`);
+      showToast(`“${rule.name}”${enabled ? '已启用' : '已禁用'}`);
     } else {
-      showToast('Failed to toggle rule', 'error');
+      showToast('切换规则状态失败', 'error');
     }
     await load();
   }
@@ -1000,21 +1000,21 @@ export function NotifRulesTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-text-secondary">{rules.length} rule{rules.length !== 1 ? 's' : ''} configured</p>
+        <p className="text-sm text-text-secondary">已配置 {rules.length} 条规则</p>
         <button
           onClick={() => setEditing('new')}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-accent hover:bg-accent-hover text-white rounded transition-colors"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New Rule
+          新建规则
         </button>
       </div>
 
       {loading ? (
-        <p className="text-sm text-text-secondary">Loading…</p>
+        <p className="text-sm text-text-secondary">加载中…</p>
       ) : rules.length === 0 ? (
         <div className="text-center py-12 text-text-secondary text-sm">
-          No rules yet. Create one to get started.
+          暂无规则，新建一条规则开始使用。
         </div>
       ) : (
         <div className="space-y-2">
@@ -1037,17 +1037,17 @@ export function NotifRulesTab() {
                       <span key={ev} className="text-xs bg-surface-hover border border-border rounded px-1.5 py-0.5 text-text-secondary font-mono">{getEventLabel(ev)}</span>
                     ))}
                     {(rule.events ?? []).length > 3 && (
-                      <span className="text-xs text-text-secondary">+{(rule.events ?? []).length - 3} more</span>
+                      <span className="text-xs text-text-secondary">另外 {(rule.events ?? []).length - 3} 个</span>
                     )}
                   </div>
                   {rule.conditions.length > 0 && (
-                    <span className="text-xs text-text-secondary shrink-0">{rule.conditions.length} condition{rule.conditions.length > 1 ? 's' : ''} ({rule.conditionLogic})</span>
+                    <span className="text-xs text-text-secondary shrink-0">{rule.conditions.length} 个条件（{rule.conditionLogic}）</span>
                   )}
                 </div>
                 <div className="flex items-center gap-3 mt-1 text-xs text-text-secondary flex-wrap">
-                  <span>{rule.actions.length} action{rule.actions.length !== 1 ? 's' : ''}: {rule.actions.map((a) => a.channel).join(', ')}</span>
-                  {rule.cadence.type === 'throttle' && <span>• throttle {rule.cadence.minutes}m</span>}
-                  {rule.lastTriggeredAt && <span>• last fired {formatRelativeTime(rule.lastTriggeredAt)}</span>}
+                  <span>{rule.actions.length} 个动作：{rule.actions.map((a) => a.channel).join(', ')}</span>
+                  {rule.cadence.type === 'throttle' && <span>• 限流 {rule.cadence.minutes} 分钟</span>}
+                  {rule.lastTriggeredAt && <span>• 上次触发 {formatRelativeTime(rule.lastTriggeredAt)}</span>}
                 </div>
               </div>
 
@@ -1056,7 +1056,7 @@ export function NotifRulesTab() {
                 <button
                   onClick={() => setEditing(rule)}
                   className="p-1.5 rounded hover:bg-surface-hover text-text-secondary transition-colors"
-                  title="Edit"
+                  title="编辑"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -1066,7 +1066,7 @@ export function NotifRulesTab() {
                 <button
                   onClick={() => setDeleting(rule)}
                   className="p-1.5 rounded hover:bg-surface-hover text-text-secondary hover:text-red-500 transition-colors"
-                  title="Delete"
+                  title="删除"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" />
@@ -1101,18 +1101,18 @@ export function NotifRulesTab() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-base font-semibold text-text-primary">Delete rule?</h3>
+                <h3 className="text-base font-semibold text-text-primary">删除规则？</h3>
                 <p className="text-sm text-text-secondary mt-1">
-                  "<span className="font-medium text-text-primary">{deleting.name}</span>" will be permanently deleted.
+                  “<span className="font-medium text-text-primary">{deleting.name}</span>”将被永久删除。
                 </p>
               </div>
             </div>
             <div className="flex gap-2 pt-1">
               <button onClick={deleteRule} className="flex-1 py-2 px-4 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors">
-                Delete
+                删除
               </button>
               <button onClick={() => setDeleting(null)} className="px-4 py-2 border border-border rounded text-sm text-text-primary hover:bg-surface-hover transition-colors">
-                Cancel
+                取消
               </button>
             </div>
           </div>
