@@ -66,7 +66,11 @@ export class RdpLiveStats {
   private pendingSince: number | null = null;
   private batchOpen = false;
 
-  constructor(now: () => number = () => performance.now(), afterTask: (fn: () => void) => void = queueMicrotask) {
+  // Wrapped, not passed as is: browsers reject queueMicrotask called as a method of this object.
+  constructor(
+    now: () => number = () => performance.now(),
+    afterTask: (fn: () => void) => void = (fn) => queueMicrotask(fn),
+  ) {
     this.now = now;
     this.afterTask = afterTask;
     this.sampledAt = now();

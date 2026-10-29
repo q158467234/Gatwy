@@ -23,6 +23,24 @@ function clock() {
 }
 
 describe('RdpLiveStats', () => {
+  it('schedules with queueMicrotask by default without calling it as its own method', async () => {
+    // Browsers throw "Illegal invocation" when queueMicrotask runs with a foreign receiver;
+    // Node does not, so check the receiver here.
+    const original = globalThis.queueMicrotask;
+    globalThis.queueMicrotask = function (this: unknown, fn: () => void) {
+      if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation');
+      original(fn);
+    };
+    try {
+      const stats = new RdpLiveStats();
+      stats.onDraw(1);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      assert.ok(stats.sample().fps > 0, 'the draw closed an update');
+    } finally {
+      globalThis.queueMicrotask = original;
+    }
+  });
+
   it('reports rates over the interval since the last sample, then starts over', () => {
     const c = clock();
     const stats = new RdpLiveStats(c.now, c.afterTask);

@@ -379,9 +379,14 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
         const liveStats = new RdpLiveStats();
         let renderMeter: RdpRenderMeter | null = null;
         let compositor: 'GPU' | 'CPU' | null = null;
+        // Statistics must never break drawing: the hooks below run inside IronRDP's blits.
         const onDraw = (pixels: number) => {
-          liveStats.onDraw(pixels);
-          renderMeter?.onDraw(pixels);
+          try {
+            liveStats.onDraw(pixels);
+            renderMeter?.onDraw(pixels);
+          } catch (error) {
+            console.warn('[RDP] draw statistics failed', error);
+          }
         };
         const hooked = new WeakSet<object>();
         const origGetContext = canvas.getContext.bind(canvas);
