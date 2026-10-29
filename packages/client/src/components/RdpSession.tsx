@@ -14,6 +14,27 @@ import {
 } from '../services/rdpMetrics';
 import { RdpFileTransfer, RdpFileTransferHandle } from './RdpFileTransfer';
 import { type RdpResolution, rdpDesktopSize } from '../lib/rdpDisplay';
+import { BASE_PATH } from '../lib/basePath';
+import {
+  type DecoderCounters,
+  type OverlayLine,
+  type RdpOverlayInfo,
+  type RdpStatsOverlayMode,
+  RdpLiveStats,
+  decoderSample,
+  graphicsLabel,
+  loadOverlayMode,
+  nextOverlayMode,
+  overlayLines,
+  saveOverlayMode,
+} from '../services/rdpLiveStats';
+import { RdpStatsOverlay } from './RdpStatsOverlay';
+
+/** How often the overlay refreshes, and how often it measures each round trip. */
+const OVERLAY_REFRESH_MS = 1000;
+const GATEWAY_RTT_MS = 2000;
+const HOST_RTT_MS = 5000;
+const OVERLAY_MODE_LABELS: Record<RdpStatsOverlayMode, string> = { off: '关闭', compact: '简洁', detailed: '详细' };
 
 let rdpInitialized = false;
 let Backend: Record<string, unknown> | null = null;
@@ -94,6 +115,20 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [overlayMode, setOverlayModeState] = useState<RdpStatsOverlayMode>(loadOverlayMode);
+  const [overlay, setOverlay] = useState<OverlayLine[]>([]);
+  // Filled in by the session effect once connected; read by the overlay's refresh timer.
+  const overlaySourceRef = useRef<(() => RdpOverlayInfo) | null>(null);
+  const rttGatewayRef = useRef<number | null>(null);
+  const rttHostRef = useRef<number | null>(null);
+  const desktopScaleRef = useRef<number | undefined>(undefined);
+
+  const setOverlayMode = useCallback((mode: RdpStatsOverlayMode) => {
+    saveOverlayMode(mode);
+    setOverlayModeState(mode);
+  }, []);
+  const cycleOverlayRef = useRef<() => void>(() => {});
+  cycleOverlayRef.current = () => setOverlayMode(nextOverlayMode(overlayMode));
   const [fileTransferOpen, setFileTransferOpen] = useState(false);
   const [showFileTransferNewBadge, setShowFileTransferNewBadge] = useState(false);
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
@@ -114,6 +149,7 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
     const h = Math.max(containerRef.current.clientHeight, 1);
     if (w <= 0 || h <= 0) return;
     const size = rdpDesktopSize(w, h, window.devicePixelRatio, resolutionRef.current);
+    desktopScaleRef.current = size.scaleFactor;
     sessionRef.current.resize(size.width, size.height, size.scaleFactor);
   }, []);
 
@@ -152,6 +188,54 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
       if (fsResizeTimer) clearTimeout(fsResizeTimer);
     };
   }, [resizeToContainer]);
+
+  // ── Connection statistics overlay ─────────────────────────────────────────
+  useEffect(() => {
+    if (overlayMode === 'off' || status !== 'Connected') {
+      setOverlay([]);
+      return;
+    }
+    const source = overlaySourceRef.current;
+    if (!source) return;
+    source(); // starts a fresh interval: rates since the overlay was hidden mean nothing
+    const refresh = window.setInterval(() => setOverlay(overlayLines(source(), overlayMode)), OVERLAY_REFRESH_MS);
+
+    // Browser to gateway: the lightest request the gateway serves.
+    const pingGateway = async () => {
+      const start = performance.now();
+      try {
+        const res = await fetch(`${BASE_PATH}/health`, { cache: 'no-store' });
+        await res.arrayBuffer();
+        if (res.ok) rttGatewayRef.current = performance.now() - start;
+      } catch {
+        rttGatewayRef.current = null;
+      }
+    };
+    // Gateway to the RDP host: a TCP connect from the gateway, as the sidebar's reachability check.
+    const pingHost = async () => {
+      try {
+        const res = await fetch('/api/v1/connections/health-check', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ checks: [{ id: tab.connectionId }] }),
+        });
+        const data = (await res.json()) as { results?: { latencyMs: number | null }[] };
+        rttHostRef.current = data.results?.[0]?.latencyMs ?? null;
+      } catch {
+        rttHostRef.current = null;
+      }
+    };
+    void pingGateway();
+    void pingHost();
+    const gatewayTimer = window.setInterval(() => void pingGateway(), GATEWAY_RTT_MS);
+    const hostTimer = window.setInterval(() => void pingHost(), HOST_RTT_MS);
+    return () => {
+      window.clearInterval(refresh);
+      window.clearInterval(gatewayTimer);
+      window.clearInterval(hostTimer);
+    };
+  }, [overlayMode, status, tab.connectionId]);
 
   // ── Auto-open panel on connect, close after 3 s ────────────────────────────
   useEffect(() => {
@@ -275,6 +359,7 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
           window.devicePixelRatio,
           rdpSettings.resolution,
         );
+        desktopScaleRef.current = initialSize.scaleFactor;
         canvas.width = initialSize.width;
         canvas.height = initialSize.height;
         container.innerHTML = '';
@@ -288,13 +373,45 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
         // We override getContext before IronRDP can call it so the context is
         // created with preserveDrawingBuffer=true, letting captureStream() read
         // the actual rendered frame on the original canvas — no mirror needed.
+        // The same hook counts presents for the statistics overlay and the performance metrics:
+        // IronRDP draws a 2D canvas with putImageData, or (GPU compositing) shows its WebGL2
+        // output by drawing into the default framebuffer.
+        const liveStats = new RdpLiveStats();
+        let renderMeter: RdpRenderMeter | null = null;
+        let compositor: 'GPU' | 'CPU' | null = null;
+        const onDraw = (pixels: number) => {
+          liveStats.onDraw(pixels);
+          renderMeter?.onDraw(pixels);
+        };
+        const hooked = new WeakSet<object>();
         const origGetContext = canvas.getContext.bind(canvas);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (canvas as any).getContext = function(contextId: string, opts?: WebGLContextAttributes) {
           if (contextId === 'webgl2' || contextId === 'webgl') {
             opts = { ...opts, preserveDrawingBuffer: true };
           }
-          return origGetContext(contextId as any, opts);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const ctx = origGetContext(contextId as any, opts);
+          if (ctx && !hooked.has(ctx)) {
+            hooked.add(ctx);
+            if (ctx instanceof CanvasRenderingContext2D) {
+              compositor = 'CPU';
+              const putImageData = ctx.putImageData;
+              ctx.putImageData = function (this: CanvasRenderingContext2D, image: ImageData, ...rest: unknown[]) {
+                onDraw(image.width * image.height);
+                return (putImageData as (...args: unknown[]) => void).call(this, image, ...rest);
+              } as CanvasRenderingContext2D['putImageData'];
+            } else if (contextId === 'webgl2') {
+              compositor = 'GPU';
+              const gl = ctx as unknown as WebGL2RenderingContext;
+              const bindFramebuffer = gl.bindFramebuffer;
+              gl.bindFramebuffer = function (this: WebGL2RenderingContext, target: GLenum, framebuffer: WebGLFramebuffer | null) {
+                if (framebuffer === null) onDraw(canvas.width * canvas.height);
+                return bindFramebuffer.call(this, target, framebuffer);
+              };
+            }
+          }
+          return ctx;
         };
 
         // IronRDP sets absolute pixel values on canvas.style.width/height during
@@ -482,10 +599,11 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
         }
 
         const h264Stats = h264?.stats; // updated in place by the decoder
-        const renderMeter = rdpSettings.metrics
-          ? new RdpRenderMeter({ extra: h264Stats ? () => h264Stats : undefined })
-          : null;
-        if (renderMeter) detachRenderMeter = attachRdpRenderMeter(canvas, renderMeter);
+        if (rdpSettings.metrics) {
+          renderMeter = new RdpRenderMeter({ extra: h264Stats ? () => h264Stats : undefined });
+          detachRenderMeter = attachRdpRenderMeter(renderMeter);
+        }
+        const meter = renderMeter;
 
         // The WASM client owns the proxy socket, so watch its construction to learn why it closed.
         const NativeWebSocket = window.WebSocket;
@@ -496,7 +614,17 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
               sock.addEventListener('close', (ev) => {
                 if (ev.code === ADMIN_DISCONNECT_CODE) adminDisconnected = true;
               });
-              if (renderMeter) sock.addEventListener('message', (ev) => renderMeter.onMessage(messageByteLength(ev.data)));
+              sock.addEventListener('message', (ev) => {
+                const bytes = messageByteLength(ev.data);
+                liveStats.onMessage(bytes);
+                meter?.onMessage(bytes);
+              });
+              // The WASM client calls send() on the instance, so an own property sees every frame.
+              const send = sock.send.bind(sock);
+              sock.send = (data: Parameters<WebSocket['send']>[0]) => {
+                liveStats.onSend(messageByteLength(data));
+                send(data);
+              };
             }
             return sock;
           },
@@ -514,6 +642,26 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
         }
 
         sessionRef.current = session;
+        const connectedAt = performance.now();
+        let previousDecoder: DecoderCounters | null = null;
+        overlaySourceRef.current = () => {
+          const counters = h264Stats ? { ...h264Stats } : null;
+          const decoder = counters ? decoderSample(previousDecoder, counters) : null;
+          previousDecoder = counters;
+          return {
+            width: canvas.width,
+            height: canvas.height,
+            scaleFactor: desktopScaleRef.current,
+            graphics: graphicsLabel(rdpSettings.graphics, h264Stats ? h264Stats.decoded : null),
+            compositor,
+            live: liveStats.sample(),
+            rttGatewayMs: rttGatewayRef.current,
+            rttHostMs: rttHostRef.current,
+            // Before any H.264 picture, decoder figures would only show zeros.
+            decoder: counters && counters.submitted > 0 ? decoder : null,
+            connectedSeconds: (performance.now() - connectedAt) / 1000,
+          };
+        };
         setStatus('Connected');
         onStatusChange(tab.id, 'connected');
 
@@ -783,6 +931,13 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
           // (e.g. the connection modal, search boxes, etc.). The mobile keyboard
           // textarea (data-mobile-keyboard) is allowed through.
           if (isTextInputFocused(true)) return;
+
+          // Ctrl+Alt+Shift+S cycles the statistics overlay, as in Moonlight; S never reaches the host.
+          if (e.code === 'KeyS' && e.ctrlKey && e.altKey && e.shiftKey && !e.metaKey) {
+            e.preventDefault();
+            if (e.type === 'keydown' && !e.repeat) cycleOverlayRef.current();
+            return;
+          }
 
           const noExtraModifiers = !e.altKey && !e.metaKey;
           const isPasteChord = noExtraModifiers && (
@@ -1073,6 +1228,8 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
         </div>
       )}
 
+      <RdpStatsOverlay lines={overlay} />
+
       {/* Disconnect overlay */}
       <DisconnectOverlay
         show={disconnected}
@@ -1161,6 +1318,27 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
             Enter fullscreen to capture Ctrl+Tab, F-keys and other browser shortcuts.
           </p>
         )}
+
+        {/* Connection statistics overlay */}
+        <div className="px-2 py-1.5">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-sm text-text-primary">连接信息</span>
+            <span className="text-[10px] text-text-secondary">Ctrl+Alt+Shift+S</span>
+          </div>
+          <div className="grid grid-cols-3 gap-1">
+            {(['off', 'compact', 'detailed'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setOverlayMode(mode)}
+                className={`py-1 rounded-md text-xs transition-colors ${
+                  overlayMode === mode ? 'bg-accent text-white' : 'bg-surface-hover/50 hover:bg-surface-hover text-text-primary'
+                }`}
+              >
+                {OVERLAY_MODE_LABELS[mode]}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Keyboard shortcuts the browser or local OS would otherwise swallow */}
         <button

@@ -334,10 +334,11 @@ router.post('/health-check', async (req: Request, res: Response) => {
   const results = await Promise.all(
     validatedChecks.map(({ id, host, port }) =>
       new Promise<{ id: string; reachable: boolean; latencyMs: number | null }>((resolve) => {
-        const start = Date.now();
+        const start = performance.now();
         const socket = net.createConnection({ host, port, timeout: 3000 });
         socket.on('connect', () => {
-          const latencyMs = Date.now() - start;
+          // A tenth of a millisecond: a LAN connect usually takes less than one.
+          const latencyMs = Math.round((performance.now() - start) * 10) / 10;
           socket.destroy();
           resolve({ id, reachable: true, latencyMs });
         });

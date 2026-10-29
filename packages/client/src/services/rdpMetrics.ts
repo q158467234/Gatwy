@@ -225,20 +225,11 @@ declare global {
 }
 
 /**
- * Instruments the session canvas and returns a teardown that stops the meter and restores it.
- * The WASM client draws through the canvas's 2D context, looked up per call, so an own-property
- * override on that context intercepts every blit.
+ * Starts the meter's interval and long-task timing, and returns a teardown that stops it. Draws
+ * and messages are fed by the caller (RdpSession hooks the context the WASM client acquires; taking
+ * one here would decide between 2D and WebGL before the client does).
  */
-export function attachRdpRenderMeter(canvas: HTMLCanvasElement, meter: RdpRenderMeter): () => void {
-  const ctx = canvas.getContext('2d');
-  const original = ctx?.putImageData;
-  if (ctx && original) {
-    ctx.putImageData = function (this: CanvasRenderingContext2D, image: ImageData, ...rest: unknown[]) {
-      meter.onDraw(image.width * image.height);
-      return (original as (...args: unknown[]) => void).call(this, image, ...rest);
-    } as CanvasRenderingContext2D['putImageData'];
-  }
-
+export function attachRdpRenderMeter(meter: RdpRenderMeter): () => void {
   let observer: PerformanceObserver | null = null;
   try {
     observer = new PerformanceObserver((list) => {
@@ -255,7 +246,6 @@ export function attachRdpRenderMeter(canvas: HTMLCanvasElement, meter: RdpRender
   return () => {
     window.clearInterval(timer);
     observer?.disconnect();
-    if (ctx && original) delete (ctx as unknown as Record<string, unknown>).putImageData;
     meter.stop();
   };
 }

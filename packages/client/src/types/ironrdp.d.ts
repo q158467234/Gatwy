@@ -85,7 +85,17 @@ declare module '@devolutions/iron-remote-desktop-rdp' {
   /** EGFX prototype build only. */
   export class WebCodecsH264Decoder {
     static create(options?: { avc444?: boolean }): Promise<WebCodecsH264Decoder | null>;
-    readonly stats: Record<string, unknown> & { hardware: boolean };
+    /** Cumulative counters, updated in place. */
+    readonly stats: Record<string, unknown> & {
+      hardware: boolean;
+      submitted: number;
+      decoded: number;
+      errors: number;
+      stalls: number;
+      keyFrameRequests: number;
+      decodeMsTotal: number;
+      decodeMsMax: number;
+    };
   }
 }
 
