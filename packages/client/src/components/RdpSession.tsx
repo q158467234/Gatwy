@@ -652,7 +652,7 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
             width: canvas.width,
             height: canvas.height,
             scaleFactor: desktopScaleRef.current,
-            graphics: graphicsLabel(rdpSettings.graphics, h264Stats ? h264Stats.decoded : null),
+            graphics: graphicsLabel(rdpSettings.graphics, h264Stats ?? null),
             compositor,
             live: liveStats.sample(),
             rttGatewayMs: rttGatewayRef.current,

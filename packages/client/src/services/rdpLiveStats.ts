@@ -178,16 +178,19 @@ export interface RdpOverlayInfo {
 }
 
 /**
- * How the screen is encoded, from the requested graphics mode and whether the H.264 decoder has
- * decoded anything yet (the server falls back to other codecs, or has sent no H.264 so far).
+ * How the screen is encoded, from the requested graphics mode and the H.264 decoder's counters
+ * (null without a decoder: the browser has no WebCodecs H.264). Windows encodes only what it
+ * considers video with H.264 unless AVC444 is prioritized, so a still desktop sends none.
  */
 export function graphicsLabel(
   mode: { egfx: boolean; h264: boolean; avc444: boolean },
-  h264Decoded: number | null,
+  h264: { submitted: number; decoded: number } | null,
 ): string {
   if (!mode.egfx) return 'RemoteFX（经典）';
-  if (!mode.h264 || h264Decoded === null) return '图形管道';
-  if (h264Decoded === 0) return '图形管道（H.264 未使用）';
+  if (!mode.h264) return '图形管道';
+  if (h264 === null) return '图形管道（浏览器不支持 H.264）';
+  if (h264.submitted === 0) return '图形管道（服务器未发送 H.264）';
+  if (h264.decoded === 0) return 'H.264（解码失败）';
   return mode.avc444 ? 'H.264（允许 4:4:4）' : 'H.264 4:2:0';
 }
 

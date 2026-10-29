@@ -79,12 +79,14 @@ describe('decoderSample', () => {
 describe('graphicsLabel', () => {
   it('names the codec in use', () => {
     const off = { egfx: false, h264: false, avc444: false };
+    const h264 = { egfx: true, h264: true, avc444: false };
     assert.equal(graphicsLabel(off, null), 'RemoteFX（经典）');
     assert.equal(graphicsLabel({ ...off, egfx: true }, null), '图形管道');
-    assert.equal(graphicsLabel({ egfx: true, h264: true, avc444: false }, null), '图形管道', 'no WebCodecs');
-    assert.equal(graphicsLabel({ egfx: true, h264: true, avc444: false }, 0), '图形管道（H.264 未使用）');
-    assert.equal(graphicsLabel({ egfx: true, h264: true, avc444: false }, 5), 'H.264 4:2:0');
-    assert.equal(graphicsLabel({ egfx: true, h264: true, avc444: true }, 5), 'H.264（允许 4:4:4）');
+    assert.equal(graphicsLabel(h264, null), '图形管道（浏览器不支持 H.264）');
+    assert.equal(graphicsLabel(h264, { submitted: 0, decoded: 0 }), '图形管道（服务器未发送 H.264）');
+    assert.equal(graphicsLabel(h264, { submitted: 3, decoded: 0 }), 'H.264（解码失败）');
+    assert.equal(graphicsLabel(h264, { submitted: 5, decoded: 5 }), 'H.264 4:2:0');
+    assert.equal(graphicsLabel({ ...h264, avc444: true }, { submitted: 5, decoded: 5 }), 'H.264（允许 4:4:4）');
   });
 });
 
