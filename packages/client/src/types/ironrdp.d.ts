@@ -95,6 +95,7 @@ declare module '@devolutions/iron-remote-desktop-rdp' {
       keyFrameRequests: number;
       decodeMsTotal: number;
       decodeMsMax: number;
+      lastError: string | null;
     };
   }
 }

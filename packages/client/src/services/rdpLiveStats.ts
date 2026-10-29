@@ -134,6 +134,7 @@ export interface DecoderCounters {
   keyFrameRequests: number;
   decodeMsTotal: number;
   decodeMsMax: number;
+  lastError: string | null;
 }
 
 export interface DecoderSample {
@@ -147,6 +148,8 @@ export interface DecoderSample {
   stalls: number;
   keyFrameRequests: number;
   errors: number;
+  /** The decoder's most recent error message, when there has been one. */
+  lastError: string | null;
 }
 
 /** Interval figures from two snapshots of the decoder's counters. */
@@ -161,6 +164,7 @@ export function decoderSample(previous: DecoderCounters | null, current: Decoder
     stalls: current.stalls,
     keyFrameRequests: current.keyFrameRequests,
     errors: current.errors,
+    lastError: current.errors > 0 ? current.lastError : null,
   };
 }
 
@@ -292,6 +296,10 @@ export function overlayLines(info: RdpOverlayInfo, mode: RdpStatsOverlayMode): O
         { text: `错误 ${decoder.errors}`, level: countLevel(decoder.errors) },
       ],
     });
+    if (decoder.lastError) {
+      const message = decoder.lastError.length > 90 ? `${decoder.lastError.slice(0, 89)}…` : decoder.lastError;
+      lines.push({ label: '最近错误', parts: [{ text: message, level: 'bad' }] });
+    }
   }
   lines.push(
     {

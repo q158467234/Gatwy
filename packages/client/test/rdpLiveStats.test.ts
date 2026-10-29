@@ -79,7 +79,10 @@ describe('RdpLiveStats', () => {
 });
 
 describe('decoderSample', () => {
-  const counters = { hardware: true, submitted: 10, decoded: 8, errors: 1, stalls: 0, keyFrameRequests: 0, decodeMsTotal: 16, decodeMsMax: 5 };
+  const counters = {
+    hardware: true, submitted: 10, decoded: 8, errors: 1, stalls: 0, keyFrameRequests: 0,
+    decodeMsTotal: 16, decodeMsMax: 5, lastError: 'decoder error: boom',
+  };
 
   it('averages decode time over the interval and counts what is still out', () => {
     const later = { ...counters, submitted: 20, decoded: 18, decodeMsTotal: 46 };
@@ -87,6 +90,8 @@ describe('decoderSample', () => {
     assert.equal(sample.avgMs, 3);
     assert.equal(sample.pending, 1);
     assert.equal(decoderSample(null, counters).avgMs, 2);
+    assert.equal(sample.lastError, 'decoder error: boom');
+    assert.equal(decoderSample(null, { ...counters, errors: 0 }).lastError, null);
   });
 
   it('has no average when nothing was decoded', () => {
@@ -118,7 +123,7 @@ describe('overlay', () => {
     live: { fps: 59.6, drawsPerSec: 60, mpxPerSec: 2.07, downMbps: 12.44, upKbps: 46, latencyP50Ms: 4.2, latencyP95Ms: 11 },
     rttGatewayMs: 0.4,
     rttHostMs: 18,
-    decoder: { hardware: true, avgMs: 2.1, maxMs: 9, pending: 1, stalls: 0, keyFrameRequests: 0, errors: 0 },
+    decoder: { hardware: true, avgMs: 2.1, maxMs: 9, pending: 1, stalls: 0, keyFrameRequests: 0, errors: 0, lastError: null },
     connectedSeconds: 2533,
   };
   const text = (mode: 'compact' | 'detailed', i = info) =>
@@ -145,6 +150,11 @@ describe('overlay', () => {
       '处理 上屏 p50 4.2 ms p95 11 ms',
       '会话 00:42:13',
     ]);
+  });
+
+  it('shows the last decode error in detailed mode', () => {
+    const failing = { ...info, decoder: { ...info.decoder!, errors: 3, lastError: 'decoder error: unsupported' } };
+    assert.deepEqual(text('detailed', failing).at(-3), '最近错误 decoder error: unsupported');
   });
 
   it('leaves out what is unknown and flags what is off', () => {
