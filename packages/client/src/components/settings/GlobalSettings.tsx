@@ -31,7 +31,7 @@ const RDP_GRAPHICS_MODES: { value: string; label: string; help: string }[] = [
   {
     value: 'h264',
     label: '图形管道 + H.264',
-    help: '由浏览器（WebCodecs）解码 H.264，可用时使用 GPU：视频和动态画面占用的带宽大幅降低。彩色文字会略显模糊（AVC420）。无法解码 H.264 的浏览器将改用不含 H.264 的图形管道。',
+    help: '由浏览器（WebCodecs）软件解码 H.264：视频和动态画面占用的带宽大幅降低。彩色文字会略显模糊（AVC420）。无法软件解码 H.264 的浏览器将改用不含 H.264 的图形管道。',
   },
   {
     value: 'h264-444',

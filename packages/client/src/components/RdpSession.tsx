@@ -411,7 +411,9 @@ export function RdpSession({ tab, onStatusChange, onClose }: RdpSessionProps) {
               const gl = ctx as unknown as WebGL2RenderingContext;
               const bindFramebuffer = gl.bindFramebuffer;
               gl.bindFramebuffer = function (this: WebGL2RenderingContext, target: GLenum, framebuffer: WebGLFramebuffer | null) {
-                if (framebuffer === null) onDraw(canvas.width * canvas.height);
+                // wasm-bindgen passes Rust `None` as undefined; WebGL treats it as the default
+                // framebuffer just like null.
+                if (framebuffer == null) onDraw(canvas.width * canvas.height);
                 return bindFramebuffer.call(this, target, framebuffer);
               };
             }

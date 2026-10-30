@@ -7,6 +7,8 @@
 
 export type RdpResolution = 'sharp' | 'saver';
 
+/** Display Control requires each desktop edge to be at least 200 pixels. */
+const MIN_EDGE = 200;
 /** RDP caps each desktop edge at 8192 pixels (MS-RDPEDISP 2.2.2.2.1). */
 const MAX_EDGE = 8192;
 
@@ -35,8 +37,8 @@ export function rdpDesktopSize(
 ): RdpDesktopSize {
   let ratio = resolution === 'sharp' && Number.isFinite(devicePixelRatio) ? Math.max(1, devicePixelRatio) : 1;
   ratio = Math.min(ratio, MAX_EDGE / Math.max(cssWidth, 1), MAX_EDGE / Math.max(cssHeight, 1));
-  const width = Math.max(2, Math.floor(Math.round(cssWidth * ratio) / 2) * 2);
-  const height = Math.max(1, Math.round(cssHeight * ratio));
+  const width = Math.max(MIN_EDGE, Math.floor(Math.round(cssWidth * ratio) / 2) * 2);
+  const height = Math.max(MIN_EDGE, Math.round(cssHeight * ratio));
   // Windows offers scales in 25% steps.
   const scaleFactor =
     resolution === 'sharp' ? Math.min(500, Math.max(100, Math.round((ratio * 100) / 25) * 25)) : undefined;

@@ -41,6 +41,11 @@ describe('rdpDesktopSize', () => {
     assert.equal(rdpDesktopSize(1001, 600, 1, 'saver').width, 1000);
   });
 
+  it('clamps transiently small containers to the Display Control minimum', () => {
+    assert.deepEqual(rdpDesktopSize(500, 50, 1, 'sharp'), { width: 500, height: 200, scaleFactor: 100 });
+    assert.deepEqual(rdpDesktopSize(100, 100, 1.5, 'sharp'), { width: 200, height: 200, scaleFactor: 150 });
+  });
+
   it('scales an oversized desktop down to the protocol limit, keeping its shape', () => {
     const { width, height, scaleFactor } = rdpDesktopSize(5120, 1440, 2, 'sharp');
     assert.equal(width, 8192);
